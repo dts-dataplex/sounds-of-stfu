@@ -235,23 +235,26 @@
     const AUDIO_TYPES = ['silence', 'speech', 'tts', 'ambient', 'music', 'sfx'];
 
     // Embedded audio clips (base64 data URLs)
-    // Note: These are placeholders - in real implementation, convert actual audio files to base64
+    // Simple test tones generated as minimal WAV files
     const botAudioClips = {
-        // Speech sample: "Testing, one, two, three" (~2 seconds)
-        // Placeholder: short beep tone
-        speech: 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=',
+        // Speech: 440Hz tone for 1 second (A4 note)
+        speech: 'data:audio/wav;base64,UklGRiQEAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAEAAA' +
+                'AAAAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAA' +
+                'AQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAA',
 
-        // Ambient conversation: background chatter loop (~5 seconds)
-        // Placeholder: white noise
-        ambient: 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=',
+        // Ambient: 220Hz tone for 1 second (A3 note - lower)
+        ambient: 'data:audio/wav;base64,UklGRiQEAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAEAAA' +
+                 'AAAAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAA' +
+                 'AQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAA',
 
-        // Music loop: catchy melody (~10 seconds)
-        // Placeholder: simple tone sequence
-        music: 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=',
+        // Music: 880Hz tone for 1 second (A5 note - higher)
+        music: 'data:audio/wav;base64,UklGRiQEAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAEAAA' +
+               'AAAAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAA' +
+               'AQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAA',
 
-        // Sound effects: applause/laughter (~2 seconds)
-        // Placeholder: short burst
-        sfx: 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA='
+        // SFX: 660Hz tone for 0.5 seconds (E5 note - short burst)
+        sfx: 'data:audio/wav;base64,UklGRiQCAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQACAAA' +
+             'AAAAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAA'
     };
 
     // NOTE: These placeholders should be replaced with actual audio files converted to base64.
@@ -679,33 +682,34 @@
         draw(); // Update visual
     }
 
-    // Play embedded audio clip for bot
+    // Play embedded audio clip for bot (using generated tones)
     function playEmbeddedAudio(botId, audioType) {
         const bot = testBots[botId];
-        if (!bot || !audioContext) return;
+        if (!bot || !audioContext) {
+            console.error(`Cannot play audio: audioContext=${!!audioContext}, bot=${!!bot}`);
+            return;
+        }
 
         // Stop current audio
         stopBotAudio(botId);
 
-        // Get audio clip
-        const audioDataURL = botAudioClips[audioType];
-        if (!audioDataURL) {
-            console.error(`No audio clip for type: ${audioType}`);
-            return;
+        // Ensure AudioContext is running
+        if (audioContext.state === 'suspended') {
+            audioContext.resume();
         }
 
-        // Create audio element
-        const audio = new Audio(audioDataURL);
-        audio.loop = (audioType === 'ambient' || audioType === 'music'); // Loop ambient/music
+        // Create oscillator for tone generation
+        const oscillator = audioContext.createOscillator();
 
-        audio.onerror = (e) => {
-            console.error(`Failed to load ${audioType} audio:`, e);
-            // Skip to next audio type on error
-            cycleBotAudio(botId);
+        // Set frequency based on audio type
+        const frequencies = {
+            speech: 440,   // A4 - mid tone
+            ambient: 220,  // A3 - low tone
+            music: 880,    // A5 - high tone
+            sfx: 660       // E5 - medium-high tone
         };
-
-        // Create audio source from HTML audio element
-        const audioSource = audioContext.createMediaElementSource(audio);
+        oscillator.frequency.value = frequencies[audioType] || 440;
+        oscillator.type = audioType === 'music' ? 'sine' : 'square';
 
         // Create analyzer for speaking detection
         const analyzer = audioContext.createAnalyser();
@@ -716,24 +720,22 @@
         const gainNode = audioContext.createGain();
         gainNode.gain.value = 1.0;
 
-        // Connect: source → analyzer → gain → destination
-        audioSource.connect(analyzer);
+        // Connect: oscillator → analyzer → gain → destination
+        oscillator.connect(analyzer);
         analyzer.connect(gainNode);
         gainNode.connect(audioContext.destination);
 
         // Store references
-        bot.audioSource = audioSource;
+        bot.audioSource = oscillator;
         bot.gainNode = gainNode;
         bot.analyzerNode = analyzer;
         gainNodes[botId] = gainNode;
         analyzerNodes[botId] = analyzer;
 
-        // Play audio
-        audio.play().catch(err => {
-            console.error(`Failed to play ${audioType}:`, err);
-        });
+        // Start oscillator
+        oscillator.start();
 
-        console.log(`Playing ${audioType} for ${bot.name}`);
+        console.log(`Playing ${audioType} tone (${frequencies[audioType]}Hz) for ${bot.name}`);
 
         // Update spatial audio
         updateSpatialAudio();
