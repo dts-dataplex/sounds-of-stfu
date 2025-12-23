@@ -228,6 +228,32 @@
     // Audio type cycle order
     const AUDIO_TYPES = ['silence', 'speech', 'tts', 'ambient', 'music', 'sfx'];
 
+    // Embedded audio clips (base64 data URLs)
+    // Note: These are placeholders - in real implementation, convert actual audio files to base64
+    const botAudioClips = {
+        // Speech sample: "Testing, one, two, three" (~2 seconds)
+        // Placeholder: short beep tone
+        speech: 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=',
+
+        // Ambient conversation: background chatter loop (~5 seconds)
+        // Placeholder: white noise
+        ambient: 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=',
+
+        // Music loop: catchy melody (~10 seconds)
+        // Placeholder: simple tone sequence
+        music: 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=',
+
+        // Sound effects: applause/laughter (~2 seconds)
+        // Placeholder: short burst
+        sfx: 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA='
+    };
+
+    // NOTE: These placeholders should be replaced with actual audio files converted to base64.
+    // To create real audio:
+    // 1. Record/find short audio clips (speech, ambient, music, sfx)
+    // 2. Convert to base64: `base64 -i audio.mp3` or use online converter
+    // 3. Replace placeholder strings above with: data:audio/mp3;base64,[base64string]
+
     // WASD and Arrow key keyboard movement
     const moveSpeed = 10; // pixels per keypress
     const keysPressed = {};
@@ -458,6 +484,66 @@
 
         console.log(`${bot.name} audio type: ${bot.audioType}`);
         draw(); // Redraw to show new audio type label
+    }
+
+    // Play embedded audio clip for bot
+    function playEmbeddedAudio(botId, audioType) {
+        const bot = testBots[botId];
+        if (!bot || !audioContext) return;
+
+        // Stop current audio
+        stopBotAudio(botId);
+
+        // Get audio clip
+        const audioDataURL = botAudioClips[audioType];
+        if (!audioDataURL) {
+            console.error(`No audio clip for type: ${audioType}`);
+            return;
+        }
+
+        // Create audio element
+        const audio = new Audio(audioDataURL);
+        audio.loop = (audioType === 'ambient' || audioType === 'music'); // Loop ambient/music
+
+        audio.onerror = (e) => {
+            console.error(`Failed to load ${audioType} audio:`, e);
+            // Skip to next audio type on error
+            cycleBotAudio(botId);
+        };
+
+        // Create audio source from HTML audio element
+        const audioSource = audioContext.createMediaElementSource(audio);
+
+        // Create analyzer for speaking detection
+        const analyzer = audioContext.createAnalyser();
+        analyzer.fftSize = 256;
+        analyzer.smoothingTimeConstant = 0.8;
+
+        // Create gain node for spatial audio
+        const gainNode = audioContext.createGain();
+        gainNode.gain.value = 1.0;
+
+        // Connect: source → analyzer → gain → destination
+        audioSource.connect(analyzer);
+        analyzer.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        // Store references
+        bot.audioSource = audioSource;
+        bot.gainNode = gainNode;
+        bot.analyzerNode = analyzer;
+        gainNodes[botId] = gainNode;
+        analyzerNodes[botId] = analyzer;
+
+        // Play audio
+        audio.play().catch(err => {
+            console.error(`Failed to play ${audioType}:`, err);
+        });
+
+        console.log(`Playing ${audioType} for ${bot.name}`);
+
+        // Update spatial audio
+        updateSpatialAudio();
     }
 
     // ========== Drawing Functions ==========
