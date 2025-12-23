@@ -69,12 +69,30 @@
         </div>
         <div>
             <button id="muteBtn" disabled>Mute</button>
+            <span id="connectionState" style="margin-left: 15px; padding: 5px 10px; background: #555; border-radius: 4px; font-size: 12px;">Not Connected</span>
+            <span id="roomDisplay" style="margin-left: 15px; padding: 5px 10px; background: #3a3a3a; border-radius: 4px; font-size: 12px; font-weight: bold; display: none;">Room: <span id="roomName"></span></span>
         </div>
         <div id="status">Status: Not connected</div>
         <div id="participants" style="margin-top: 10px; padding: 10px; background: #333; border-radius: 4px;">
             <strong>Participants:</strong>
             <ul id="participantList" style="list-style: none; padding: 0;"></ul>
         </div>
+    </div>
+
+    <div id="instructions" style="padding: 20px; background: #2a2a2a; border-radius: 8px; margin-bottom: 20px;">
+        <h3 style="margin-top: 0;">How to Use:</h3>
+        <ol style="line-height: 1.8;">
+            <li>Enter a room code (create new or join existing room)</li>
+            <li>Click "Join Room" and allow microphone access</li>
+            <li><strong>Click anywhere on the canvas to move your position</strong></li>
+            <li>Get close to others to hear them clearly</li>
+            <li>Move away to reduce their volume</li>
+            <li>Pulsing ring = someone is speaking</li>
+        </ol>
+        <p style="margin-top: 15px; padding: 10px; background: #3a3a3a; border-radius: 4px; margin-bottom: 0;">
+            <strong>Tip:</strong> The light blue circle around you shows your hearing range (~200px).
+            Move within that range to have a conversation.
+        </p>
     </div>
 
     <canvas id="barCanvas" width="800" height="600"></canvas>
@@ -94,6 +112,9 @@
     const muteBtnEl = document.getElementById('muteBtn');
     const statusDiv = document.getElementById('status');
     const participantListEl = document.getElementById('participantList');
+    const connectionStateEl = document.getElementById('connectionState');
+    const roomDisplayEl = document.getElementById('roomDisplay');
+    const roomNameEl = document.getElementById('roomName');
 
     const canvas = document.getElementById('barCanvas');
     const ctx = canvas.getContext('2d');
@@ -226,6 +247,22 @@
     function animate() {
         updateSpeakingStates();
         draw();
+
+        // Update status with user count and nearest peer info
+        if (myPeerId && currentRoom) {
+            const userCount = Object.keys(participants).length;
+            const nearestInfo = getNearestPeerInfo();
+
+            if (nearestInfo) {
+                updateStatus(
+                    `${userCount} user${userCount !== 1 ? 's' : ''} in room | ` +
+                    `Nearest: ${nearestInfo.peerId} (${nearestInfo.distance}px, ${nearestInfo.volume}% volume)`
+                );
+            } else {
+                updateStatus(`${userCount} user${userCount !== 1 ? 's' : ''} in room | Waiting for others to join...`);
+            }
+        }
+
         requestAnimationFrame(animate);
     }
     animate();
@@ -233,6 +270,40 @@
     function updateStatus(message) {
         statusDiv.textContent = `Status: ${message}`;
         console.log(message);
+    }
+
+    function updateConnectionState(state, color) {
+        connectionStateEl.textContent = state;
+        connectionStateEl.style.background = color;
+    }
+
+    // Get nearest peer info for status
+    function getNearestPeerInfo() {
+        if (!myPeerId || !positions[myPeerId]) return null;
+
+        const myPos = positions[myPeerId];
+        let nearest = null;
+        let minDistance = Infinity;
+
+        Object.keys(positions).forEach(peerId => {
+            if (peerId !== myPeerId && positions[peerId]) {
+                const distance = calculateDistance(myPos, positions[peerId]);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    nearest = peerId;
+                }
+            }
+        });
+
+        if (nearest) {
+            const gain = calculateGain(minDistance);
+            return {
+                peerId: nearest.substring(0, 6),
+                distance: Math.round(minDistance),
+                volume: Math.round(gain * 100)
+            };
+        }
+        return null;
     }
 
     function updateParticipantList() {
@@ -249,18 +320,21 @@
     joinRoomBtn.addEventListener('click', async () => {
         const roomCode = roomCodeInput.value.trim();
         if (!roomCode) {
-            updateStatus('Please enter a room code');
+            updateStatus('Error: Please enter a room code');
+            updateConnectionState('Not Connected', '#cc0000');
             return;
         }
 
         try {
             // Get microphone
             updateStatus('Requesting microphone access...');
+            updateConnectionState('Connecting...', '#ff9e4a');
             localStream = await navigator.mediaDevices.getUserMedia({
                 audio: true,
                 video: false
             });
             updateStatus('Microphone access granted');
+            updateConnectionState('Setting up...', '#ff9e4a');
 
             // Create audio context for spatial audio
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -284,6 +358,9 @@
             peer.on('open', (id) => {
                 myPeerId = id;
                 currentRoom = roomCode;
+                updateConnectionState('Connected', '#00cc00');
+                roomDisplayEl.style.display = 'inline';
+                roomNameEl.textContent = roomCode;
                 updateStatus(`Joined room: ${roomCode}`);
 
                 // Initialize my position
@@ -313,8 +390,21 @@
                 if (err.type === 'unavailable-id') {
                     // Room host exists, that's fine
                     console.log('Host peer ID taken, joining as participant');
+                } else if (err.type === 'peer-unavailable') {
+                    updateStatus(`Error: Cannot connect to peer - they may have left the room`);
+                    updateConnectionState('Connection Error', '#cc6600');
+                    console.error('Peer unavailable:', err);
+                } else if (err.type === 'network') {
+                    updateStatus(`Error: Network connection failed - check your internet or firewall`);
+                    updateConnectionState('Network Error', '#cc0000');
+                    console.error('Network error:', err);
+                } else if (err.type === 'server-error') {
+                    updateStatus(`Error: Signaling server error - try again in a moment`);
+                    updateConnectionState('Server Error', '#cc0000');
+                    console.error('Server error:', err);
                 } else {
                     updateStatus(`Error: ${err.type} - ${err.message}`);
+                    updateConnectionState('Error', '#cc0000');
                     console.error('Peer error:', err);
                 }
             });
@@ -355,7 +445,19 @@
             });
 
         } catch (err) {
-            updateStatus(`Error: ${err.message}`);
+            if (err.name === 'NotAllowedError') {
+                updateStatus(`Error: Microphone access denied - please allow microphone in browser settings`);
+                updateConnectionState('Mic Denied', '#cc0000');
+            } else if (err.name === 'NotFoundError') {
+                updateStatus(`Error: No microphone found - please connect a microphone`);
+                updateConnectionState('No Mic', '#cc0000');
+            } else if (err.name === 'NotReadableError') {
+                updateStatus(`Error: Microphone in use by another application`);
+                updateConnectionState('Mic Busy', '#cc0000');
+            } else {
+                updateStatus(`Error: ${err.message}`);
+                updateConnectionState('Error', '#cc0000');
+            }
             console.error('Setup error:', err);
         }
     });
@@ -446,6 +548,11 @@
             console.log(`Cleaned up audio nodes for ${conn.peer}`);
 
             updateParticipantList();
+
+            // Update status if we're alone now
+            if (Object.keys(participants).length === 1) {
+                updateStatus(`1 user in room | Waiting for others to join...`);
+            }
         });
     }
 
