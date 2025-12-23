@@ -68,8 +68,52 @@
 
     <script src="https://unpkg.com/peerjs@1.5.0/dist/peerjs.min.js"></script>
     <script>
-        // Implementation will go here
-        console.log('PeerJS loaded:', typeof Peer !== 'undefined');
+        let peer = null;
+        let localStream = null;
+        let remoteConnection = null;
+
+        const myPeerIdInput = document.getElementById('myPeerId');
+        const remotePeerIdInput = document.getElementById('remotePeerId');
+        const createPeerBtn = document.getElementById('createPeer');
+        const connectBtn = document.getElementById('connect');
+        const statusDiv = document.getElementById('status');
+
+        function updateStatus(message) {
+            statusDiv.textContent = `Status: ${message}`;
+            console.log(message);
+        }
+
+        // Create peer and get microphone
+        createPeerBtn.addEventListener('click', async () => {
+            try {
+                // Get microphone access
+                updateStatus('Requesting microphone access...');
+                localStream = await navigator.mediaDevices.getUserMedia({
+                    audio: true,
+                    video: false
+                });
+                updateStatus('Microphone access granted');
+
+                // Create peer with PeerJS cloud server
+                peer = new Peer();
+
+                peer.on('open', (id) => {
+                    myPeerIdInput.value = id;
+                    updateStatus(`Peer created with ID: ${id}`);
+                    connectBtn.disabled = false;
+                    createPeerBtn.disabled = true;
+                });
+
+                peer.on('error', (err) => {
+                    updateStatus(`Error: ${err.type} - ${err.message}`);
+                    console.error('Peer error:', err);
+                });
+
+            } catch (err) {
+                updateStatus(`Microphone error: ${err.message}`);
+                console.error('getUserMedia error:', err);
+            }
+        });
     </script>
 </body>
 </html>
