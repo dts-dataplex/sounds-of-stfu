@@ -480,10 +480,35 @@
 
         const currentIndex = AUDIO_TYPES.indexOf(bot.audioType);
         const nextIndex = (currentIndex + 1) % AUDIO_TYPES.length;
-        bot.audioType = AUDIO_TYPES[nextIndex];
+        const nextType = AUDIO_TYPES[nextIndex];
 
-        console.log(`${bot.name} audio type: ${bot.audioType}`);
-        draw(); // Redraw to show new audio type label
+        bot.audioType = nextType;
+
+        console.log(`${bot.name} cycling to: ${nextType}`);
+
+        // Play audio based on type
+        switch(nextType) {
+            case 'silence':
+                stopBotAudio(botId);
+                break;
+            case 'speech':
+                playEmbeddedAudio(botId, 'speech');
+                break;
+            case 'tts':
+                playBotTTS(botId);
+                break;
+            case 'ambient':
+                playEmbeddedAudio(botId, 'ambient');
+                break;
+            case 'music':
+                playEmbeddedAudio(botId, 'music');
+                break;
+            case 'sfx':
+                playEmbeddedAudio(botId, 'sfx');
+                break;
+        }
+
+        draw(); // Update visual
     }
 
     // Play embedded audio clip for bot
@@ -544,6 +569,53 @@
 
         // Update spatial audio
         updateSpatialAudio();
+    }
+
+    // Play text-to-speech for bot
+    function playBotTTS(botId) {
+        const bot = testBots[botId];
+        if (!bot) return;
+
+        // Check if Web Speech API is available
+        if (!('speechSynthesis' in window)) {
+            console.warn('Web Speech API not available');
+            updateStatus('Text-to-speech not supported in this browser');
+            // Skip TTS, cycle to next type
+            cycleBotAudio(botId);
+            return;
+        }
+
+        // Stop current audio
+        stopBotAudio(botId);
+
+        // Extract bot number from ID (bot-1 → 1)
+        const botNumber = botId.split('-')[1];
+
+        // Create utterance
+        const utterance = new SpeechSynthesisUtterance(`Hello, I am Bot ${botNumber}`);
+        utterance.rate = 0.9; // Slightly slower for clarity
+        utterance.pitch = 1.0 + (parseInt(botNumber) * 0.1); // Vary pitch per bot
+        utterance.volume = 1.0;
+
+        // Note: TTS doesn't integrate with Web Audio API directly
+        // It plays through system audio, not spatial audio pipeline
+        // This is a known limitation of Web Speech API
+
+        utterance.onend = () => {
+            console.log(`TTS finished for ${bot.name}`);
+            bot.audioType = 'silence';
+            draw();
+        };
+
+        utterance.onerror = (e) => {
+            console.error(`TTS error for ${bot.name}:`, e);
+            cycleBotAudio(botId);
+        };
+
+        // Speak
+        speechSynthesis.speak(utterance);
+
+        console.log(`TTS started for ${bot.name}`);
     }
 
     // ========== Drawing Functions ==========
