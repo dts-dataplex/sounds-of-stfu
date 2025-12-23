@@ -103,6 +103,8 @@
 
     let audioContext = null;
     let gainNodes = {}; // { peerId: GainNode }
+    let analyzerNodes = {}; // { peerId: AnalyserNode }
+    let speakingStates = {}; // { peerId: boolean }
 
     // Canvas click to move
     canvas.addEventListener('click', (e) => {
@@ -134,6 +136,20 @@
         Object.keys(positions).forEach(peerId => {
             const pos = positions[peerId];
             const isMe = peerId === myPeerId;
+            const isSpeaking = speakingStates[peerId];
+
+            // Draw pulsing ring if speaking
+            if (isSpeaking) {
+                const time = Date.now();
+                const pulseScale = 1.0 + 0.3 * Math.abs(Math.sin(time / 300));
+                const ringRadius = 30 * pulseScale;
+
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, ringRadius, 0, Math.PI * 2);
+                ctx.strokeStyle = isMe ? '#4a9effaa' : '#ff9e4aaa';
+                ctx.lineWidth = 4;
+                ctx.stroke();
+            }
 
             // Draw circle for user
             ctx.beginPath();
@@ -178,8 +194,37 @@
         });
     }
 
+    // Detect if audio is being produced
+    function detectSpeaking(peerId) {
+        const analyzer = analyzerNodes[peerId];
+        if (!analyzer) return false;
+
+        const dataArray = new Uint8Array(analyzer.frequencyBinCount);
+        analyzer.getByteFrequencyData(dataArray);
+
+        // Calculate RMS (root mean square) volume
+        let sumSquares = 0;
+        for (let i = 0; i < dataArray.length; i++) {
+            const normalized = dataArray[i] / 255.0;
+            sumSquares += normalized * normalized;
+        }
+        const rms = Math.sqrt(sumSquares / dataArray.length);
+
+        // Speaking threshold
+        const threshold = 0.02;
+        return rms > threshold;
+    }
+
+    // Update speaking states for all peers
+    function updateSpeakingStates() {
+        Object.keys(analyzerNodes).forEach(peerId => {
+            speakingStates[peerId] = detectSpeaking(peerId);
+        });
+    }
+
     // Animation loop
     function animate() {
+        updateSpeakingStates();
         draw();
         requestAnimationFrame(animate);
     }
@@ -221,6 +266,14 @@
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             updateStatus('Audio context created');
 
+            // Create analyzer for local microphone
+            const localSource = audioContext.createMediaStreamSource(localStream);
+            const localAnalyzer = audioContext.createAnalyser();
+            localAnalyzer.fftSize = 256;
+            localAnalyzer.smoothingTimeConstant = 0.8;
+            localSource.connect(localAnalyzer);
+            // Note: Don't connect to destination (would cause echo)
+
             // Create peer with room code as ID prefix
             const timestamp = Date.now().toString(36);
             const random = Math.random().toString(36).substring(2, 6);
@@ -235,6 +288,9 @@
 
                 // Initialize my position
                 positions[myPeerId] = myPosition;
+
+                // Store local analyzer
+                analyzerNodes[myPeerId] = localAnalyzer;
 
                 // Add self to participants
                 participants[myPeerId] = { name: 'Me' };
@@ -278,8 +334,13 @@
                     if (gainNodes[call.peer]) {
                         gainNodes[call.peer].disconnect();
                         delete gainNodes[call.peer];
-                        console.log(`Cleaned up audio nodes for ${call.peer}`);
                     }
+                    if (analyzerNodes[call.peer]) {
+                        analyzerNodes[call.peer].disconnect();
+                        delete analyzerNodes[call.peer];
+                    }
+                    delete speakingStates[call.peer];
+                    console.log(`Cleaned up audio nodes for ${call.peer}`);
                 });
 
                 if (!connections[call.peer]) {
@@ -318,8 +379,13 @@
             if (gainNodes[hostId]) {
                 gainNodes[hostId].disconnect();
                 delete gainNodes[hostId];
-                console.log(`Cleaned up audio nodes for ${hostId}`);
             }
+            if (analyzerNodes[hostId]) {
+                analyzerNodes[hostId].disconnect();
+                delete analyzerNodes[hostId];
+            }
+            delete speakingStates[hostId];
+            console.log(`Cleaned up audio nodes for ${hostId}`);
         });
 
         connections[hostId] = { call, conn };
@@ -371,8 +437,13 @@
             if (gainNodes[conn.peer]) {
                 gainNodes[conn.peer].disconnect();
                 delete gainNodes[conn.peer];
-                console.log(`Cleaned up audio nodes for ${conn.peer}`);
             }
+            if (analyzerNodes[conn.peer]) {
+                analyzerNodes[conn.peer].disconnect();
+                delete analyzerNodes[conn.peer];
+            }
+            delete speakingStates[conn.peer];
+            console.log(`Cleaned up audio nodes for ${conn.peer}`);
 
             updateParticipantList();
         });
@@ -453,6 +524,10 @@
             gainNodes[peerId].disconnect();
             delete gainNodes[peerId];
         }
+        if (analyzerNodes[peerId]) {
+            analyzerNodes[peerId].disconnect();
+            delete analyzerNodes[peerId];
+        }
 
         // Resume audio context if suspended
         if (audioContext.state === 'suspended') {
@@ -468,16 +543,23 @@
             // Create audio source from remote stream
             const source = audioContext.createMediaStreamSource(stream);
 
+            // Create analyzer for speaking detection
+            const analyzer = audioContext.createAnalyser();
+            analyzer.fftSize = 256;
+            analyzer.smoothingTimeConstant = 0.8;
+
             // Create gain node for volume control
             const gainNode = audioContext.createGain();
             gainNode.gain.value = 1.0; // Start at full volume
 
-            // Connect: source -> gain -> destination
-            source.connect(gainNode);
+            // Connect: source -> analyzer -> gain -> destination
+            source.connect(analyzer);
+            analyzer.connect(gainNode);
             gainNode.connect(audioContext.destination);
 
-            // Store gain node for this peer
+            // Store nodes
             gainNodes[peerId] = gainNode;
+            analyzerNodes[peerId] = analyzer;
 
             console.log(`Audio connected for ${peerId}`);
 
