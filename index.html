@@ -145,6 +145,14 @@
         </div>
 
         <div style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px;">
+                Bot Volume:
+                <input type="range" id="botVolumeSlider" min="0" max="100" value="30" style="vertical-align: middle; margin-left: 10px; min-width: 150px;">
+                <span id="botVolumeValue" style="display: inline-block; min-width: 40px; font-weight: bold; margin-left: 10px;">30%</span>
+            </label>
+        </div>
+
+        <div style="margin-bottom: 15px;">
             <button id="startTestBtn" style="padding: 8px 16px; font-size: 14px;">Start Test</button>
             <button id="stopTestBtn" style="display:none; margin-left: 10px; padding: 8px 16px; font-size: 14px;">Stop Test</button>
         </div>
@@ -199,6 +207,8 @@
     const testModeStatus = document.getElementById('testModeStatus');
     const demoModeStatus = document.getElementById('demoModeStatus');
     const demoHostName = document.getElementById('demoHostName');
+    const botVolumeSlider = document.getElementById('botVolumeSlider');
+    const botVolumeValue = document.getElementById('botVolumeValue');
 
     const canvas = document.getElementById('barCanvas');
     const ctx = canvas.getContext('2d');
@@ -214,6 +224,7 @@
     // Spatial audio parameters
     let maxHearingRange = 300; // adjustable via slider
     let falloffCurve = 1.0; // adjustable via slider (1.0 = linear, >1 = exponential)
+    let botMasterVolume = 0.3; // bot volume (0.0 to 1.0, default 30%)
 
     // Test mode state
     let testBots = {}; // { botId: {id, name, position, audioType, audioSource, gainNode, analyzerNode, pattern, patternPhase, patternCenter, isDragging} }
@@ -230,6 +241,8 @@
     // Drag state
     let draggedBot = null;
     let dragOffset = { x: 0, y: 0 };
+    let dragStartPos = { x: 0, y: 0 };
+    let hasDragged = false;
 
     // Audio type cycle order
     const AUDIO_TYPES = ['silence', 'speech', 'tts', 'ambient', 'music', 'sfx'];
@@ -279,6 +292,20 @@
     // Bot count slider updates value display
     testBotCount.addEventListener('input', () => {
         testBotCountValue.textContent = testBotCount.value;
+    });
+
+    // Bot volume slider updates value display and applies to bots
+    botVolumeSlider.addEventListener('input', () => {
+        const volume = parseInt(botVolumeSlider.value);
+        botVolumeValue.textContent = `${volume}%`;
+        botMasterVolume = volume / 100;
+
+        // Update all active bot volumes
+        Object.values(testBots).forEach(bot => {
+            if (bot.gainNode) {
+                updateSpatialAudio(); // This will apply new volume
+            }
+        });
     });
 
     // Start Test Mode
@@ -448,13 +475,13 @@
                 return;
             }
 
-            // Start dragging
+            // Prepare for potential drag
             draggedBot = clickedBot;
-            draggedBot.isDragging = true;
             dragOffset.x = clickedBot.position.x - x;
             dragOffset.y = clickedBot.position.y - y;
+            dragStartPos = { x, y };
+            hasDragged = false;
 
-            console.log(`Started dragging ${clickedBot.name}`);
             e.preventDefault();
         }
     });
@@ -466,18 +493,30 @@
         const y = e.clientY - rect.top;
 
         if (draggedBot) {
+            // Check if we've moved enough to be considered dragging (5px threshold)
+            const dx = x - dragStartPos.x;
+            const dy = y - dragStartPos.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance > 5) {
+                hasDragged = true;
+                draggedBot.isDragging = true;
+            }
+
             // Update bot position while dragging
-            draggedBot.position.x = Math.max(20, Math.min(canvas.width - 20, x + dragOffset.x));
-            draggedBot.position.y = Math.max(20, Math.min(canvas.height - 20, y + dragOffset.y));
+            if (hasDragged) {
+                draggedBot.position.x = Math.max(20, Math.min(canvas.width - 20, x + dragOffset.x));
+                draggedBot.position.y = Math.max(20, Math.min(canvas.height - 20, y + dragOffset.y));
 
-            // Update positions map
-            positions[draggedBot.id] = draggedBot.position;
+                // Update positions map
+                positions[draggedBot.id] = draggedBot.position;
 
-            // Update spatial audio
-            updateSpatialAudio();
+                // Update spatial audio
+                updateSpatialAudio();
 
-            // Redraw
-            draw();
+                // Redraw
+                draw();
+            }
         } else {
             // If not dragging, check if hovering over bot
             const hoveredBot = getBotAtPosition(x, y);
@@ -485,24 +524,33 @@
         }
     });
 
-    // Canvas mouseup to end dragging
+    // Canvas mouseup to end dragging (or handle click)
     canvas.addEventListener('mouseup', (e) => {
         if (!draggedBot) return;
 
-        console.log(`Stopped dragging ${draggedBot.name} at (${Math.round(draggedBot.position.x)}, ${Math.round(draggedBot.position.y)})`);
+        if (hasDragged) {
+            // This was a drag operation
+            console.log(`Stopped dragging ${draggedBot.name} at (${Math.round(draggedBot.position.x)}, ${Math.round(draggedBot.position.y)})`);
 
-        // Update pattern center if in pattern mode
-        if (testModeState.movementMode === 'patterns') {
-            draggedBot.patternCenter = {...draggedBot.position};
+            // Update pattern center if in pattern mode
+            if (testModeState.movementMode === 'patterns') {
+                draggedBot.patternCenter = {...draggedBot.position};
+            }
+
+            // Broadcast final position
+            if (myPeerId === testModeState.hostPeerId) {
+                broadcastBotState(draggedBot.id);
+            }
+
+            draggedBot.isDragging = false;
+        } else {
+            // This was a click (no movement) - cycle audio type
+            console.log(`Clicked ${draggedBot.name} - cycling audio type`);
+            cycleBotAudio(draggedBot.id);
         }
 
-        // Broadcast final position
-        if (myPeerId === testModeState.hostPeerId) {
-            broadcastBotState(draggedBot.id);
-        }
-
-        draggedBot.isDragging = false;
         draggedBot = null;
+        hasDragged = false;
     });
 
     // Canvas mouseleave to cancel dragging
@@ -718,7 +766,7 @@
 
         // Create gain node for spatial audio
         const gainNode = audioContext.createGain();
-        gainNode.gain.value = 1.0;
+        gainNode.gain.value = botMasterVolume; // Use master volume setting
 
         // Connect: oscillator → analyzer → gain → destination
         oscillator.connect(analyzer);
@@ -1804,8 +1852,11 @@
                 const distance = calculateDistance(myPos, peerPos);
                 const gain = calculateGain(distance);
 
+                // Apply bot master volume multiplier for bots
+                const finalGain = peerId.startsWith('bot-') ? gain * botMasterVolume : gain;
+
                 // Update gain node
-                gainNodes[peerId].gain.value = gain;
+                gainNodes[peerId].gain.value = finalGain;
             }
         });
     }
