@@ -272,6 +272,62 @@
         testBotCountValue.textContent = testBotCount.value;
     });
 
+    // Start Test Mode
+    startTestBtn.addEventListener('click', () => {
+        if (!myPeerId) {
+            updateStatus('Join a room first before starting test mode');
+            return;
+        }
+
+        const numBots = parseInt(testBotCount.value);
+        const duration = parseInt(testDuration.value);
+        const movement = testMovement.value;
+
+        console.log(`Starting test mode: ${numBots} bots, ${duration}s, ${movement} movement`);
+
+        // Update state
+        testModeState.active = true;
+        testModeState.hostPeerId = myPeerId;
+        testModeState.startTime = Date.now();
+        testModeState.duration = duration;
+        testModeState.movementMode = movement;
+        testModeState.numBots = numBots;
+
+        // Spawn bots
+        spawnTestBots(numBots);
+
+        // Update UI
+        startTestBtn.style.display = 'none';
+        stopTestBtn.style.display = 'inline-block';
+        testTimer.style.display = 'block';
+
+        // Show appropriate status
+        const hasOtherUsers = Object.keys(participants).length > 1;
+        if (hasOtherUsers) {
+            // Demo mode
+            demoModeStatus.style.display = 'block';
+            testModeStatus.style.display = 'none';
+        } else {
+            // Solo test mode
+            testModeStatus.style.display = 'block';
+            demoModeStatus.style.display = 'none';
+        }
+
+        // Start timer
+        startTestTimer(duration);
+
+        // Broadcast test mode start to others (if any)
+        broadcastTestModeStart();
+
+        updateStatus(`Test mode started with ${numBots} bots`);
+        draw();
+    });
+
+    // Stop Test Mode
+    stopTestBtn.addEventListener('click', () => {
+        stopTestMode();
+    });
+
     document.addEventListener('keydown', (e) => {
         if (!myPeerId) return;
 
@@ -616,6 +672,129 @@
         speechSynthesis.speak(utterance);
 
         console.log(`TTS started for ${bot.name}`);
+    }
+
+    // Start test mode countdown timer
+    function startTestTimer(durationSeconds) {
+        const endTime = Date.now() + (durationSeconds * 1000);
+
+        testTimerInterval = setInterval(() => {
+            const remaining = Math.max(0, endTime - Date.now());
+            const seconds = Math.floor(remaining / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+
+            testTimerValue.textContent = `${minutes}:${secs.toString().padStart(2, '0')}`;
+
+            if (remaining <= 0) {
+                clearInterval(testTimerInterval);
+                testTimerInterval = null;
+                endTestMode();
+            }
+        }, 100); // Update 10 times/second for smooth countdown
+    }
+
+    // End test mode (timer expired)
+    function endTestMode() {
+        console.log('Test mode timer expired, fading out...');
+
+        // Fade out all bot audio over 2 seconds
+        Object.values(testBots).forEach(bot => {
+            if (bot.gainNode && bot.audioType !== 'silence') {
+                const currentGain = bot.gainNode.gain.value;
+                bot.gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 2);
+
+                // After fade, stop audio and reset to silence
+                setTimeout(() => {
+                    stopBotAudio(bot.id);
+                    bot.audioType = 'silence';
+                    draw();
+                }, 2100);
+            }
+        });
+
+        updateStatus('Test complete (audio fading out...)');
+
+        // Bots remain visible but silent
+        // User can click "Stop Test" to remove them
+    }
+
+    function stopTestMode() {
+        console.log('Stopping test mode');
+
+        // Stop timer
+        if (testTimerInterval) {
+            clearInterval(testTimerInterval);
+            testTimerInterval = null;
+        }
+
+        // Remove all bots
+        removeTestBots();
+
+        // Update state
+        testModeState.active = false;
+        testModeState.hostPeerId = null;
+
+        // Update UI
+        startTestBtn.style.display = 'inline-block';
+        stopTestBtn.style.display = 'none';
+        testTimer.style.display = 'none';
+        testModeStatus.style.display = 'none';
+        demoModeStatus.style.display = 'none';
+
+        // Broadcast stop to others
+        broadcastTestModeStop();
+
+        updateStatus('Test mode stopped');
+        draw();
+    }
+
+    // Broadcast test mode start to all peers
+    function broadcastTestModeStart() {
+        if (!currentRoom) return;
+
+        const message = {
+            type: 'test_mode',
+            action: 'start',
+            hostPeerId: myPeerId,
+            numBots: testModeState.numBots,
+            duration: testModeState.duration,
+            movementMode: testModeState.movementMode,
+            bots: Object.values(testBots).map(bot => ({
+                id: bot.id,
+                position: bot.position,
+                audioType: bot.audioType,
+                pattern: bot.pattern
+            }))
+        };
+
+        // Broadcast to all connections
+        Object.values(connections).forEach(conn => {
+            if (conn.conn && conn.conn.open) {
+                conn.conn.send(message);
+            }
+        });
+
+        console.log('Broadcast test mode start:', message);
+    }
+
+    // Broadcast test mode stop
+    function broadcastTestModeStop() {
+        if (!currentRoom) return;
+
+        const message = {
+            type: 'test_mode',
+            action: 'stop',
+            hostPeerId: myPeerId
+        };
+
+        Object.values(connections).forEach(conn => {
+            if (conn.conn && conn.conn.open) {
+                conn.conn.send(message);
+            }
+        });
+
+        console.log('Broadcast test mode stop');
     }
 
     // ========== Drawing Functions ==========
