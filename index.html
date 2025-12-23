@@ -797,6 +797,79 @@
         console.log('Broadcast test mode stop');
     }
 
+    // Update bot positions based on movement patterns
+    function updateTestBots() {
+        if (!testModeState.active || testModeState.movementMode !== 'patterns') return;
+
+        const time = Date.now() / 1000;
+        let positionsChanged = false;
+
+        Object.values(testBots).forEach(bot => {
+            if (bot.isDragging) return;
+
+            const oldX = bot.position.x;
+            const oldY = bot.position.y;
+
+            const center = bot.patternCenter;
+
+            switch (bot.pattern) {
+                case 'circle':
+                    bot.position.x = center.x + 100 * Math.cos(time * Math.PI / 10);
+                    bot.position.y = center.y + 100 * Math.sin(time * Math.PI / 10);
+                    break;
+                case 'figure8':
+                    bot.position.x = center.x + 150 * Math.sin(time * Math.PI / 10);
+                    bot.position.y = center.y + 75 * Math.sin(time * Math.PI / 5);
+                    break;
+                case 'linear':
+                    bot.position.x = center.x + 150 * Math.sin(time * Math.PI / 10);
+                    bot.position.y = center.y;
+                    break;
+            }
+
+            bot.position.x = Math.max(20, Math.min(canvas.width - 20, bot.position.x));
+            bot.position.y = Math.max(20, Math.min(canvas.height - 20, bot.position.y));
+
+            if (Math.abs(bot.position.x - oldX) > 1 || Math.abs(bot.position.y - oldY) > 1) {
+                positionsChanged = true;
+                positions[bot.id] = bot.position;
+            }
+        });
+
+        // Broadcast position updates (throttled to ~10/second)
+        if (positionsChanged && myPeerId === testModeState.hostPeerId) {
+            const now = Date.now();
+            if (!updateTestBots.lastBroadcast || now - updateTestBots.lastBroadcast > 100) {
+                broadcastBotPositions();
+                updateTestBots.lastBroadcast = now;
+            }
+        }
+
+        if (positionsChanged) {
+            updateSpatialAudio();
+        }
+    }
+
+    // Broadcast bot positions to all peers
+    function broadcastBotPositions() {
+        if (!currentRoom || !testModeState.active) return;
+
+        const message = {
+            type: 'bot_positions',
+            bots: Object.values(testBots).map(bot => ({
+                id: bot.id,
+                x: Math.round(bot.position.x),
+                y: Math.round(bot.position.y)
+            }))
+        };
+
+        Object.values(connections).forEach(conn => {
+            if (conn.conn && conn.conn.open) {
+                conn.conn.send(message);
+            }
+        });
+    }
+
     // ========== Drawing Functions ==========
 
     // Draw the bar space
@@ -943,6 +1016,7 @@
     function animate() {
         handleKeyboardMovement();
         updateSpeakingStates();
+        updateTestBots();
         draw();
 
         // Update status with user count and nearest peer info
