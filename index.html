@@ -1432,6 +1432,32 @@
             delete speakingStates[conn.peer];
             console.log(`Cleaned up audio nodes for ${conn.peer}`);
 
+            // Check if test mode host disconnected
+            if (testModeState.active && conn.peer === testModeState.hostPeerId) {
+                console.log('Test mode host disconnected, ending test mode');
+
+                // Stop timer
+                if (testTimerInterval) {
+                    clearInterval(testTimerInterval);
+                    testTimerInterval = null;
+                }
+
+                // Remove bots
+                removeTestBots();
+
+                // Update state
+                testModeState.active = false;
+                testModeState.hostPeerId = null;
+
+                // Update UI
+                testTimer.style.display = 'none';
+                demoModeStatus.style.display = 'none';
+                testModePanel.style.display = 'none';
+
+                updateStatus('Demo mode ended (host disconnected)');
+                draw();
+            }
+
             updateParticipantList();
 
             // Update status if we're alone now
@@ -1483,7 +1509,141 @@
             positions[data.peerId] = { x: data.x, y: data.y };
             // Update spatial audio when peer moves
             updateSpatialAudio();
+        } else if (data.type === 'test_mode' && data.action === 'start') {
+            handleTestModeStart(data, fromPeer);
+        } else if (data.type === 'test_mode' && data.action === 'stop') {
+            handleTestModeStop(data, fromPeer);
+        } else if (data.type === 'bot_state') {
+            handleBotStateUpdate(data);
+        } else if (data.type === 'bot_positions') {
+            handleBotPositionsUpdate(data);
         }
+    }
+
+    // Handle receiving test mode start from host
+    function handleTestModeStart(data, hostPeerId) {
+        console.log('Received test mode start from', hostPeerId);
+
+        // Update state
+        testModeState.active = true;
+        testModeState.hostPeerId = hostPeerId;
+        testModeState.numBots = data.numBots;
+        testModeState.duration = data.duration;
+        testModeState.movementMode = data.movementMode;
+        testModeState.startTime = Date.now();
+
+        // Spawn bots with received state
+        testBots = {};
+        data.bots.forEach((botData, index) => {
+            const botNumber = index + 1;
+            const bot = createBot(botData.id, botNumber, botData.position);
+            bot.audioType = botData.audioType;
+            bot.pattern = botData.pattern;
+            testBots[botData.id] = bot;
+            positions[botData.id] = bot.position;
+        });
+
+        // Update UI for demo mode (non-host)
+        testModePanel.style.display = 'block';
+        startTestBtn.style.display = 'none';
+        stopTestBtn.style.display = 'none'; // Non-host can't stop
+        testTimer.style.display = 'block';
+        demoModeStatus.style.display = 'block';
+        testModeStatus.style.display = 'none';
+
+        const hostName = participants[hostPeerId]?.name || 'Unknown';
+        demoHostName.textContent = hostName;
+
+        // Start timer
+        startTestTimer(data.duration);
+
+        updateStatus(`Demo mode started by ${hostName}`);
+        draw();
+    }
+
+    // Handle receiving test mode stop from host
+    function handleTestModeStop(data, hostPeerId) {
+        console.log('Received test mode stop from', hostPeerId);
+
+        // Remove bots
+        removeTestBots();
+
+        // Stop timer
+        if (testTimerInterval) {
+            clearInterval(testTimerInterval);
+            testTimerInterval = null;
+        }
+
+        // Update state
+        testModeState.active = false;
+        testModeState.hostPeerId = null;
+
+        // Update UI
+        testTimer.style.display = 'none';
+        demoModeStatus.style.display = 'none';
+        testModePanel.style.display = 'none';
+
+        updateStatus('Demo mode ended');
+        draw();
+    }
+
+    // Handle bot state update (audio type or position)
+    function handleBotStateUpdate(data) {
+        const bot = testBots[data.botId];
+        if (!bot) return;
+
+        console.log(`Bot state update: ${data.botId} → ${data.audioType}`);
+
+        // Update position
+        if (data.position) {
+            bot.position.x = data.position.x;
+            bot.position.y = data.position.y;
+            positions[data.botId] = bot.position;
+        }
+
+        // Update audio type if changed
+        if (data.audioType && data.audioType !== bot.audioType) {
+            bot.audioType = data.audioType;
+
+            // Play corresponding audio
+            switch(data.audioType) {
+                case 'silence':
+                    stopBotAudio(data.botId);
+                    break;
+                case 'speech':
+                    playEmbeddedAudio(data.botId, 'speech');
+                    break;
+                case 'tts':
+                    playBotTTS(data.botId);
+                    break;
+                case 'ambient':
+                    playEmbeddedAudio(data.botId, 'ambient');
+                    break;
+                case 'music':
+                    playEmbeddedAudio(data.botId, 'music');
+                    break;
+                case 'sfx':
+                    playEmbeddedAudio(data.botId, 'sfx');
+                    break;
+            }
+        }
+
+        updateSpatialAudio();
+        draw();
+    }
+
+    // Handle bot positions update (for pattern movement)
+    function handleBotPositionsUpdate(data) {
+        data.bots.forEach(botData => {
+            const bot = testBots[botData.id];
+            if (bot && !bot.isDragging) {
+                bot.position.x = botData.x;
+                bot.position.y = botData.y;
+                positions[botData.id] = bot.position;
+            }
+        });
+
+        updateSpatialAudio();
     }
 
     // Connect to a specific peer
