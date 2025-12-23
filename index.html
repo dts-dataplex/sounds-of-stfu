@@ -50,6 +50,14 @@
             font-family: monospace;
             font-size: 12px;
         }
+        #barCanvas {
+            display: block;
+            background: #2a2a2a;
+            border: 2px solid #4a4a4a;
+            border-radius: 8px;
+            cursor: crosshair;
+            margin: 20px 0;
+        }
     </style>
 </head>
 <body>
@@ -69,6 +77,8 @@
         </div>
     </div>
 
+    <canvas id="barCanvas" width="800" height="600"></canvas>
+
     <script src="https://unpkg.com/peerjs@1.5.0/dist/peerjs.min.js"></script>
     <script>
     let peer = null;
@@ -84,6 +94,93 @@
     const muteBtnEl = document.getElementById('muteBtn');
     const statusDiv = document.getElementById('status');
     const participantListEl = document.getElementById('participantList');
+
+    const canvas = document.getElementById('barCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let positions = {}; // { peerId: { x, y } }
+    let myPosition = { x: 400, y: 300 }; // Start in center
+
+    // Initialize my position
+    positions[myPeerId] = myPosition;
+
+    // Canvas click to move
+    canvas.addEventListener('click', (e) => {
+        if (!myPeerId) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        myPosition = { x, y };
+        positions[myPeerId] = myPosition;
+
+        // Broadcast position to all peers
+        broadcastPosition();
+
+        draw();
+    });
+
+    // Draw the bar space
+    function draw() {
+        // Clear canvas
+        ctx.fillStyle = '#2a2a2a';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw all participants
+        Object.keys(positions).forEach(peerId => {
+            const pos = positions[peerId];
+            const isMe = peerId === myPeerId;
+
+            // Draw circle for user
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, 20, 0, Math.PI * 2);
+            ctx.fillStyle = isMe ? '#4a9eff' : '#ff9e4a';
+            ctx.fill();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Draw label
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '12px monospace';
+            ctx.textAlign = 'center';
+            const label = isMe ? 'You' : peerId.substring(0, 6);
+            ctx.fillText(label, pos.x, pos.y - 30);
+        });
+
+        // Draw hearing range circle around me
+        if (myPeerId && positions[myPeerId]) {
+            const pos = positions[myPeerId];
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, 200, 0, Math.PI * 2);
+            ctx.strokeStyle = '#4a9eff44';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
+    }
+
+    // Broadcast my position to all peers
+    function broadcastPosition() {
+        Object.keys(connections).forEach(peerId => {
+            const conn = connections[peerId]?.conn;
+            if (conn && conn.open) {
+                conn.send({
+                    type: 'position',
+                    peerId: myPeerId,
+                    x: myPosition.x,
+                    y: myPosition.y
+                });
+            }
+        });
+    }
+
+    // Animation loop
+    function animate() {
+        draw();
+        requestAnimationFrame(animate);
+    }
+    animate();
 
     function updateStatus(message) {
         statusDiv.textContent = `Status: ${message}`;
@@ -212,6 +309,16 @@
                 room: currentRoom
             });
 
+            // Send current position
+            if (myPosition) {
+                conn.send({
+                    type: 'position',
+                    peerId: myPeerId,
+                    x: myPosition.x,
+                    y: myPosition.y
+                });
+            }
+
             if (!connections[conn.peer]) {
                 connections[conn.peer] = {};
             }
@@ -230,6 +337,7 @@
             console.log(`Data connection closed with ${conn.peer}`);
             delete connections[conn.peer];
             delete participants[conn.peer];
+            delete positions[conn.peer];
             updateParticipantList();
         });
     }
@@ -271,6 +379,9 @@
             if (data.peerId !== myPeerId && !connections[data.peerId]) {
                 connectToPeer(data.peerId);
             }
+        } else if (data.type === 'position') {
+            // Update peer position
+            positions[data.peerId] = { x: data.x, y: data.y };
         }
     }
 
