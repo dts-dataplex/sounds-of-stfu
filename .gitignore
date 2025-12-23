@@ -33,3 +33,6 @@ dist/
 build/
 *.min.js
 *.map
+
+# Music files (keep locally, don't commit to repo)
+music/
