@@ -225,6 +225,10 @@
     };
     let testTimerInterval = null;
 
+    // Drag state
+    let draggedBot = null;
+    let dragOffset = { x: 0, y: 0 };
+
     // Audio type cycle order
     const AUDIO_TYPES = ['silence', 'speech', 'tts', 'ambient', 'music', 'sfx'];
 
@@ -403,6 +407,86 @@
         draw();
     });
 
+    // Canvas mousedown for bot dragging
+    canvas.addEventListener('mousedown', (e) => {
+        if (!myPeerId) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        // Check if clicking on a bot
+        const clickedBot = getBotAtPosition(x, y);
+        if (clickedBot) {
+            // Check if user can interact with bots
+            if (testModeState.active && myPeerId !== testModeState.hostPeerId) {
+                // Demo mode: non-host cannot drag
+                const hostName = participants[testModeState.hostPeerId]?.name || 'Unknown';
+                updateStatus(`Demo controlled by ${hostName}`);
+                return;
+            }
+
+            // Start dragging
+            draggedBot = clickedBot;
+            draggedBot.isDragging = true;
+            dragOffset.x = clickedBot.position.x - x;
+            dragOffset.y = clickedBot.position.y - y;
+
+            console.log(`Started dragging ${clickedBot.name}`);
+            e.preventDefault();
+        }
+    });
+
+    // Canvas mousemove for bot dragging
+    canvas.addEventListener('mousemove', (e) => {
+        if (!draggedBot) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        // Update bot position
+        draggedBot.position.x = Math.max(20, Math.min(canvas.width - 20, x + dragOffset.x));
+        draggedBot.position.y = Math.max(20, Math.min(canvas.height - 20, y + dragOffset.y));
+
+        // Update positions map
+        positions[draggedBot.id] = draggedBot.position;
+
+        // Update spatial audio
+        updateSpatialAudio();
+
+        // Redraw
+        draw();
+    });
+
+    // Canvas mouseup to end dragging
+    canvas.addEventListener('mouseup', (e) => {
+        if (!draggedBot) return;
+
+        console.log(`Stopped dragging ${draggedBot.name} at (${Math.round(draggedBot.position.x)}, ${Math.round(draggedBot.position.y)})`);
+
+        // Update pattern center if in pattern mode
+        if (testModeState.movementMode === 'patterns') {
+            draggedBot.patternCenter = {...draggedBot.position};
+        }
+
+        // Broadcast final position
+        if (myPeerId === testModeState.hostPeerId) {
+            broadcastBotState(draggedBot.id);
+        }
+
+        draggedBot.isDragging = false;
+        draggedBot = null;
+    });
+
+    // Canvas mouseleave to cancel dragging
+    canvas.addEventListener('mouseleave', (e) => {
+        if (draggedBot) {
+            draggedBot.isDragging = false;
+            draggedBot = null;
+        }
+    });
+
     // ========== Bot Management Functions ==========
 
     // Create a bot object
@@ -562,6 +646,11 @@
             case 'sfx':
                 playEmbeddedAudio(botId, 'sfx');
                 break;
+        }
+
+        // Broadcast state change if host
+        if (testModeState.active && myPeerId === testModeState.hostPeerId) {
+            broadcastBotState(botId);
         }
 
         draw(); // Update visual
@@ -868,6 +957,31 @@
                 conn.conn.send(message);
             }
         });
+    }
+
+    // Broadcast single bot state change
+    function broadcastBotState(botId) {
+        const bot = testBots[botId];
+        if (!bot || !currentRoom) return;
+
+        const message = {
+            type: 'bot_state',
+            botId: botId,
+            position: {
+                x: Math.round(bot.position.x),
+                y: Math.round(bot.position.y)
+            },
+            audioType: bot.audioType,
+            timestamp: Date.now()
+        };
+
+        Object.values(connections).forEach(conn => {
+            if (conn.conn && conn.conn.open) {
+                conn.conn.send(message);
+            }
+        });
+
+        console.log('Broadcast bot state:', message);
     }
 
     // ========== Drawing Functions ==========
