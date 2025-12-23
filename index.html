@@ -101,11 +101,13 @@
             <li>Get close to others to hear them clearly</li>
             <li>Move away to reduce their volume</li>
             <li>Adjust "Hearing Range" and "Falloff Curve" sliders to tune spatial audio</li>
+            <li><strong>Click "Test Mode" to spawn AI bots for solo testing</strong></li>
             <li>Pulsing ring = someone is speaking</li>
         </ol>
         <p style="margin-top: 15px; padding: 10px; background: #3a3a3a; border-radius: 4px; margin-bottom: 0;">
             <strong>Tip:</strong> The light blue circle around you shows your hearing range.
             Move within that range to have a conversation. Adjust the sliders to experiment with different spatial audio settings.
+            <strong>Test Mode lets you spawn bots to test audio without needing multiple people - click bots to cycle through different audio types!</strong>
         </p>
     </div>
 
@@ -287,7 +289,14 @@
         const duration = parseInt(testDuration.value);
         const movement = testMovement.value;
 
-        console.log(`Starting test mode: ${numBots} bots, ${duration}s, ${movement} movement`);
+        console.log('=== Test Mode Started ===');
+        console.log(`Bots: ${numBots}`);
+        console.log(`Duration: ${duration}s`);
+        console.log(`Movement: ${movement}`);
+        console.log('Audio types: silence → speech → tts → ambient → music → sfx');
+        console.log('Click bots to cycle audio types');
+        console.log('Drag bots to reposition');
+        console.log('========================');
 
         // Update state
         testModeState.active = true;
@@ -333,9 +342,19 @@
     });
 
     document.addEventListener('keydown', (e) => {
+        const key = e.key.toLowerCase();
+
+        // Toggle test mode panel with 'T' key
+        if (key === 't' && !e.ctrlKey && !e.metaKey) {
+            if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'SELECT') {
+                testModeToggle.click();
+                e.preventDefault();
+                return;
+            }
+        }
+
         if (!myPeerId) return;
 
-        const key = e.key.toLowerCase();
         // Track WASD and arrow keys
         if (['w', 's', 'a', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)) {
             keysPressed[key] = true;
@@ -437,26 +456,30 @@
         }
     });
 
-    // Canvas mousemove for bot dragging
+    // Canvas mousemove for bot dragging and cursor
     canvas.addEventListener('mousemove', (e) => {
-        if (!draggedBot) return;
-
         const rect = canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
 
-        // Update bot position
-        draggedBot.position.x = Math.max(20, Math.min(canvas.width - 20, x + dragOffset.x));
-        draggedBot.position.y = Math.max(20, Math.min(canvas.height - 20, y + dragOffset.y));
+        if (draggedBot) {
+            // Update bot position while dragging
+            draggedBot.position.x = Math.max(20, Math.min(canvas.width - 20, x + dragOffset.x));
+            draggedBot.position.y = Math.max(20, Math.min(canvas.height - 20, y + dragOffset.y));
 
-        // Update positions map
-        positions[draggedBot.id] = draggedBot.position;
+            // Update positions map
+            positions[draggedBot.id] = draggedBot.position;
 
-        // Update spatial audio
-        updateSpatialAudio();
+            // Update spatial audio
+            updateSpatialAudio();
 
-        // Redraw
-        draw();
+            // Redraw
+            draw();
+        } else {
+            // If not dragging, check if hovering over bot
+            const hoveredBot = getBotAtPosition(x, y);
+            canvas.style.cursor = hoveredBot ? 'pointer' : 'default';
+        }
     });
 
     // Canvas mouseup to end dragging
