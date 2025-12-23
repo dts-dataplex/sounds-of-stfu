@@ -101,6 +101,9 @@
     let positions = {}; // { peerId: { x, y } }
     let myPosition = { x: 400, y: 300 }; // Start in center
 
+    let audioContext = null;
+    let gainNodes = {}; // { peerId: GainNode }
+
     // Initialize my position
     positions[myPeerId] = myPosition;
 
@@ -117,6 +120,9 @@
 
         // Broadcast position to all peers
         broadcastPosition();
+
+        // Update spatial audio based on new position
+        updateSpatialAudio();
 
         draw();
     });
@@ -213,6 +219,10 @@
                 video: false
             });
             updateStatus('Microphone access granted');
+
+            // Create audio context for spatial audio
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            updateStatus('Audio context created');
 
             // Create peer with room code as ID prefix
             const timestamp = Date.now().toString(36);
@@ -382,6 +392,8 @@
         } else if (data.type === 'position') {
             // Update peer position
             positions[data.peerId] = { x: data.x, y: data.y };
+            // Update spatial audio when peer moves
+            updateSpatialAudio();
         }
     }
 
@@ -402,16 +414,89 @@
         connections[peerId] = { call, conn };
     }
 
-    // Play audio from remote peer
+    // Play audio with spatial processing
     function playAudio(stream, peerId) {
-        const audio = new Audio();
-        audio.srcObject = stream;
-        audio.play().catch(err => {
-            console.error('Audio playback error:', err);
-            updateStatus('Click anywhere to enable audio playback');
+        if (!audioContext) {
+            console.error('Audio context not initialized');
+            return;
+        }
+
+        try {
+            // Create audio source from remote stream
+            const source = audioContext.createMediaStreamSource(stream);
+
+            // Create gain node for volume control
+            const gainNode = audioContext.createGain();
+            gainNode.gain.value = 1.0; // Start at full volume
+
+            // Connect: source -> gain -> destination
+            source.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            // Store gain node for this peer
+            gainNodes[peerId] = gainNode;
+
+            console.log(`Audio connected for ${peerId}`);
+
+            // Initialize their position if not set
+            if (!positions[peerId]) {
+                positions[peerId] = {
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height
+                };
+            }
+
+            // Update volume based on distance
+            updateSpatialAudio();
+
+        } catch (err) {
+            console.error('Error setting up spatial audio:', err);
+            // Handle autoplay policy
+            updateStatus('Click anywhere to enable audio');
             document.body.addEventListener('click', () => {
-                audio.play();
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
             }, { once: true });
+        }
+    }
+
+    // Calculate distance between two points
+    function calculateDistance(pos1, pos2) {
+        const dx = pos1.x - pos2.x;
+        const dy = pos1.y - pos2.y;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    // Calculate gain (volume) based on distance
+    function calculateGain(distance) {
+        const maxHearingRange = 300; // pixels
+        const minGain = 0.0;
+        const maxGain = 1.0;
+
+        // Linear falloff
+        if (distance >= maxHearingRange) {
+            return minGain;
+        }
+
+        return maxGain - (distance / maxHearingRange);
+    }
+
+    // Update spatial audio for all peers
+    function updateSpatialAudio() {
+        if (!myPeerId || !positions[myPeerId]) return;
+
+        const myPos = positions[myPeerId];
+
+        Object.keys(gainNodes).forEach(peerId => {
+            if (positions[peerId]) {
+                const peerPos = positions[peerId];
+                const distance = calculateDistance(myPos, peerPos);
+                const gain = calculateGain(distance);
+
+                // Update gain node
+                gainNodes[peerId].gain.value = gain;
+            }
         });
     }
 
