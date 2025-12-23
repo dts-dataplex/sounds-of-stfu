@@ -213,6 +213,21 @@
     let maxHearingRange = 300; // adjustable via slider
     let falloffCurve = 1.0; // adjustable via slider (1.0 = linear, >1 = exponential)
 
+    // Test mode state
+    let testBots = {}; // { botId: {id, name, position, audioType, audioSource, gainNode, analyzerNode, pattern, patternPhase, patternCenter, isDragging} }
+    let testModeState = {
+        active: false,
+        hostPeerId: null,
+        startTime: null,
+        duration: 120,
+        movementMode: 'stationary',
+        numBots: 3
+    };
+    let testTimerInterval = null;
+
+    // Audio type cycle order
+    const AUDIO_TYPES = ['silence', 'speech', 'tts', 'ambient', 'music', 'sfx'];
+
     // WASD and Arrow key keyboard movement
     const moveSpeed = 10; // pixels per keypress
     const keysPressed = {};
@@ -297,6 +312,104 @@
 
         draw();
     });
+
+    // ========== Bot Management Functions ==========
+
+    // Create a bot object
+    function createBot(botId, botNumber, position) {
+        return {
+            id: botId,
+            name: `BOT ${botNumber} 🤖`,
+            position: position,
+            audioType: 'silence',
+            audioSource: null,
+            gainNode: null,
+            analyzerNode: null,
+            stream: null,
+            pattern: getBotPattern(botNumber),
+            patternPhase: 0,
+            patternCenter: {...position},
+            isDragging: false
+        };
+    }
+
+    // Get pattern type based on bot number
+    function getBotPattern(botNumber) {
+        const patterns = ['circle', 'figure8', 'linear'];
+        return patterns[botNumber - 1] || 'circle';
+    }
+
+    // Get predetermined spawn position based on bot number
+    function getBotSpawnPosition(botNumber) {
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+
+        switch(botNumber) {
+            case 1: // Near (150px from center)
+                return {x: centerX + 100, y: centerY};
+            case 2: // Medium (300px from center, diagonal)
+                return {x: centerX + 212, y: centerY + 212};
+            case 3: // Far (450px from center, bottom)
+                return {x: centerX, y: centerY + 450};
+            default:
+                return {x: centerX, y: centerY};
+        }
+    }
+
+    // Spawn test bots
+    function spawnTestBots(numBots) {
+        testBots = {};
+
+        for (let i = 1; i <= numBots; i++) {
+            const botId = `bot-${i}`;
+            const position = getBotSpawnPosition(i);
+            const bot = createBot(botId, i, position);
+            testBots[botId] = bot;
+
+            // Initialize position in positions map
+            positions[botId] = bot.position;
+
+            console.log(`Spawned ${bot.name} at (${position.x}, ${position.y})`);
+        }
+    }
+
+    // Remove all test bots
+    function removeTestBots() {
+        Object.keys(testBots).forEach(botId => {
+            stopBotAudio(botId);
+            delete positions[botId];
+            delete speakingStates[botId];
+        });
+        testBots = {};
+        console.log('Removed all test bots');
+    }
+
+    // Stop audio for a specific bot
+    function stopBotAudio(botId) {
+        const bot = testBots[botId];
+        if (!bot) return;
+
+        // Disconnect and cleanup audio nodes
+        if (bot.gainNode) {
+            bot.gainNode.disconnect();
+            delete gainNodes[botId];
+        }
+        if (bot.analyzerNode) {
+            bot.analyzerNode.disconnect();
+            delete analyzerNodes[botId];
+        }
+        if (bot.audioSource) {
+            if (bot.audioSource.stop) bot.audioSource.stop();
+            if (bot.audioSource.disconnect) bot.audioSource.disconnect();
+        }
+
+        bot.audioSource = null;
+        bot.gainNode = null;
+        bot.analyzerNode = null;
+        bot.audioType = 'silence';
+    }
+
+    // ========== Drawing Functions ==========
 
     // Draw the bar space
     function draw() {
