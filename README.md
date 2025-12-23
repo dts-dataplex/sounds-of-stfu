@@ -7,6 +7,7 @@ A proof-of-concept demonstrating spatial audio for virtual social spaces. Multip
 - [Features Implemented](#features-implemented)
 - [Quick Start](#quick-start)
 - [How to Use](#how-to-use)
+- [Test Mode (Solo Testing)](#test-mode-solo-testing)
 - [Spatial Audio Algorithm](#spatial-audio-algorithm)
 - [Browser Compatibility](#browser-compatibility)
 - [Known Limitations](#known-limitations)
@@ -30,6 +31,7 @@ This POC successfully demonstrates:
 - ✅ **Real-time status updates** - Shows nearest peer distance and volume percentage
 - ✅ **Connection state indicators** - Clear visual feedback on connection status
 - ✅ **Clean disconnection handling** - Graceful cleanup when users leave
+- ✅ **Test Mode with AI Bots** - Spawn 1-3 bots for solo testing without multiple devices
 
 ## Quick Start
 
@@ -143,6 +145,72 @@ The POC excels at allowing **simultaneous conversations** in the same room:
 4. Someone can move between groups to join different conversations
 
 This simulates a real bar where multiple groups chat independently!
+
+## Test Mode (Solo Testing)
+
+Test mode allows you to evaluate spatial audio without needing multiple people or devices by spawning AI-controlled bots.
+
+### Activating Test Mode
+
+1. Join a room (or create a new one)
+2. Click "Test Mode" button (or press 'T' key)
+3. Configure settings:
+   - **Number of Bots**: 1-3 bots
+   - **Duration**: 30 seconds to 5 minutes
+   - **Movement**: Stationary or Patterns
+4. Click "Start Test"
+
+### Interacting with Bots
+
+**Bot Positions:**
+- Bot 1: Near (150px from center) - tests close proximity
+- Bot 2: Medium (300px diagonal) - tests mid-range
+- Bot 3: Far (450px away) - tests max hearing range
+
+**Audio Types (click bot to cycle):**
+1. **Silence** - Off
+2. **Speech** - Pre-recorded voice sample
+3. **Text-to-Speech** - "Hello, I am Bot X"
+4. **Ambient** - Background conversation sounds
+5. **Music** - Looping melody
+6. **Sound Effects** - Applause/laughter
+
+**Movement Modes:**
+- **Stationary**: Bots stay in fixed positions
+- **Patterns**:
+  - Bot 1 moves in circle
+  - Bot 2 moves in figure-8
+  - Bot 3 moves back-and-forth
+- **Manual Drag**: Click and drag any bot to reposition
+
+### Demo Mode (Multi-User)
+
+When other users join while test mode is active, it automatically becomes "demo mode":
+- Host controls bots (can click and drag)
+- Others observe in real-time
+- Bot state syncs across all clients
+- Host name displayed in status
+
+### Test Mode Completion
+
+- Timer counts down visibly
+- When time expires: bots fade out gracefully over 2-3 seconds
+- Bots remain visible but silent
+- Click "Stop Test" to remove bots immediately
+
+### Use Cases
+
+**Solo Testing:**
+- Test spatial audio without multiple devices
+- Verify audio quality and volume falloff
+- Test network performance with multiple audio sources
+- Practice movement and controls
+
+**Demonstrations:**
+- Show spatial audio to stakeholders
+- Let others hear different audio types
+- Demonstrate dynamic movement patterns
+- Test multi-user scenarios with bots + real users
 
 ## Spatial Audio Algorithm
 
@@ -336,6 +404,28 @@ Gain values update in real-time (60 FPS) as users move around the canvas.
 - **Missing:** Echo cancellation tuning, noise suppression, bitrate control
 - **Future:** Expose Web Audio API settings, per-user audio profiles
 
+### Test Mode Specific
+
+**11. No mobile test mode**
+- **Current:** Test mode designed for desktop browsers
+- **Missing:** Touch controls for bot dragging, mobile-optimized UI
+- **Future:** Touch gestures for mobile test mode
+
+**12. TTS bypasses spatial audio**
+- **Why:** Web Speech API doesn't integrate with Web Audio API
+- **Impact:** Text-to-speech plays at fixed volume, not spatially
+- **Workaround:** Use embedded audio types instead of TTS for spatial testing
+
+**13. Placeholder audio**
+- **Current:** Embedded audio clips are short placeholders (may be silent)
+- **Missing:** Real conversation samples, music, ambient sounds
+- **Future:** Replace with actual audio files (speech samples, music loops)
+
+**14. Host disconnect ends demo**
+- **Current:** If host leaves, demo mode ends for all users
+- **Missing:** Host migration, auto-promotion of new host
+- **Future:** Elect new host when original host disconnects
+
 ## Troubleshooting
 
 ### Connection Issues
@@ -461,6 +551,37 @@ Gain values update in real-time (60 FPS) as users move around the canvas.
   - Check microphone input level (system settings)
   - Check not muted in app
   - Threshold is set to 0.02 RMS (fairly sensitive)
+
+### Test Mode Issues
+
+**Problem: Bots don't make sound**
+- **Cause:** Placeholder audio clips are very short/silent, or browser audio permissions
+- **Solution:**
+  - Check browser console for audio loading errors
+  - Some audio types are placeholders (very short/silent)
+  - Click bot multiple times to cycle to different audio type
+  - TTS may not be supported in your browser
+
+**Problem: Bots don't move in pattern mode**
+- **Cause:** Movement mode set to "Stationary" instead of "Patterns"
+- **Solution:**
+  - Verify "Movement" is set to "Patterns" not "Stationary"
+  - Check browser console for JavaScript errors
+  - Refresh page and try again
+
+**Problem: Demo mode not syncing**
+- **Cause:** Network issue or data channel not established
+- **Solution:**
+  - Verify both users are in the same room
+  - Check network connection (data channel required)
+  - Refresh both browsers and rejoin room
+
+**Problem: Can't interact with bots**
+- **Cause:** In demo mode, only host can interact with bots
+- **Solution:**
+  - In demo mode, only host can interact with bots
+  - Check if you're the host (your status shows "You are controlling")
+  - If not host, you can only observe
 
 ## Testing Checklist
 
