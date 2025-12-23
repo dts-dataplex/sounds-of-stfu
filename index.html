@@ -293,7 +293,7 @@
         }
     }
 
-    // Canvas click to move
+    // Canvas click to move or interact with bots
     canvas.addEventListener('click', (e) => {
         if (!myPeerId) return;
 
@@ -301,6 +301,14 @@
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
 
+        // Check if clicking on a bot
+        const clickedBot = getBotAtPosition(x, y);
+        if (clickedBot) {
+            handleBotClick(clickedBot);
+            return; // Don't move user if clicking a bot
+        }
+
+        // Regular click-to-move
         myPosition = { x, y };
         positions[myPeerId] = myPosition;
 
@@ -409,6 +417,49 @@
         bot.audioType = 'silence';
     }
 
+    // Check if click is on a bot
+    function getBotAtPosition(canvasX, canvasY) {
+        const clickRadius = 25; // Slightly larger than bot visual radius
+
+        for (const bot of Object.values(testBots)) {
+            const dx = canvasX - bot.position.x;
+            const dy = canvasY - bot.position.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance <= clickRadius) {
+                return bot;
+            }
+        }
+        return null;
+    }
+
+    // Handle bot click (cycle audio or show demo mode message)
+    function handleBotClick(bot) {
+        // Check if user is allowed to interact
+        if (testModeState.active && myPeerId !== testModeState.hostPeerId) {
+            // Demo mode: non-host clicked
+            const hostName = participants[testModeState.hostPeerId]?.name || 'Unknown';
+            updateStatus(`Demo controlled by ${hostName}`);
+            return;
+        }
+
+        // Cycle to next audio type
+        cycleBotAudio(bot.id);
+    }
+
+    // Cycle bot through audio types
+    function cycleBotAudio(botId) {
+        const bot = testBots[botId];
+        if (!bot) return;
+
+        const currentIndex = AUDIO_TYPES.indexOf(bot.audioType);
+        const nextIndex = (currentIndex + 1) % AUDIO_TYPES.length;
+        bot.audioType = AUDIO_TYPES[nextIndex];
+
+        console.log(`${bot.name} audio type: ${bot.audioType}`);
+        draw(); // Redraw to show new audio type label
+    }
+
     // ========== Drawing Functions ==========
 
     // Draw the bar space
@@ -417,8 +468,11 @@
         ctx.fillStyle = '#2a2a2a';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Draw all participants
+        // Draw all participants (excluding bots)
         Object.keys(positions).forEach(peerId => {
+            // Skip bots - they'll be rendered separately
+            if (testBots[peerId]) return;
+
             const pos = positions[peerId];
             const isMe = peerId === myPeerId;
             const isSpeaking = speakingStates[peerId];
@@ -462,6 +516,47 @@
             ctx.lineWidth = 1;
             ctx.stroke();
         }
+
+        // Draw test bots
+        Object.values(testBots).forEach(bot => {
+            const pos = bot.position;
+            const isSpeaking = speakingStates[bot.id];
+
+            // Speaking indicator (pulsing ring)
+            if (isSpeaking) {
+                const time = Date.now();
+                const pulseScale = 1.0 + 0.3 * Math.abs(Math.sin(time / 300));
+                const ringRadius = 30 * pulseScale;
+
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, ringRadius, 0, Math.PI * 2);
+                ctx.strokeStyle = '#888888aa'; // Gray, semi-transparent
+                ctx.lineWidth = 4;
+                ctx.stroke();
+            }
+
+            // Bot circle (gray)
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, 20, 0, Math.PI * 2);
+            ctx.fillStyle = '#888888';
+            ctx.fill();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Bot label (above)
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 11px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(bot.name, pos.x, pos.y - 28);
+
+            // Audio type indicator (below)
+            if (bot.audioType !== 'silence') {
+                ctx.font = '9px sans-serif';
+                ctx.fillStyle = '#aaaaaa';
+                ctx.fillText(bot.audioType, pos.x, pos.y + 35);
+            }
+        });
     }
 
     // Broadcast my position to all peers
