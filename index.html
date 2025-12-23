@@ -72,6 +72,18 @@
             <span id="connectionState" style="margin-left: 15px; padding: 5px 10px; background: #555; border-radius: 4px; font-size: 12px;">Not Connected</span>
             <span id="roomDisplay" style="margin-left: 15px; padding: 5px 10px; background: #3a3a3a; border-radius: 4px; font-size: 12px; font-weight: bold; display: none;">Room: <span id="roomName"></span></span>
         </div>
+        <div style="margin-top: 10px;">
+            <label style="margin-right: 20px;">
+                Hearing Range:
+                <input type="range" id="hearingRangeSlider" min="100" max="500" value="300" step="10" style="vertical-align: middle; min-width: 150px;">
+                <span id="hearingRangeValue" style="display: inline-block; min-width: 60px; font-weight: bold;">300px</span>
+            </label>
+            <label>
+                Falloff Curve:
+                <input type="range" id="falloffSlider" min="0.5" max="3.0" value="1.0" step="0.1" style="vertical-align: middle; min-width: 150px;">
+                <span id="falloffValue" style="display: inline-block; min-width: 40px; font-weight: bold;">1.0</span>
+            </label>
+        </div>
         <div id="status">Status: Not connected</div>
         <div id="participants" style="margin-top: 10px; padding: 10px; background: #333; border-radius: 4px;">
             <strong>Participants:</strong>
@@ -84,14 +96,15 @@
         <ol style="line-height: 1.8;">
             <li>Enter a room code (create new or join existing room)</li>
             <li>Click "Join Room" and allow microphone access</li>
-            <li><strong>Click anywhere on the canvas to move your position</strong></li>
+            <li><strong>Use WASD or arrow keys to move, or click anywhere on the canvas</strong></li>
             <li>Get close to others to hear them clearly</li>
             <li>Move away to reduce their volume</li>
+            <li>Adjust "Hearing Range" and "Falloff Curve" sliders to tune spatial audio</li>
             <li>Pulsing ring = someone is speaking</li>
         </ol>
         <p style="margin-top: 15px; padding: 10px; background: #3a3a3a; border-radius: 4px; margin-bottom: 0;">
-            <strong>Tip:</strong> The light blue circle around you shows your hearing range (~200px).
-            Move within that range to have a conversation.
+            <strong>Tip:</strong> The light blue circle around you shows your hearing range.
+            Move within that range to have a conversation. Adjust the sliders to experiment with different spatial audio settings.
         </p>
     </div>
 
@@ -115,6 +128,10 @@
     const connectionStateEl = document.getElementById('connectionState');
     const roomDisplayEl = document.getElementById('roomDisplay');
     const roomNameEl = document.getElementById('roomName');
+    const hearingRangeSlider = document.getElementById('hearingRangeSlider');
+    const hearingRangeValue = document.getElementById('hearingRangeValue');
+    const falloffSlider = document.getElementById('falloffSlider');
+    const falloffValue = document.getElementById('falloffValue');
 
     const canvas = document.getElementById('barCanvas');
     const ctx = canvas.getContext('2d');
@@ -126,6 +143,61 @@
     let gainNodes = {}; // { peerId: GainNode }
     let analyzerNodes = {}; // { peerId: AnalyserNode }
     let speakingStates = {}; // { peerId: boolean }
+
+    // Spatial audio parameters
+    let maxHearingRange = 300; // adjustable via slider
+    let falloffCurve = 1.0; // adjustable via slider (1.0 = linear, >1 = exponential)
+
+    // WASD and Arrow key keyboard movement
+    const moveSpeed = 10; // pixels per keypress
+    const keysPressed = {};
+
+    document.addEventListener('keydown', (e) => {
+        if (!myPeerId) return;
+
+        const key = e.key.toLowerCase();
+        // Track WASD and arrow keys
+        if (['w', 's', 'a', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)) {
+            keysPressed[key] = true;
+            e.preventDefault(); // Prevent page scrolling with arrow keys
+        }
+    });
+
+    document.addEventListener('keyup', (e) => {
+        const key = e.key.toLowerCase();
+        keysPressed[key] = false;
+    });
+
+    // Update position based on keys pressed
+    function handleKeyboardMovement() {
+        if (!myPeerId) return;
+
+        let moved = false;
+
+        // WASD or Arrow keys
+        if (keysPressed['w'] || keysPressed['arrowup']) {
+            myPosition.y = Math.max(0, myPosition.y - moveSpeed);
+            moved = true;
+        }
+        if (keysPressed['s'] || keysPressed['arrowdown']) {
+            myPosition.y = Math.min(canvas.height, myPosition.y + moveSpeed);
+            moved = true;
+        }
+        if (keysPressed['a'] || keysPressed['arrowleft']) {
+            myPosition.x = Math.max(0, myPosition.x - moveSpeed);
+            moved = true;
+        }
+        if (keysPressed['d'] || keysPressed['arrowright']) {
+            myPosition.x = Math.min(canvas.width, myPosition.x + moveSpeed);
+            moved = true;
+        }
+
+        if (moved) {
+            positions[myPeerId] = myPosition;
+            broadcastPosition();
+            updateSpatialAudio();
+        }
+    }
 
     // Canvas click to move
     canvas.addEventListener('click', (e) => {
@@ -193,7 +265,7 @@
         if (myPeerId && positions[myPeerId]) {
             const pos = positions[myPeerId];
             ctx.beginPath();
-            ctx.arc(pos.x, pos.y, 200, 0, Math.PI * 2);
+            ctx.arc(pos.x, pos.y, maxHearingRange, 0, Math.PI * 2);
             ctx.strokeStyle = '#4a9eff44';
             ctx.lineWidth = 1;
             ctx.stroke();
@@ -245,6 +317,7 @@
 
     // Animation loop
     function animate() {
+        handleKeyboardMovement();
         updateSpeakingStates();
         draw();
 
@@ -702,16 +775,24 @@
 
     // Calculate gain (volume) based on distance
     function calculateGain(distance) {
-        const maxHearingRange = 300; // pixels
         const minGain = 0.0;
         const maxGain = 1.0;
 
-        // Linear falloff
+        // Check if out of hearing range
         if (distance >= maxHearingRange) {
             return minGain;
         }
 
-        return maxGain - (distance / maxHearingRange);
+        // Calculate normalized distance (0 to 1)
+        const normalizedDistance = distance / maxHearingRange;
+
+        // Apply falloff curve
+        // falloffCurve = 1.0: linear falloff
+        // falloffCurve > 1.0: exponential falloff (steeper, sounds drop off faster)
+        // falloffCurve < 1.0: logarithmic falloff (gentler, sounds carry further)
+        const falloff = Math.pow(normalizedDistance, falloffCurve);
+
+        return maxGain - falloff;
     }
 
     // Update spatial audio for all peers
@@ -740,6 +821,20 @@
         });
         muteBtnEl.textContent = isMuted ? 'Unmute' : 'Mute';
         updateStatus(isMuted ? 'Muted' : 'Unmuted');
+    });
+
+    // Hearing range slider
+    hearingRangeSlider.addEventListener('input', (e) => {
+        maxHearingRange = parseInt(e.target.value);
+        hearingRangeValue.textContent = `${maxHearingRange}px`;
+        updateSpatialAudio();
+    });
+
+    // Falloff curve slider
+    falloffSlider.addEventListener('input', (e) => {
+        falloffCurve = parseFloat(e.target.value);
+        falloffValue.textContent = falloffCurve.toFixed(1);
+        updateSpatialAudio();
     });
     </script>
 </body>
