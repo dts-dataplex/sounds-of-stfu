@@ -17,8 +17,11 @@ The platform aims to solve the problem of spatial audio in digital communication
 
 ### Current State
 
-**This repository is in the conceptual/planning phase.** Currently it contains only:
-- `STFU-steev.md`: Comprehensive design document outlining the vision, problem statement, and desired features
+**This repository is in the conceptual/planning phase.** Currently it contains:
+- `STFU-steev.md`: Original design document outlining the vision, problem statement, and desired features
+- `PRODUCT_REQUIREMENTS.md`: Comprehensive PRD with user personas, features, user stories, and success metrics
+- `BACKLOG.md`: Detailed feature backlog with 150+ prioritized tasks across MVP v1.0, v1.1, and v2.0
+- `AGENTIC_DESIGN_PATTERNS.md`: Architectural guidance using established agentic AI patterns
 
 No code has been written yet. The project is ready for initial architecture and implementation.
 
@@ -42,11 +45,54 @@ Per the design document, the project emphasizes:
 - **Stakeholder communication**: Check with project leaders when decisions require clarification
 - **Cost-effectiveness**: Balance quality with resource usage
 
+## Agentic Architecture Patterns
+
+**See `AGENTIC_DESIGN_PATTERNS.md` for comprehensive guidance.**
+
+When designing AI-powered features for this platform, apply established agentic design patterns:
+
+### Core Patterns
+1. **Reflection Pattern**: Iterative self-evaluation and refinement (use for conversation summaries, topic detection)
+2. **Tool Use Pattern**: LLMs augmented with external tools and APIs (use for data access, integrations)
+3. **Planning Pattern**: Decompose complex tasks into structured roadmaps (use for development workflow, multi-step features)
+4. **Multi-Agent Collaboration**: Specialized agents coordinated by orchestrator (use for moderator dashboard, AI feature suite)
+5. **ReAct Pattern**: Thought → Action → Observation loops (use for conversation recommendations, smart moderation)
+
+### Development Workflow Patterns
+- **Use Multi-Agent pattern** for parallel development: Separate teams for Audio, Frontend, Backend, AI/ML, DevOps
+- **Use Planning pattern** for sprint execution: Analyze backlog → Decompose → Sequence → Execute → Adapt
+- **Use Reflection pattern** for code quality: Self-review → Tests → Peer review → Refine → Merge
+- **Leverage superpowers skills**: `brainstorming`, `writing-plans`, `requesting-code-review`, `systematic-debugging`
+
+### Feature Implementation Guidance
+- **MVP (v1.0)**: Keep it simple - basic Tool Use + Planning, no complex AI agents yet
+- **v1.1**: Add Reflection for quality-critical features (topic detection, recommendations)
+- **v2.0**: Full agentic features with Multi-Agent + ReAct (moderator dashboard, smart recommendations)
+
+### Key Principles
+- Start simple, evolve complexity only when needed
+- Combine patterns thoughtfully (most features use multiple patterns)
+- Design for observability (log reasoning traces, agent interactions)
+- Handle failures gracefully (fallbacks, human-in-loop, graceful degradation)
+- Respect user agency (AI augments, doesn't replace user decisions)
+
 ## When Starting Development
 
 Future instances should:
-1. Review `STFU-steev.md` thoroughly to understand the vision
-2. Research existing spatial audio technologies and platforms
-3. Define technical architecture (client-server model, audio streaming protocols, etc.)
-4. Create initial project structure with appropriate build tools and dependencies
-5. Use git to track all decisions and implementations with detailed commit messages
+1. **Understand the vision**: Review `STFU-steev.md` for the original concept and `PRODUCT_REQUIREMENTS.md` for detailed features
+2. **Review the roadmap**: Check `BACKLOG.md` for prioritized tasks and current development phase
+3. **Study agentic patterns**: Read `AGENTIC_DESIGN_PATTERNS.md` before implementing AI features
+4. **Research technologies**: Evaluate spatial audio libraries (Web Audio API, Agora, Dolby.io, Janus)
+5. **Define architecture**: System design document, tech stack selection, data flow diagrams
+6. **Use superpowers**: Leverage `brainstorming` skill before major features, `writing-plans` for complex tasks
+7. **Track everything in git**: Commit artifacts incrementally with detailed reasoning in commit messages
+
+## Commands & Development Workflow
+
+### Not Yet Established
+No build commands, test runners, or development servers exist yet. These will be established once the tech stack is selected (task RES-005 in BACKLOG.md).
+
+### Git Workflow
+- **Configured user**: helpdesk@thisisunsafe.ai (Ann Claude)
+- **Commit convention**: Reference backlog IDs (e.g., "feat: implement WebRTC audio (AUD-001)")
+- **Branch strategy**: TBD once development begins
