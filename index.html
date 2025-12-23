@@ -56,129 +56,263 @@
     <div id="controls">
         <h1>Sounds of STFU - POC</h1>
         <div>
-            <input type="text" id="myPeerId" placeholder="Your Peer ID will appear here" readonly>
-            <button id="createPeer">Create Peer</button>
+            <input type="text" id="roomCode" placeholder="Enter room code (or create new)">
+            <button id="joinRoom">Join Room</button>
         </div>
         <div>
-            <input type="text" id="remotePeerId" placeholder="Enter remote Peer ID">
-            <button id="connect" disabled>Connect to Peer</button>
+            <button id="muteBtn" disabled>Mute</button>
         </div>
         <div id="status">Status: Not connected</div>
+        <div id="participants" style="margin-top: 10px; padding: 10px; background: #333; border-radius: 4px;">
+            <strong>Participants:</strong>
+            <ul id="participantList" style="list-style: none; padding: 0;"></ul>
+        </div>
     </div>
 
     <script src="https://unpkg.com/peerjs@1.5.0/dist/peerjs.min.js"></script>
     <script>
-        let peer = null;
-        let localStream = null;
-        let remoteConnection = null;
+    let peer = null;
+    let localStream = null;
+    let myPeerId = null;
+    let currentRoom = null;
+    let connections = {}; // { peerId: { call: MediaConnection, conn: DataConnection } }
+    let participants = {}; // { peerId: { name: string } }
+    let isMuted = false;
 
-        const myPeerIdInput = document.getElementById('myPeerId');
-        const remotePeerIdInput = document.getElementById('remotePeerId');
-        const createPeerBtn = document.getElementById('createPeer');
-        const connectBtn = document.getElementById('connect');
-        const statusDiv = document.getElementById('status');
+    const roomCodeInput = document.getElementById('roomCode');
+    const joinRoomBtn = document.getElementById('joinRoom');
+    const muteBtnEl = document.getElementById('muteBtn');
+    const statusDiv = document.getElementById('status');
+    const participantListEl = document.getElementById('participantList');
 
-        function updateStatus(message) {
-            statusDiv.textContent = `Status: ${message}`;
-            console.log(message);
-        }
+    function updateStatus(message) {
+        statusDiv.textContent = `Status: ${message}`;
+        console.log(message);
+    }
 
-        // Create peer and get microphone
-        createPeerBtn.addEventListener('click', async () => {
-            try {
-                // Get microphone access
-                updateStatus('Requesting microphone access...');
-                localStream = await navigator.mediaDevices.getUserMedia({
-                    audio: true,
-                    video: false
-                });
-                updateStatus('Microphone access granted');
-
-                // Create peer with PeerJS cloud server
-                peer = new Peer();
-
-                peer.on('open', (id) => {
-                    myPeerIdInput.value = id;
-                    updateStatus(`Peer created with ID: ${id}`);
-                    connectBtn.disabled = false;
-                    createPeerBtn.disabled = true;
-                });
-
-                peer.on('error', (err) => {
-                    updateStatus(`Error: ${err.type} - ${err.message}`);
-                    console.error('Peer error:', err);
-                });
-
-            } catch (err) {
-                updateStatus(`Microphone error: ${err.message}`);
-                console.error('getUserMedia error:', err);
-            }
+    function updateParticipantList() {
+        participantListEl.innerHTML = '';
+        Object.keys(participants).forEach(peerId => {
+            const li = document.createElement('li');
+            li.textContent = `${participants[peerId].name || peerId.substring(0, 8)}`;
+            li.style.padding = '5px';
+            participantListEl.appendChild(li);
         });
+    }
 
-    // Connect to remote peer
-    connectBtn.addEventListener('click', () => {
-        const remotePeerId = remotePeerIdInput.value.trim();
-        if (!remotePeerId) {
-            updateStatus('Please enter a remote Peer ID');
+    // Join room
+    joinRoomBtn.addEventListener('click', async () => {
+        const roomCode = roomCodeInput.value.trim();
+        if (!roomCode) {
+            updateStatus('Please enter a room code');
             return;
         }
 
-        updateStatus(`Calling peer ${remotePeerId}...`);
+        try {
+            // Get microphone
+            updateStatus('Requesting microphone access...');
+            localStream = await navigator.mediaDevices.getUserMedia({
+                audio: true,
+                video: false
+            });
+            updateStatus('Microphone access granted');
 
-        // Make outgoing call with local audio stream
-        const call = peer.call(remotePeerId, localStream);
+            // Create peer with room code as ID prefix
+            const timestamp = Date.now().toString(36);
+            const random = Math.random().toString(36).substring(2, 6);
+            const peerId = `${roomCode}-${timestamp}-${random}`;
 
-        call.on('stream', (remoteStream) => {
-            updateStatus(`Connected! Receiving audio from ${remotePeerId}`);
-            playAudio(remoteStream);
-        });
+            peer = new Peer(peerId);
 
-        call.on('error', (err) => {
-            updateStatus(`Call error: ${err.message}`);
-            console.error('Call error:', err);
-        });
+            peer.on('open', (id) => {
+                myPeerId = id;
+                currentRoom = roomCode;
+                updateStatus(`Joined room: ${roomCode}`);
 
-        call.on('close', () => {
-            updateStatus('Call ended');
-        });
+                // Add self to participants
+                participants[myPeerId] = { name: 'Me' };
+                updateParticipantList();
 
-        remoteConnection = call;
-        connectBtn.disabled = true;
+                // Try to connect to room host
+                const hostId = roomCode; // Host uses room code as peer ID
+                if (id !== hostId) {
+                    connectToHost(hostId);
+                } else {
+                    updateStatus(`Created room as host: ${roomCode}`);
+                }
+
+                joinRoomBtn.disabled = true;
+                roomCodeInput.disabled = true;
+                muteBtnEl.disabled = false;
+            });
+
+            peer.on('error', (err) => {
+                if (err.type === 'unavailable-id') {
+                    // Room host exists, that's fine
+                    console.log('Host peer ID taken, joining as participant');
+                } else {
+                    updateStatus(`Error: ${err.type} - ${err.message}`);
+                    console.error('Peer error:', err);
+                }
+            });
+
+            // Handle incoming calls
+            peer.on('call', (call) => {
+                console.log(`Incoming call from ${call.peer}`);
+                call.answer(localStream);
+
+                call.on('stream', (remoteStream) => {
+                    console.log(`Receiving audio from ${call.peer}`);
+                    playAudio(remoteStream, call.peer);
+                });
+
+                if (!connections[call.peer]) {
+                    connections[call.peer] = {};
+                }
+                connections[call.peer].call = call;
+            });
+
+            // Handle incoming data connections
+            peer.on('connection', (conn) => {
+                setupDataConnection(conn);
+            });
+
+        } catch (err) {
+            updateStatus(`Error: ${err.message}`);
+            console.error('Setup error:', err);
+        }
     });
 
-    // Answer incoming calls
-    peer.on('call', (call) => {
-        updateStatus(`Incoming call from ${call.peer}...`);
+    // Connect to room host
+    function connectToHost(hostId) {
+        updateStatus(`Connecting to room host...`);
 
-        // Answer with local audio stream
-        call.answer(localStream);
+        // Open data connection to host
+        const conn = peer.connect(hostId);
+        setupDataConnection(conn);
 
+        // Call host for audio
+        const call = peer.call(hostId, localStream);
         call.on('stream', (remoteStream) => {
-            updateStatus(`Connected! Receiving audio from ${call.peer}`);
-            playAudio(remoteStream);
+            playAudio(remoteStream, hostId);
         });
 
-        call.on('error', (err) => {
-            updateStatus(`Call error: ${err.message}`);
-            console.error('Call error:', err);
+        connections[hostId] = { call, conn };
+    }
+
+    // Setup data connection for participant discovery
+    function setupDataConnection(conn) {
+        conn.on('open', () => {
+            console.log(`Data connection opened with ${conn.peer}`);
+
+            // Send hello with my peer ID
+            conn.send({
+                type: 'hello',
+                peerId: myPeerId,
+                room: currentRoom
+            });
+
+            if (!connections[conn.peer]) {
+                connections[conn.peer] = {};
+            }
+            connections[conn.peer].conn = conn;
+
+            // Add to participants
+            participants[conn.peer] = { name: conn.peer.substring(0, 8) };
+            updateParticipantList();
         });
 
-        remoteConnection = call;
-    });
+        conn.on('data', (data) => {
+            handleDataMessage(data, conn.peer);
+        });
 
-    // Play remote audio stream
-    function playAudio(stream) {
+        conn.on('close', () => {
+            console.log(`Data connection closed with ${conn.peer}`);
+            delete connections[conn.peer];
+            delete participants[conn.peer];
+            updateParticipantList();
+        });
+    }
+
+    // Handle incoming data messages
+    function handleDataMessage(data, fromPeer) {
+        console.log('Received data:', data, 'from:', fromPeer);
+
+        if (data.type === 'hello') {
+            // Someone joined, send them current participant list
+            const conn = connections[fromPeer]?.conn;
+            if (conn) {
+                conn.send({
+                    type: 'participants',
+                    list: Object.keys(participants)
+                });
+            }
+
+            // If I'm host, broadcast new participant to others
+            if (myPeerId === currentRoom) {
+                Object.keys(connections).forEach(peerId => {
+                    if (peerId !== fromPeer && connections[peerId].conn) {
+                        connections[peerId].conn.send({
+                            type: 'new_participant',
+                            peerId: data.peerId
+                        });
+                    }
+                });
+            }
+        } else if (data.type === 'participants') {
+            // Received participant list, connect to each
+            data.list.forEach(peerId => {
+                if (peerId !== myPeerId && !connections[peerId]) {
+                    connectToPeer(peerId);
+                }
+            });
+        } else if (data.type === 'new_participant') {
+            // New participant joined, connect to them
+            if (data.peerId !== myPeerId && !connections[data.peerId]) {
+                connectToPeer(data.peerId);
+            }
+        }
+    }
+
+    // Connect to a specific peer
+    function connectToPeer(peerId) {
+        console.log(`Connecting to peer: ${peerId}`);
+
+        // Data connection
+        const conn = peer.connect(peerId);
+        setupDataConnection(conn);
+
+        // Audio call
+        const call = peer.call(peerId, localStream);
+        call.on('stream', (remoteStream) => {
+            playAudio(remoteStream, peerId);
+        });
+
+        connections[peerId] = { call, conn };
+    }
+
+    // Play audio from remote peer
+    function playAudio(stream, peerId) {
         const audio = new Audio();
         audio.srcObject = stream;
         audio.play().catch(err => {
             console.error('Audio playback error:', err);
             updateStatus('Click anywhere to enable audio playback');
-            // Handle autoplay policy
             document.body.addEventListener('click', () => {
                 audio.play();
             }, { once: true });
         });
     }
+
+    // Mute toggle
+    muteBtnEl.addEventListener('click', () => {
+        isMuted = !isMuted;
+        localStream.getAudioTracks().forEach(track => {
+            track.enabled = !isMuted;
+        });
+        muteBtnEl.textContent = isMuted ? 'Unmute' : 'Mute';
+        updateStatus(isMuted ? 'Muted' : 'Unmuted');
+    });
     </script>
 </body>
 </html>
