@@ -104,9 +104,6 @@
     let audioContext = null;
     let gainNodes = {}; // { peerId: GainNode }
 
-    // Initialize my position
-    positions[myPeerId] = myPosition;
-
     // Canvas click to move
     canvas.addEventListener('click', (e) => {
         if (!myPeerId) return;
@@ -236,6 +233,9 @@
                 currentRoom = roomCode;
                 updateStatus(`Joined room: ${roomCode}`);
 
+                // Initialize my position
+                positions[myPeerId] = myPosition;
+
                 // Add self to participants
                 participants[myPeerId] = { name: 'Me' };
                 updateParticipantList();
@@ -273,6 +273,15 @@
                     playAudio(remoteStream, call.peer);
                 });
 
+                call.on('close', () => {
+                    console.log(`Call closed with ${call.peer}`);
+                    if (gainNodes[call.peer]) {
+                        gainNodes[call.peer].disconnect();
+                        delete gainNodes[call.peer];
+                        console.log(`Cleaned up audio nodes for ${call.peer}`);
+                    }
+                });
+
                 if (!connections[call.peer]) {
                     connections[call.peer] = {};
                 }
@@ -302,6 +311,15 @@
         const call = peer.call(hostId, localStream);
         call.on('stream', (remoteStream) => {
             playAudio(remoteStream, hostId);
+        });
+
+        call.on('close', () => {
+            console.log(`Call closed with ${hostId}`);
+            if (gainNodes[hostId]) {
+                gainNodes[hostId].disconnect();
+                delete gainNodes[hostId];
+                console.log(`Cleaned up audio nodes for ${hostId}`);
+            }
         });
 
         connections[hostId] = { call, conn };
@@ -348,6 +366,14 @@
             delete connections[conn.peer];
             delete participants[conn.peer];
             delete positions[conn.peer];
+
+            // Clean up audio nodes
+            if (gainNodes[conn.peer]) {
+                gainNodes[conn.peer].disconnect();
+                delete gainNodes[conn.peer];
+                console.log(`Cleaned up audio nodes for ${conn.peer}`);
+            }
+
             updateParticipantList();
         });
     }
@@ -415,10 +441,27 @@
     }
 
     // Play audio with spatial processing
-    function playAudio(stream, peerId) {
+    async function playAudio(stream, peerId) {
         if (!audioContext) {
             console.error('Audio context not initialized');
             return;
+        }
+
+        // Check if audio already playing for this peer
+        if (gainNodes[peerId]) {
+            console.warn(`Audio already playing for ${peerId}, cleaning up old nodes`);
+            gainNodes[peerId].disconnect();
+            delete gainNodes[peerId];
+        }
+
+        // Resume audio context if suspended
+        if (audioContext.state === 'suspended') {
+            try {
+                await audioContext.resume();
+                console.log('AudioContext resumed');
+            } catch (err) {
+                console.error('Failed to resume AudioContext:', err);
+            }
         }
 
         try {
