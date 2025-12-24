@@ -85,6 +85,26 @@
                 <span id="falloffValue" style="display: inline-block; min-width: 40px; font-weight: bold;">1.0</span>
             </label>
         </div>
+        <div style="margin-top: 10px; padding: 10px; background: #3a3a3a; border-radius: 4px;">
+            <label style="display: flex; align-items: center; margin-bottom: 8px;">
+                <input type="checkbox" id="autoComfortToggle" style="margin-right: 10px;">
+                <strong>Auto Volume Comfort</strong>
+                <span style="margin-left: 10px; font-size: 11px; color: #aaa;">(auto-move away from loud conversations)</span>
+            </label>
+            <div id="comfortControls" style="display: none; margin-left: 25px;">
+                <label style="display: block; margin-bottom: 8px;">
+                    Volume Threshold:
+                    <input type="range" id="comfortThresholdSlider" min="0.01" max="0.15" value="0.05" step="0.01" style="vertical-align: middle; min-width: 150px;">
+                    <span id="comfortThresholdValue" style="display: inline-block; min-width: 50px; font-weight: bold;">0.05</span>
+                    <span style="font-size: 10px; color: #999;">(lower = more sensitive)</span>
+                </label>
+                <label style="display: block;">
+                    Auto-Move Speed:
+                    <input type="range" id="comfortSpeedSlider" min="0.5" max="3.0" value="1.0" step="0.1" style="vertical-align: middle; min-width: 150px;">
+                    <span id="comfortSpeedValue" style="display: inline-block; min-width: 40px; font-weight: bold;">1.0x</span>
+                </label>
+            </div>
+        </div>
         <div id="status">Status: Not connected</div>
         <div id="participants" style="margin-top: 10px; padding: 10px; background: #333; border-radius: 4px;">
             <strong>Participants:</strong>
@@ -101,13 +121,20 @@
             <li>Get close to others to hear them clearly</li>
             <li>Move away to reduce their volume</li>
             <li>Adjust "Hearing Range" and "Falloff Curve" sliders to tune spatial audio</li>
+            <li><strong>Enable "Auto Volume Comfort" to automatically move away from loud conversations</strong></li>
             <li><strong>Click "Test Mode" to spawn AI bots for solo testing</strong></li>
             <li>Pulsing ring = someone is speaking</li>
+            <li>Bot emojis: 🎸 = music, 💬 = conversation</li>
         </ol>
         <p style="margin-top: 15px; padding: 10px; background: #3a3a3a; border-radius: 4px; margin-bottom: 0;">
             <strong>Tip:</strong> The light blue circle around you shows your hearing range.
             Move within that range to have a conversation. Adjust the sliders to experiment with different spatial audio settings.
             <strong>Test Mode lets you spawn bots to test audio - click bots to cycle: silence → conversation → Marley music!</strong>
+        </p>
+        <p style="margin-top: 10px; padding: 10px; background: #2a3a2a; border-radius: 4px; margin-bottom: 0; border-left: 3px solid #4a9eff;">
+            <strong>Auto Volume Comfort:</strong> When enabled, your avatar automatically moves away from loud audio sources to maintain a comfortable listening level.
+            Manual movement (WASD/arrow keys/clicking) temporarily pauses auto-movement for 3 seconds, giving you full control.
+            Adjust threshold (sensitivity) and speed to your preference.
         </p>
         <p style="margin-top: 10px; padding: 10px; background: #3a1a1a; border-radius: 4px; margin-bottom: 0; border-left: 3px solid #cc6600;">
             <strong>Known Limitation:</strong> Bot conversations (TTS) do not currently support spatial audio due to browser API constraints.
@@ -200,6 +227,12 @@
     const falloffValue = document.getElementById('falloffValue');
     const testModeToggle = document.getElementById('testModeToggle');
     const testModePanel = document.getElementById('testModePanel');
+    const autoComfortToggle = document.getElementById('autoComfortToggle');
+    const comfortControls = document.getElementById('comfortControls');
+    const comfortThresholdSlider = document.getElementById('comfortThresholdSlider');
+    const comfortThresholdValue = document.getElementById('comfortThresholdValue');
+    const comfortSpeedSlider = document.getElementById('comfortSpeedSlider');
+    const comfortSpeedValue = document.getElementById('comfortSpeedValue');
     const testBotCount = document.getElementById('testBotCount');
     const testBotCountValue = document.getElementById('testBotCountValue');
     const testDuration = document.getElementById('testDuration');
@@ -247,6 +280,13 @@
     let dragOffset = { x: 0, y: 0 };
     let dragStartPos = { x: 0, y: 0 };
     let hasDragged = false;
+
+    // Auto Volume Comfort state
+    let autoComfortEnabled = false;
+    let comfortThreshold = 0.05; // RMS volume threshold (0.01-0.15)
+    let comfortSpeed = 1.0; // Movement speed multiplier
+    let comfortMoveDirection = null; // { x, y } direction to move away from loud source
+    let comfortPausedUntil = 0; // Timestamp to pause auto-comfort after manual movement
 
     // Audio type cycle order (focus on real interactions: conversations and music)
     const AUDIO_TYPES = ['silence', 'conversation', 'marley1', 'marley2', 'marley3'];
@@ -310,6 +350,31 @@
                 updateSpatialAudio(); // This will apply new volume
             }
         });
+    });
+
+    // Auto Volume Comfort toggle
+    autoComfortToggle.addEventListener('change', () => {
+        autoComfortEnabled = autoComfortToggle.checked;
+        comfortControls.style.display = autoComfortEnabled ? 'block' : 'none';
+
+        if (autoComfortEnabled) {
+            updateStatus('Auto Volume Comfort enabled - will move away from loud conversations');
+        } else {
+            updateStatus('Auto Volume Comfort disabled');
+            comfortMoveDirection = null; // Reset movement
+        }
+    });
+
+    // Comfort threshold slider
+    comfortThresholdSlider.addEventListener('input', () => {
+        comfortThreshold = parseFloat(comfortThresholdSlider.value);
+        comfortThresholdValue.textContent = comfortThreshold.toFixed(2);
+    });
+
+    // Comfort speed slider
+    comfortSpeedSlider.addEventListener('input', () => {
+        comfortSpeed = parseFloat(comfortSpeedSlider.value);
+        comfortSpeedValue.textContent = `${comfortSpeed.toFixed(1)}x`;
     });
 
     // Start Test Mode
@@ -429,6 +494,9 @@
             positions[myPeerId] = myPosition;
             broadcastPosition();
             updateSpatialAudio();
+
+            // Pause auto-comfort for 3 seconds when user manually moves
+            comfortPausedUntil = Date.now() + 3000;
         }
     }
 
@@ -456,6 +524,9 @@
 
         // Update spatial audio based on new position
         updateSpatialAudio();
+
+        // Pause auto-comfort for 3 seconds when user manually clicks to move
+        comfortPausedUntil = Date.now() + 3000;
 
         draw();
     });
@@ -1340,11 +1411,24 @@
             ctx.textAlign = 'center';
             ctx.fillText(bot.name, pos.x, pos.y - 28);
 
-            // Audio type indicator (below)
+            // Audio type emoji indicator (below bot)
             if (bot.audioType !== 'silence') {
-                ctx.font = '9px sans-serif';
-                ctx.fillStyle = '#aaaaaa';
-                ctx.fillText(bot.audioType, pos.x, pos.y + 35);
+                let emoji = '';
+                switch(bot.audioType) {
+                    case 'marley1':
+                    case 'marley2':
+                    case 'marley3':
+                        emoji = '🎸'; // Guitar for music
+                        break;
+                    case 'conversation':
+                        emoji = '💬'; // Speech bubble for conversation
+                        break;
+                }
+
+                if (emoji) {
+                    ctx.font = '20px sans-serif'; // Larger for visibility
+                    ctx.fillText(emoji, pos.x, pos.y + 38);
+                }
             }
         });
     }
@@ -1392,10 +1476,100 @@
         });
     }
 
+    // Check volume levels and calculate auto-comfort movement
+    function updateAutoComfortMovement() {
+        if (!autoComfortEnabled || !myPeerId || !positions[myPeerId]) {
+            comfortMoveDirection = null;
+            return;
+        }
+
+        // Check if auto-comfort is paused due to manual movement
+        if (Date.now() < comfortPausedUntil) {
+            comfortMoveDirection = null;
+            return;
+        }
+
+        const myPos = positions[myPeerId];
+        let loudestSource = null;
+        let loudestRMS = 0;
+
+        // Check all audio sources (peers and bots)
+        Object.keys(analyzerNodes).forEach(peerId => {
+            const analyzer = analyzerNodes[peerId];
+            if (!analyzer || peerId === myPeerId) return;
+
+            // Get position of this audio source
+            const sourcePos = positions[peerId];
+            if (!sourcePos) return;
+
+            // Calculate RMS volume
+            const dataArray = new Uint8Array(analyzer.frequencyBinCount);
+            analyzer.getByteFrequencyData(dataArray);
+
+            let sumSquares = 0;
+            for (let i = 0; i < dataArray.length; i++) {
+                const normalized = dataArray[i] / 255.0;
+                sumSquares += normalized * normalized;
+            }
+            const rms = Math.sqrt(sumSquares / dataArray.length);
+
+            // Check if this source exceeds comfort threshold
+            if (rms > comfortThreshold && rms > loudestRMS) {
+                loudestRMS = rms;
+                loudestSource = sourcePos;
+            }
+        });
+
+        // Calculate movement direction away from loudest source
+        if (loudestSource) {
+            const dx = myPos.x - loudestSource.x;
+            const dy = myPos.y - loudestSource.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance > 0) {
+                // Normalize direction vector
+                comfortMoveDirection = {
+                    x: dx / distance,
+                    y: dy / distance
+                };
+            }
+        } else {
+            comfortMoveDirection = null;
+        }
+    }
+
+    // Apply auto-comfort movement
+    function applyAutoComfortMovement() {
+        if (!comfortMoveDirection || !myPeerId || !positions[myPeerId]) return;
+
+        const baseSpeed = 2; // pixels per frame
+        const speed = baseSpeed * comfortSpeed;
+
+        const newX = myPosition.x + (comfortMoveDirection.x * speed);
+        const newY = myPosition.y + (comfortMoveDirection.y * speed);
+
+        // Keep within canvas bounds
+        myPosition.x = Math.max(20, Math.min(canvas.width - 20, newX));
+        myPosition.y = Math.max(20, Math.min(canvas.height - 20, newY));
+
+        positions[myPeerId] = myPosition;
+
+        // Throttle position broadcasts (only every 10 frames)
+        if (!applyAutoComfortMovement.frameCount) applyAutoComfortMovement.frameCount = 0;
+        applyAutoComfortMovement.frameCount++;
+
+        if (applyAutoComfortMovement.frameCount % 10 === 0) {
+            broadcastPosition();
+            updateSpatialAudio();
+        }
+    }
+
     // Animation loop
     function animate() {
         handleKeyboardMovement();
         updateSpeakingStates();
+        updateAutoComfortMovement(); // Check for loud audio sources
+        applyAutoComfortMovement(); // Move away if needed
         updateTestBots();
         draw();
 
