@@ -15,6 +15,7 @@ export class SceneManager {
     this.clock = new THREE.Clock();
     this.zoneMeshes = {};
     this.lights = {};
+    this.animationFrameId = null;
 
     this.init();
   }
@@ -159,7 +160,7 @@ export class SceneManager {
   }
 
   animate() {
-    requestAnimationFrame(() => this.animate());
+    this.animationFrameId = requestAnimationFrame(() => this.animate());
 
     const time = this.clock.getElapsedTime();
 
@@ -175,5 +176,12 @@ export class SceneManager {
 
   start() {
     this.animate();
+  }
+
+  stop() {
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
+    }
   }
 }
