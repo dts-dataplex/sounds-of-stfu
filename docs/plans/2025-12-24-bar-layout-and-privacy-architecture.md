@@ -373,20 +373,41 @@ function evaluateAccess(requester, policy) {
 
 ## Part 3: Visual Bar Layout (Detailed Floor Plans)
 
-### Status: NOT YET DESIGNED
+### Status: ✅ DESIGN COMPLETE
 
-This section will include:
-- 2D floor plan with dimensions and zone specifications
-- First floor layout (gaming zone, central bar, card tables, firepit debate area)
-- Second floor layout (private booths, small stage, connection to first floor)
-- Traffic flow patterns and social dynamics
-- Acoustic zone definitions for spatial audio
+**Comprehensive floor plan design documents have been created:**
 
-**Next Steps**:
-- Complete technical architecture questions
-- Create detailed floor plans with measurements
-- Define zone boundaries and audio characteristics
-- Map conversation flow patterns
+1. **`CHATSUBO_FLOOR_PLAN_SPECIFICATIONS.md`** (886 lines)
+   - Complete zone specifications with dimensions, coordinates, and capacity
+   - Acoustic parameters with wave-based falloff formulas
+   - Lighting specifications with cyberpunk color palette
+   - Social flow analysis (newcomer journey, movement patterns, escape routes)
+   - Implementation-ready data structures (JSON, JavaScript examples)
+
+2. **`FLOOR_PLAN_VISUAL_REFERENCE.md`** (473 lines)
+   - ASCII art floor plans (first and second floor)
+   - Heat map visualization examples
+   - Audio falloff diagrams
+   - Zone atmosphere details with quick reference cards
+   - Phase-by-phase implementation checklist
+
+3. **`CHATSUBO_DESIGN_SUMMARY.md`** (437 lines)
+   - Executive summary for stakeholders and new team members
+   - Design principles and aesthetic rationale
+   - User experience walkthrough
+   - Technical architecture highlights
+   - Implementation roadmap
+
+**Completed Deliverables**:
+- ✅ 2D floor plan with dimensions and zone specifications
+- ✅ First floor layout (gaming zone, central bar, card tables, firepit debate area)
+- ✅ Second floor layout (private booths, small stage, staircase connection)
+- ✅ Traffic flow patterns and social dynamics analysis
+- ✅ Acoustic zone definitions with wave-based spatial audio formulas
+- ✅ Lighting specifications with Chatsubo/Neuromancer aesthetic
+- ✅ Isometric 3D view rendering parameters
+- ✅ Heat map visualization specifications
+- ✅ Privacy vs visibility balance across all zones
 
 ---
 
@@ -481,22 +502,25 @@ This section will include:
 
 ## Next Steps
 
-1. **Resume Design Session**:
-   - Answer outstanding architecture questions
-   - Complete technical architecture section
-   - Design detailed floor plans
+1. **Begin Development (Phase 1)**:
+   - Set up project repository and development environment
+   - Implement isometric camera view (static)
+   - Render first floor zones as colored rectangles
+   - Place test avatars and validate coordinate system
+   - **Reference:** `CHATSUBO_FLOOR_PLAN_SPECIFICATIONS.md` for all parameters
 
-2. **Create Visual Assets**:
+2. **Create Visual Assets (Parallel Track)**:
    - Commission or create comic strip panels (illustration)
    - Design heat map visualization mockups
    - Create UI wireframes for HUD, controls, and dashboards
 
-3. **Technical Validation**:
+3. **Technical Validation (Phase 2)**:
    - Prototype PeerJS mesh with 2-3 users
    - Test Transformers.js sentiment models for performance
    - Validate Web Speech API accuracy for conversation transcription
+   - Implement wave-based audio falloff function
 
-4. **Documentation**:
+4. **Documentation (Ongoing)**:
    - System architecture diagram
    - Data flow diagrams
    - API contracts
@@ -506,9 +530,9 @@ This section will include:
 
 ## Document Status
 
-**Current State**: Architecture design complete, ready for implementation planning
-**Completion**: ~75% complete (comic strip ✅, architecture ✅, floor plans pending)
-**Next Session**: Create detailed floor plans and data flow diagrams
+**Current State**: ✅ Design complete - ready for developer handoff
+**Completion**: 100% complete (comic strip ✅, architecture ✅, floor plans ✅)
+**Next Milestone**: Phase 1 Prototype (Week 1)
 **Last Updated**: 2025-12-24
 
 ### Completed Sections
@@ -517,12 +541,15 @@ This section will include:
 - ✅ Two-tier sentiment model (local SLM + aggregate bartender)
 - ✅ All 5 critical design decisions resolved
 - ✅ Booth privacy with prompt-based access control
+- ✅ **Detailed floor plans with dimensions** (3 comprehensive documents)
+- ✅ **Wave-based audio falloff specifications** (formulas and parameters)
+- ✅ **Zone boundaries and acoustic characteristics** (all 6 zones)
+- ✅ **Traffic flow patterns and social dynamics** (newcomer journey, escape routes)
 
 ### Pending Sections
-- ⏳ Detailed floor plans with dimensions
-- ⏳ Data flow diagrams
-- ⏳ API contracts and component interfaces
-- ⏳ Wave-based audio falloff curve specifications
+- ⏳ Data flow diagrams (technical architecture visualization)
+- ⏳ API contracts and component interfaces (implementation detail)
+- ⏳ System architecture diagram (developer reference)
 
 ---
 
