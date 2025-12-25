@@ -5,12 +5,9 @@
 
 import { pipeline, env } from '@xenova/transformers';
 
-// Configure Transformers.js to use HuggingFace CDN
-// Disable local model loading and force CDN usage
+// Configure Transformers.js to use CDN (defaults to HuggingFace)
 env.allowLocalModels = false;
 env.useBrowserCache = true;
-env.remoteHost = 'https://huggingface.co';
-env.remotePathTemplate = '{model}/resolve/{revision}/';
 
 // Configure WASM paths for ONNX runtime
 env.backends.onnx.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/dist/';
@@ -21,9 +18,11 @@ let classifier = null;
 async function initialize() {
   console.log('[SentimentWorker] Loading DistilBERT model...');
   try {
+    // Load with explicit revision to ensure correct model path
     classifier = await pipeline(
       'sentiment-analysis',
-      'Xenova/distilbert-base-uncased-finetuned-sst-2-english'
+      'Xenova/distilbert-base-uncased-finetuned-sst-2-english',
+      { revision: 'main' }
     );
     console.log('[SentimentWorker] Model loaded successfully');
 
