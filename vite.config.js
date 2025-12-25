@@ -5,7 +5,7 @@ export default defineConfig({
     format: 'es',
   },
   optimizeDeps: {
-    exclude: ['@xenova/transformers'],
+    exclude: ['@xenova/transformers', 'onnxruntime-web'],
   },
   build: {
     target: 'esnext',
