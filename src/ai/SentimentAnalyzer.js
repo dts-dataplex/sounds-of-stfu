@@ -6,7 +6,11 @@
  * Performance: <200ms p95 latency, ~280MB memory
  */
 
-import { pipeline } from '@xenova/transformers';
+import { pipeline, env } from '@xenova/transformers';
+
+// Configure Transformers.js to use HuggingFace CDN
+env.allowLocalModels = false;
+env.useBrowserCache = true;
 
 export default class SentimentAnalyzer {
   constructor() {
@@ -25,12 +29,25 @@ export default class SentimentAnalyzer {
       });
 
       // Wait for worker ready signal
-      await new Promise((resolve) => {
+      await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('Worker initialization timeout after 30s'));
+        }, 30000);
+
         this.worker.onmessage = (e) => {
           if (e.data.type === 'ready') {
+            clearTimeout(timeout);
             console.log('[SentimentAnalyzer] Worker initialized');
             resolve();
+          } else if (e.data.type === 'error') {
+            clearTimeout(timeout);
+            reject(new Error(`Worker error: ${e.data.error}`));
           }
+        };
+
+        this.worker.onerror = (error) => {
+          clearTimeout(timeout);
+          reject(error);
         };
       });
     } else {

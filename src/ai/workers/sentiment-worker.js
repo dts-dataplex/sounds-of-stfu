@@ -3,21 +3,30 @@
  * Runs DistilBERT in background thread to avoid blocking UI
  */
 
-import { pipeline } from '@xenova/transformers';
+import { pipeline, env } from '@xenova/transformers';
+
+// Configure Transformers.js to use HuggingFace CDN
+env.allowLocalModels = false;
+env.useBrowserCache = true;
 
 let classifier = null;
 
 // Initialize the model when worker starts
 async function initialize() {
   console.log('[SentimentWorker] Loading DistilBERT model...');
-  classifier = await pipeline(
-    'sentiment-analysis',
-    'Xenova/distilbert-base-uncased-finetuned-sst-2-english'
-  );
-  console.log('[SentimentWorker] Model loaded');
+  try {
+    classifier = await pipeline(
+      'sentiment-analysis',
+      'Xenova/distilbert-base-uncased-finetuned-sst-2-english'
+    );
+    console.log('[SentimentWorker] Model loaded successfully');
 
-  // Send ready signal
-  self.postMessage({ type: 'ready' });
+    // Send ready signal
+    self.postMessage({ type: 'ready' });
+  } catch (error) {
+    console.error('[SentimentWorker] Failed to load model:', error);
+    self.postMessage({ type: 'error', error: error.message });
+  }
 }
 
 // Handle messages from main thread
