@@ -6,7 +6,7 @@
 import * as THREE from 'three';
 import { SceneManager } from './scene/SceneManager.js';
 import { MeshNetworkCoordinator } from './network/index.js';
-import { chatsuboAI } from './ai/index.js';
+// import { chatsuboAI } from './ai/index.js'; // TEMPORARILY DISABLED: ONNX runtime error
 import { calculateSpatialGain } from './audio/spatial-falloff.js';
 
 export default class ChatsuboApp {
@@ -16,7 +16,7 @@ export default class ChatsuboApp {
     // Core modules
     this.sceneManager = null;
     this.networkCoordinator = null;
-    this.aiModule = chatsuboAI;
+    this.aiModule = null; // chatsuboAI; // TEMPORARILY DISABLED: ONNX runtime error
 
     // Application state
     this.localPeerId = null;
@@ -46,20 +46,30 @@ export default class ChatsuboApp {
       this.sceneManager.start();
       await this.delay(500);
 
-      // 2. Initialize AI module (lazy loaded, non-blocking)
-      this.updateStatus('Preparing AI systems...');
-      try {
-        await this.aiModule.initialize();
-        console.log('[ChatsuboApp] AI systems ready');
-      } catch (aiError) {
-        console.warn('[ChatsuboApp] AI initialization failed (non-critical):', aiError.message);
-        this.updateStatus('AI systems unavailable (continuing without AI features)');
-      }
-      await this.delay(500);
+      // 2. Initialize AI module (TEMPORARILY DISABLED: ONNX runtime error)
+      // this.updateStatus('Preparing AI systems...');
+      // try {
+      //   await this.aiModule.initialize();
+      //   console.log('[ChatsuboApp] AI systems ready');
+      // } catch (aiError) {
+      //   console.warn('[ChatsuboApp] AI initialization failed (non-critical):', aiError.message);
+      //   this.updateStatus('AI systems unavailable (continuing without AI features)');
+      // }
+      // await this.delay(500);
+      console.log('[ChatsuboApp] AI systems disabled (ONNX runtime issue)');
 
-      // 3. Initialize audio context (user gesture required)
+      // 3. Initialize audio context (user gesture required - non-blocking)
       this.updateStatus('Setting up audio system...');
-      await this.initializeAudio();
+      try {
+        await this.initializeAudio();
+        console.log('[ChatsuboApp] Audio system ready');
+      } catch (audioError) {
+        console.warn(
+          '[ChatsuboApp] Audio initialization deferred (requires user gesture):',
+          audioError.message
+        );
+        this.updateStatus('Audio will activate after joining room');
+      }
 
       // 4. Initialize network (creates peer ID)
       this.updateStatus('Connecting to P2P network...');
@@ -84,6 +94,12 @@ export default class ChatsuboApp {
 
     try {
       this.updateStatus(`Joining room: ${roomId}...`);
+
+      // Resume audio context if suspended (user gesture happened)
+      if (this.audioContext && this.audioContext.state === 'suspended') {
+        await this.audioContext.resume();
+        console.log('[ChatsuboApp] Audio context resumed after user gesture');
+      }
 
       // Join mesh network
       this.localPeerId = await this.networkCoordinator.joinRoom(roomId);
@@ -165,12 +181,18 @@ export default class ChatsuboApp {
     if (!this.audioContext) {
       this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-      // Resume audio context (required after user gesture)
+      // Try to resume audio context (may require user gesture)
       if (this.audioContext.state === 'suspended') {
-        await this.audioContext.resume();
+        try {
+          await this.audioContext.resume();
+          console.log('[ChatsuboApp] Audio context initialized and resumed');
+        } catch (error) {
+          console.log('[ChatsuboApp] Audio context created but suspended (user gesture required)');
+          // Audio will be activated later when user clicks Join Room
+        }
+      } else {
+        console.log('[ChatsuboApp] Audio context initialized');
       }
-
-      console.log('[ChatsuboApp] Audio context initialized');
     }
   }
 
@@ -336,20 +358,22 @@ export default class ChatsuboApp {
       this.conversationMessages.shift();
     }
 
-    // Analyze sentiment
-    try {
-      const sentiment = await this.aiModule.analyzeSentiment(text);
-      console.log(
-        `[ChatsuboApp] Message sentiment: ${sentiment.label} (${sentiment.score.toFixed(2)})`
-      );
+    // Analyze sentiment (skip if AI disabled)
+    if (this.aiModule) {
+      try {
+        const sentiment = await this.aiModule.analyzeSentiment(text);
+        console.log(
+          `[ChatsuboApp] Message sentiment: ${sentiment.label} (${sentiment.score.toFixed(2)})`
+        );
 
-      // Check if conversation is heated
-      const isHeated = await this.aiModule.isConversationHeated(this.conversationMessages);
-      if (isHeated && this.onHeatedConversation) {
-        this.onHeatedConversation();
+        // Check if conversation is heated
+        const isHeated = await this.aiModule.isConversationHeated(this.conversationMessages);
+        if (isHeated && this.onHeatedConversation) {
+          this.onHeatedConversation();
+        }
+      } catch (error) {
+        console.error('[ChatsuboApp] Sentiment analysis error:', error);
       }
-    } catch (error) {
-      console.error('[ChatsuboApp] Sentiment analysis error:', error);
     }
   }
 
