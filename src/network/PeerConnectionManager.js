@@ -13,9 +13,9 @@ export default class PeerConnectionManager {
     this.maxPeers = config.maxPeers || 10;
     this.eventHandlers = new Map();
 
-    // PeerJS configuration with free cloud server
+    // PeerJS configuration with public cloud server
     this.peerConfig = {
-      host: 'peerjs.com',
+      host: '0.peerjs.com',
       port: 443,
       path: '/',
       secure: true,
