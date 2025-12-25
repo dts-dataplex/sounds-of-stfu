@@ -12,9 +12,6 @@ import { pipeline, env } from '@xenova/transformers';
 env.allowLocalModels = false;
 env.useBrowserCache = true;
 
-// Configure WASM paths for ONNX runtime
-env.backends.onnx.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/dist/';
-
 export default class SentimentAnalyzer {
   constructor() {
     this.classifier = null;
