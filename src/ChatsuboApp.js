@@ -20,7 +20,8 @@ export default class ChatsuboApp {
 
     // Application state
     this.localPeerId = null;
-    this.localPosition = { x: 24, y: 0, z: 18 }; // Start at center bar
+    this.localPosition = { x: 24, y: 0, z: 34 }; // Start at entryway
+    this.localAvatar = null; // User's own avatar mesh
     this.peerPositions = new Map(); // peerId -> {x, y, z}
     this.peerAvatars = new Map(); // peerId -> THREE.Mesh
     this.audioContext = null;
@@ -106,6 +107,9 @@ export default class ChatsuboApp {
 
       this.updateStatus(`Connected as: ${this.localPeerId.substring(0, 8)}...`);
       console.log(`[ChatsuboApp] Joined room as: ${this.localPeerId}`);
+
+      // Create local user avatar
+      this.createLocalAvatar();
 
       // Broadcast initial position
       this.broadcastPosition();
@@ -341,6 +345,63 @@ export default class ChatsuboApp {
   }
 
   /**
+   * Create visual avatar for local user
+   */
+  createLocalAvatar() {
+    if (!this.sceneManager) return;
+
+    // Create a distinct cone shape for local user (pointing up)
+    const geometry = new THREE.ConeGeometry(0.5, 1.5, 8);
+    const material = new THREE.MeshPhongMaterial({
+      color: 0x44ff88, // Bright cyan-green (matches theme)
+      emissive: 0x44ff88,
+      emissiveIntensity: 0.5,
+    });
+
+    this.localAvatar = new THREE.Mesh(geometry, material);
+
+    // Position at current location
+    this.localAvatar.position.set(
+      this.localPosition.x,
+      this.localPosition.y + 1.25, // Raise cone base above floor
+      this.localPosition.z
+    );
+
+    // Add to scene
+    this.sceneManager.scene.add(this.localAvatar);
+
+    console.log(
+      `[ChatsuboApp] Created local avatar at (${this.localPosition.x}, ${this.localPosition.z})`
+    );
+  }
+
+  /**
+   * Update local avatar position when user moves
+   */
+  updateLocalAvatar() {
+    if (this.localAvatar) {
+      this.localAvatar.position.set(
+        this.localPosition.x,
+        this.localPosition.y + 1.25,
+        this.localPosition.z
+      );
+    }
+  }
+
+  /**
+   * Remove local avatar (on disconnect)
+   */
+  removeLocalAvatar() {
+    if (this.localAvatar && this.sceneManager) {
+      this.sceneManager.scene.remove(this.localAvatar);
+      this.localAvatar.geometry.dispose();
+      this.localAvatar.material.dispose();
+      this.localAvatar = null;
+      console.log('[ChatsuboApp] Removed local avatar');
+    }
+  }
+
+  /**
    * Handle chat message with sentiment analysis
    */
   async handleChatMessage(peerId, text, timestamp) {
@@ -377,6 +438,9 @@ export default class ChatsuboApp {
   moveTo(x, y, z) {
     this.localPosition = { x, y, z };
     console.log(`[ChatsuboApp] Moved to: (${x}, ${y}, ${z})`);
+
+    // Update local avatar position
+    this.updateLocalAvatar();
 
     // Update all spatial audio
     this.spatialAudioNodes.forEach((nodes, peerId) => {
@@ -465,6 +529,14 @@ export default class ChatsuboApp {
    * Clean up all resources
    */
   destroy() {
+    // Remove local avatar
+    this.removeLocalAvatar();
+
+    // Remove all peer avatars
+    this.peerAvatars.forEach((avatar, peerId) => {
+      this.removePeerAvatar(peerId);
+    });
+
     // Stop scene
     if (this.sceneManager) {
       this.sceneManager.stop();

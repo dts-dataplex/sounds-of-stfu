@@ -4,6 +4,17 @@
  */
 
 export const ZONES = {
+  entryway: {
+    name: 'Entryway',
+    floor: 0,
+    bounds: { x: 20, y: 32, width: 8, height: 4 },
+    color: 0x666666, // Neutral gray
+    lightColor: 0xaaaaaa,
+    lightIntensity: 0.6,
+    capacity: 2,
+    falloffDistance: 5.0,
+    acousticType: 'balanced',
+  },
   gaming: {
     name: 'Gaming Zone',
     floor: 0,

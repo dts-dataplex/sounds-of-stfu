@@ -256,10 +256,10 @@ function escapeHtml(text) {
 /**
  * Movement controls
  */
-function moveToZone(x, z) {
+function moveToZone(x, z, zoneName) {
   if (!app || !isInRoom) return;
   app.moveTo(x, 0, z);
-  addSystemMessage(`Moved to (${x}, ${z})`);
+  addSystemMessage(`Moved to ${zoneName}`);
 }
 
 /**
@@ -347,18 +347,69 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Zone movement buttons
   const moveButtons = {
-    'move-gaming': () => moveToZone(8, 7),
-    'move-bar': () => moveToZone(24, 18),
-    'move-card-tables': () => moveToZone(40, 7),
-    'move-firepit': () => moveToZone(24, 32),
-    'move-booth1': () => moveToZone(8, 21),
-    'move-booth2': () => moveToZone(24, 6),
-    'move-stage': () => moveToZone(40, 32),
+    'move-entryway': () => moveToZone(24, 34, 'Entryway'),
+    'move-gaming': () => moveToZone(8, 7, 'Gaming Zone'),
+    'move-bar': () => moveToZone(24, 18, 'Central Bar'),
+    'move-card-tables': () => moveToZone(40, 7, 'Card Tables'),
+    'move-firepit': () => moveToZone(24, 32, 'Firepit Debate Area'),
+    'move-booth1': () => moveToZone(8, 21, 'Private Booth 1'),
+    'move-booth2': () => moveToZone(24, 6, 'Private Booth 2'),
+    'move-stage': () => moveToZone(40, 32, 'Small Stage'),
   };
 
   Object.entries(moveButtons).forEach(([id, handler]) => {
     const button = getElement(id);
     if (button) button.addEventListener('click', handler);
+  });
+
+  // Arrow key navigation
+  document.addEventListener('keydown', (e) => {
+    // Don't handle keys when chat input is focused
+    const chatInput = getElement('chat-input');
+    if (document.activeElement === chatInput) return;
+
+    // Don't handle if not in a room
+    if (!app || !isInRoom) return;
+
+    const moveSpeed = 2; // Units per keypress
+    let newX = app.localPosition.x;
+    let newZ = app.localPosition.z;
+
+    switch (e.key) {
+      case 'ArrowUp':
+      case 'w':
+      case 'W':
+        newZ -= moveSpeed;
+        e.preventDefault();
+        break;
+      case 'ArrowDown':
+      case 's':
+      case 'S':
+        newZ += moveSpeed;
+        e.preventDefault();
+        break;
+      case 'ArrowLeft':
+      case 'a':
+      case 'A':
+        newX -= moveSpeed;
+        e.preventDefault();
+        break;
+      case 'ArrowRight':
+      case 'd':
+      case 'D':
+        newX += moveSpeed;
+        e.preventDefault();
+        break;
+      default:
+        return; // Don't handle other keys
+    }
+
+    // Clamp to floor bounds (48ft x 36ft)
+    newX = Math.max(0, Math.min(48, newX));
+    newZ = Math.max(0, Math.min(36, newZ));
+
+    // Move to new position
+    app.moveTo(newX, 0, newZ);
   });
 });
 
