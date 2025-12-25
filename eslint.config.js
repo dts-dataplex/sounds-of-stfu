@@ -40,6 +40,13 @@ export default [
         TextDecoder: 'readonly',
         btoa: 'readonly',
         atob: 'readonly',
+        // Vitest globals
+        describe: 'readonly',
+        it: 'readonly',
+        expect: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        vi: 'readonly',
       },
     },
     rules: {
