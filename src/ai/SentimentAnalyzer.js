@@ -9,8 +9,14 @@
 import { pipeline, env } from '@xenova/transformers';
 
 // Configure Transformers.js to use HuggingFace CDN
+// Disable local model loading and force CDN usage
 env.allowLocalModels = false;
 env.useBrowserCache = true;
+env.remoteHost = 'https://huggingface.co';
+env.remotePathTemplate = '{model}/resolve/{revision}/';
+
+// Configure WASM paths for ONNX runtime
+env.backends.onnx.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2/dist/';
 
 export default class SentimentAnalyzer {
   constructor() {
