@@ -290,7 +290,84 @@ Illustrate the spatial audio experience through a 12-15 panel comic strip showin
 - Con: Bartender has blind spots, reduced moderation effectiveness
 - Con: May create two-tier community (sharers vs. non-sharers)
 
-**Recommendation**: TBD based on stakeholder input
+**Decision**: **Defer to Post-MVP User Research**
+- Launch MVP without aggregate sentiment sharing requirement
+- Survey communities after they've experienced the platform
+- Make data-driven decision based on actual user preferences and community health outcomes
+- Rationale: Cannot make informed consent/data-sharing decisions without user experience data
+
+### Booth Privacy & Access Control System
+
+#### Architecture: Prompt-Based Natural Language Access Control
+
+When users enter a private booth (second-floor booths, designated private zones), they define privacy preferences via natural language prompt rather than rigid permission settings.
+
+**User Workflow**:
+1. User(s) enter private booth
+2. System prompts: "Who should be able to join or listen to this conversation?"
+3. User provides natural language prompt, examples:
+   - "Only close friends can join, no eavesdropping"
+   - "Allow bartender for emergencies, otherwise completely private"
+   - "Open to anyone interested in philosophy discussions"
+   - "Private for the next 30 minutes, then anyone can join"
+   - "Friends and friends-of-friends welcome, strangers need to knock"
+
+**Local Agentic Processing**:
+- **Model**: Same Transformers.js + Phi-3.5-mini infrastructure used for sentiment analysis
+- **Processing**: Entirely local, runs in user's browser
+- **Function**: Parse natural language prompt into access rules
+- **Output**: Access control policy enforced client-side
+
+**Access Enforcement**:
+- When another user attempts to join booth:
+  1. Their client sends join request with user metadata (friend status, profile, etc.)
+  2. Booth owner's local agent evaluates request against natural language policy
+  3. Policy decision returned: Allow / Deny / Request Knock (ask for explicit permission)
+- Audio routing:
+  - Approved users: Full audio connection established
+  - Denied users: No audio connection, booth appears "occupied - private"
+  - Knock requests: Owner receives notification, can approve/deny in real-time
+
+**Privacy Guarantees**:
+- Booth privacy prompts never leave the owner's device
+- Access decisions made locally, no server involvement
+- Even bartender AI cannot override privacy settings (unless explicitly permitted in prompt)
+- Conversation content remains E2E encrypted between booth participants
+
+**Example Access Control Logic** (conceptual):
+
+```javascript
+// Local agent parses prompt: "Only close friends can join"
+const accessPolicy = {
+  allowedRelationships: ['close_friend'],
+  allowBartender: false,
+  knockEnabled: false
+};
+
+// When user Alice requests to join
+function evaluateAccess(requester, policy) {
+  if (policy.allowedRelationships.includes(requester.relationship)) {
+    return 'ALLOW';
+  }
+  if (policy.knockEnabled) {
+    return 'KNOCK'; // Owner receives notification
+  }
+  return 'DENY';
+}
+```
+
+**Advanced Features (v2.0)**:
+- Time-based privacy: "Private for 30 minutes, then open"
+- Topic-based access: "Anyone interested in quantum physics can join"
+- Dynamic renegotiation: "If conversation gets heated, make it private"
+- Multi-party consent: All booth members must agree to new joiners
+
+**Design Benefits**:
+- **User-Friendly**: Natural language is more intuitive than permission checkboxes
+- **Flexible**: Handles nuanced, context-aware privacy preferences
+- **Privacy-Preserving**: All processing local, no server surveillance
+- **Culturally Sensitive**: Users can express privacy norms in their own terms
+- **Scalable**: Leverages existing SLM infrastructure, no new dependencies
 
 ---
 
@@ -315,22 +392,65 @@ This section will include:
 
 ## Part 4: Technical Architecture (Continued)
 
-### Status: IN PROGRESS
+### Status: DESIGN DECISIONS COMPLETE
 
-**Outstanding Design Questions**:
+**Resolved Design Decisions**:
 
-1. **Aggregate Sentiment Sharing**: Required vs. Optional (see Privacy Controls section above)
-2. **Audio Falloff Curve**: What distance-based volume curve feels most natural?
-3. **Movement Speed**: How fast should avatar movement be? Instant click-to-teleport vs. walking animation?
-4. **Heat Map Update Frequency**: Real-time (< 2 sec) vs. periodic (5-10 sec)?
-5. **Word Cloud Privacy**: How to generate word clouds without violating booth privacy?
+#### 1. Aggregate Sentiment Sharing
+**Decision**: Defer to post-MVP user research
+- Launch MVP without requiring aggregate sentiment sharing
+- Survey communities after experiencing the platform
+- Make data-driven decision based on actual user preferences and community outcomes
+- **Rationale**: Cannot make informed consent/data-sharing decisions without real user experience data
+
+#### 2. Audio Falloff Curve
+**Decision**: Wave-based falloff function (not linear multiplier)
+- Implement wave function for distance-based volume attenuation
+- Provides more nuanced, fluid audio processing
+- Better represents real-world sound propagation physics
+- **Benefits**: More natural spatial audio experience, smoother transitions
+- **Technical Note**: Explore sinusoidal or exponential decay curves during implementation
+
+#### 3. Movement & Volume Control Design
+**Decision**: Distance + Manual Volume (needs UX vetting before implementation)
+- **Problem**: Users shouldn't feel forced to "run away" from suddenly loud conversations (appears rude)
+- **Proposed Solution**:
+  - User can move to maximum distance from conversation (reduces base gain via wave falloff)
+  - User can then manually adjust volume using wave-based control
+  - Combination of spatial distance + manual mixing provides control without social awkwardness
+- **Caution**: This UX pattern is untested and may have unforeseen usability issues
+- **Required**: Vet this design during prototype phase, consider alternative approaches
+- **Other Considerations**: May be impacted by group dynamics, cultural norms, accessibility needs
+
+#### 4. Heat Map Update Frequency
+**Decision**: User-configurable with multiple modes (algorithmic preference decision)
+- **Three Update Modes**:
+  1. **On-Demand**: User requests updates (rate-limited to X requests per Y time to prevent abuse)
+  2. **Event-Triggered**: Updates triggered by spatial cues (e.g., moving between gaming zone and football zone)
+  3. **Periodic Default**: Updates every 2 minutes automatically
+- **Key Insight**: Heat map update frequency is an algorithmic/preference decision that varies by individual
+- **User Control**: Like sentiment analysis, heat map clustering measurement may vary based on individual worldviews, values, and experiences
+- **Design Principle**: Give users control over algorithmic decisions that affect their experience
+- **Architecture Review**: Needs careful consideration during implementation - what other algorithmic preferences should be user-configurable?
+
+#### 5. Booth Privacy & Access Control
+**Decision**: Prompt-based access control via local agentic models
+- **When entering private booth**: Party is asked to provide a natural language prompt
+- **Prompt Purpose**: Defines who (if anyone) can interrupt or listen in
+  - Example: "Only close friends can join, no eavesdropping"
+  - Example: "Allow bartender for emergencies, otherwise private"
+  - Example: "Open to anyone interested in philosophy discussions"
+- **Processing**: Local agentic models (SLM-based) interpret the prompt and enforce access rules
+- **Privacy-Preserving**: Access control runs locally, no server involvement
+- **Flexibility**: Natural language allows nuanced, context-aware privacy preferences
+- **Implementation**: Can leverage same Transformers.js + Phi-3.5-mini infrastructure used for sentiment
 
 **Next Session Goals**:
-- Resolve outstanding questions
-- Complete technical architecture section
-- Design detailed floor plans
-- Create data flow diagrams
+- Design detailed floor plans with zone specifications
+- Create data flow diagrams for P2P mesh architecture
 - Define API contracts between components
+- Prototype wave-based audio falloff curves
+- Design booth privacy prompt UI/UX
 
 ---
 
@@ -351,6 +471,11 @@ This section will include:
 - **Privacy by Design**: Default to local processing, make data sharing opt-in and transparent
 - **Natural Interactions**: Spatial audio should feel like walking through a real bar
 - **Moderator Empowerment**: Give tools to manage community without surveillance
+- **User Agency Over Algorithms**: Algorithmic decisions (heat map updates, sentiment analysis frequency, clustering methods) should be user-configurable, not imposed
+- **Research-Driven Consent**: Defer privacy/data-sharing decisions until users can make informed choices based on actual experience
+- **Physics-Inspired Design**: Use wave-based audio falloff for more natural, fluid spatial audio that mirrors real sound propagation
+- **Social Comfort Priority**: Users should never feel forced into rude behaviors (like "running away" from conversations) by technical limitations
+- **Local-First AI**: Agentic features (sentiment analysis, privacy access control) run locally via Transformers.js to preserve privacy
 
 ---
 
@@ -381,10 +506,23 @@ This section will include:
 
 ## Document Status
 
-**Current State**: Design session in progress, paused for user's dinner
-**Completion**: ~40% complete
-**Next Session**: Resume with architecture questions and floor plan design
-**Target Completion**: 2025-12-24 (later session)
+**Current State**: Architecture design complete, ready for implementation planning
+**Completion**: ~75% complete (comic strip ✅, architecture ✅, floor plans pending)
+**Next Session**: Create detailed floor plans and data flow diagrams
+**Last Updated**: 2025-12-24
+
+### Completed Sections
+- ✅ 12-panel comic strip walkthrough (complete narrative)
+- ✅ Privacy-first P2P architecture (PeerJS mesh + E2E encryption)
+- ✅ Two-tier sentiment model (local SLM + aggregate bartender)
+- ✅ All 5 critical design decisions resolved
+- ✅ Booth privacy with prompt-based access control
+
+### Pending Sections
+- ⏳ Detailed floor plans with dimensions
+- ⏳ Data flow diagrams
+- ⏳ API contracts and component interfaces
+- ⏳ Wave-based audio falloff curve specifications
 
 ---
 
