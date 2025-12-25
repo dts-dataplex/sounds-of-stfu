@@ -3,6 +3,7 @@
  * Integrates all modules: Scene, Network, Audio, AI
  */
 
+import * as THREE from 'three';
 import { SceneManager } from './scene/SceneManager.js';
 import { MeshNetworkCoordinator } from './network/index.js';
 import { chatsuboAI } from './ai/index.js';
@@ -21,6 +22,7 @@ export default class ChatsuboApp {
     this.localPeerId = null;
     this.localPosition = { x: 24, y: 0, z: 18 }; // Start at center bar
     this.peerPositions = new Map(); // peerId -> {x, y, z}
+    this.peerAvatars = new Map(); // peerId -> THREE.Mesh
     this.audioContext = null;
     this.spatialAudioNodes = new Map(); // peerId -> {source, gain, panner}
     this.conversationMessages = [];
@@ -44,9 +46,15 @@ export default class ChatsuboApp {
       this.sceneManager.start();
       await this.delay(500);
 
-      // 2. Initialize AI module (lazy loaded)
+      // 2. Initialize AI module (lazy loaded, non-blocking)
       this.updateStatus('Preparing AI systems...');
-      await this.aiModule.initialize();
+      try {
+        await this.aiModule.initialize();
+        console.log('[ChatsuboApp] AI systems ready');
+      } catch (aiError) {
+        console.warn('[ChatsuboApp] AI initialization failed (non-critical):', aiError.message);
+        this.updateStatus('AI systems unavailable (continuing without AI features)');
+      }
       await this.delay(500);
 
       // 3. Initialize audio context (user gesture required)
@@ -104,6 +112,7 @@ export default class ChatsuboApp {
     // New peer connected
     this.networkCoordinator.on('peerJoined', ({ peerId, roomSize }) => {
       console.log(`[ChatsuboApp] Peer joined: ${peerId} (room size: ${roomSize})`);
+      this.createPeerAvatar(peerId);
       this.updatePeerList();
     });
 
@@ -111,6 +120,7 @@ export default class ChatsuboApp {
     this.networkCoordinator.on('peerLeft', ({ peerId, roomSize }) => {
       console.log(`[ChatsuboApp] Peer left: ${peerId} (room size: ${roomSize})`);
       this.removePeerAudio(peerId);
+      this.removePeerAvatar(peerId);
       this.peerPositions.delete(peerId);
       this.updatePeerList();
     });
@@ -125,6 +135,7 @@ export default class ChatsuboApp {
     this.networkCoordinator.on('peerPositionUpdate', ({ peerId, position }) => {
       this.peerPositions.set(peerId, position);
       this.updateSpatialAudio(peerId);
+      this.updatePeerAvatar(peerId);
     });
 
     // Chat message received
@@ -243,6 +254,74 @@ export default class ChatsuboApp {
       this.spatialAudioNodes.delete(peerId);
       console.log(`[ChatsuboApp] Removed audio for: ${peerId}`);
     }
+  }
+
+  /**
+   * Create visual avatar for a peer
+   */
+  createPeerAvatar(peerId) {
+    if (!this.sceneManager) return;
+
+    // Create a simple sphere avatar
+    const geometry = new THREE.SphereGeometry(0.5, 16, 16);
+    const material = new THREE.MeshPhongMaterial({
+      color: this.generatePeerColor(peerId),
+      emissive: this.generatePeerColor(peerId),
+      emissiveIntensity: 0.3,
+    });
+
+    const avatar = new THREE.Mesh(geometry, material);
+
+    // Set initial position (center if no position known yet)
+    const position = this.peerPositions.get(peerId) || { x: 24, y: 0, z: 18 };
+    avatar.position.set(position.x, position.y + 1, position.z); // +1 to raise above floor
+
+    // Add to scene
+    this.sceneManager.scene.add(avatar);
+    this.peerAvatars.set(peerId, avatar);
+
+    console.log(`[ChatsuboApp] Created avatar for: ${peerId}`);
+  }
+
+  /**
+   * Update peer avatar position
+   */
+  updatePeerAvatar(peerId) {
+    const avatar = this.peerAvatars.get(peerId);
+    const position = this.peerPositions.get(peerId);
+
+    if (avatar && position) {
+      avatar.position.set(position.x, position.y + 1, position.z);
+    }
+  }
+
+  /**
+   * Remove peer avatar when they disconnect
+   */
+  removePeerAvatar(peerId) {
+    const avatar = this.peerAvatars.get(peerId);
+    if (avatar && this.sceneManager) {
+      this.sceneManager.scene.remove(avatar);
+      avatar.geometry.dispose();
+      avatar.material.dispose();
+      this.peerAvatars.delete(peerId);
+      console.log(`[ChatsuboApp] Removed avatar for: ${peerId}`);
+    }
+  }
+
+  /**
+   * Generate a consistent color for a peer based on their ID
+   */
+  generatePeerColor(peerId) {
+    // Hash the peerId to get a consistent color
+    let hash = 0;
+    for (let i = 0; i < peerId.length; i++) {
+      hash = peerId.charCodeAt(i) + ((hash << 5) - hash);
+    }
+
+    // Convert to HSL color (various hues, high saturation, medium lightness)
+    const hue = Math.abs(hash) % 360;
+    return new THREE.Color().setHSL(hue / 360, 0.8, 0.6);
   }
 
   /**
