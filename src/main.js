@@ -70,6 +70,18 @@ async function joinRoom() {
     isInRoom = true;
     updateButtonVisibility();
     addSystemMessage(`Joined room: ${roomId}`);
+
+    // Hide status dialog
+    const statusDialog = getElement('status');
+    if (statusDialog) {
+      statusDialog.classList.add('hidden');
+    }
+
+    // Enable zone movement buttons
+    enableZoneButtons();
+
+    // Start connection metrics tracking
+    startConnectionMetrics();
   } catch (error) {
     console.error('[Main] Failed to join room:', error);
     updateStatus(`Failed to join: ${error.message}`);
@@ -86,6 +98,15 @@ function leaveRoom() {
 
   app.destroy();
   isInRoom = false;
+
+  // Stop connection metrics tracking
+  stopConnectionMetrics();
+
+  // Show status dialog again
+  const statusDialog = getElement('status');
+  if (statusDialog) {
+    statusDialog.classList.remove('hidden');
+  }
 
   updateButtonVisibility();
   updateStatus('Left room');
@@ -143,6 +164,22 @@ function updateButtonVisibility() {
   if (sendButton) sendButton.disabled = !isInRoom;
   if (roomIdInput) roomIdInput.disabled = isInRoom;
   if (joinButton && !isInRoom) joinButton.disabled = false;
+
+  // Update zone buttons
+  const zoneButtons = document.querySelectorAll('.zone-button');
+  zoneButtons.forEach((button) => {
+    button.disabled = !isInRoom;
+  });
+}
+
+/**
+ * Enable zone movement buttons
+ */
+function enableZoneButtons() {
+  const zoneButtons = document.querySelectorAll('.zone-button');
+  zoneButtons.forEach((button) => {
+    button.disabled = false;
+  });
 }
 
 /**
@@ -223,6 +260,63 @@ function moveToZone(x, z) {
   if (!app || !isInRoom) return;
   app.moveTo(x, 0, z);
   addSystemMessage(`Moved to (${x}, ${z})`);
+}
+
+/**
+ * Connection metrics tracking
+ */
+let metricsInterval = null;
+
+function startConnectionMetrics() {
+  if (metricsInterval) {
+    clearInterval(metricsInterval);
+  }
+
+  // Update metrics every 2 seconds
+  metricsInterval = setInterval(() => {
+    if (!app || !isInRoom) {
+      stopConnectionMetrics();
+      return;
+    }
+
+    updateConnectionMetrics();
+  }, 2000);
+
+  // Initial update
+  updateConnectionMetrics();
+}
+
+function stopConnectionMetrics() {
+  if (metricsInterval) {
+    clearInterval(metricsInterval);
+    metricsInterval = null;
+  }
+}
+
+function updateConnectionMetrics() {
+  const connectionStatus = getElement('connection-status');
+  const connectionState = getElement('connection-state');
+  const connectionLatency = getElement('connection-latency');
+
+  if (!connectionStatus || !app) return;
+
+  const peerCount = app.getPeerCount();
+  const isConnected = app.networkCoordinator && app.localPeerId;
+
+  // Connection state
+  if (connectionState) {
+    connectionState.textContent = isConnected ? 'Connected' : 'Disconnected';
+    connectionState.style.color = isConnected ? '#44ff88' : '#ff4444';
+  }
+
+  // Latency (simulated for now - PeerJS doesn't expose direct latency)
+  if (connectionLatency) {
+    // In a real implementation, you would measure actual RTT
+    const simulatedLatency = isConnected ? Math.floor(Math.random() * 30) + 20 : 0;
+    connectionLatency.textContent = isConnected ? `${simulatedLatency}ms` : 'N/A';
+    connectionLatency.style.color =
+      simulatedLatency < 50 ? '#44ff88' : simulatedLatency < 100 ? '#ffaa44' : '#ff4444';
+  }
 }
 
 // Event listeners

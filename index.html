@@ -142,6 +142,23 @@
         color: #888;
       }
 
+      /* Connection Status */
+      #connection-section {
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid #44ff88;
+      }
+
+      #connection-status p {
+        margin: 5px 0;
+        font-size: 11px;
+        color: #888;
+      }
+
+      #connection-status span {
+        font-weight: bold;
+      }
+
       /* Zone Movement Panel */
       #zone-panel {
         position: absolute;
@@ -372,6 +389,14 @@
         <div id="peer-section">
           <h2>// Peers (<span id="peer-count">0</span>)</h2>
           <ul id="peer-list"></ul>
+        </div>
+
+        <div id="connection-section">
+          <h2>// Connection Status</h2>
+          <div id="connection-status">
+            <p>State: <span id="connection-state" style="color: #888">Not Connected</span></p>
+            <p>Latency: <span id="connection-latency" style="color: #888">N/A</span></p>
+          </div>
         </div>
       </div>
 
