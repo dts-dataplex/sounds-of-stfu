@@ -181,15 +181,9 @@ export default class ChatsuboApp {
     if (!this.audioContext) {
       this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-      // Try to resume audio context (may require user gesture)
+      // AudioContext starts suspended - will resume on user gesture (Join Room click)
       if (this.audioContext.state === 'suspended') {
-        try {
-          await this.audioContext.resume();
-          console.log('[ChatsuboApp] Audio context initialized and resumed');
-        } catch (error) {
-          console.log('[ChatsuboApp] Audio context created but suspended (user gesture required)');
-          // Audio will be activated later when user clicks Join Room
-        }
+        console.log('[ChatsuboApp] Audio context created (suspended until user gesture)');
       } else {
         console.log('[ChatsuboApp] Audio context initialized');
       }

@@ -1,2260 +1,409 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sounds of STFU - POC</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>Chatsubo Virtual Bar - Sounds of STFU</title>
     <style>
-        body {
-            margin: 0;
-            padding: 20px;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: #1a1a1a;
-            color: #ffffff;
-        }
-        #controls {
-            margin-bottom: 20px;
-            padding: 20px;
-            background: #2a2a2a;
-            border-radius: 8px;
-        }
-        input, button {
-            padding: 10px 15px;
-            margin: 5px;
-            border: none;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-        input {
-            background: #3a3a3a;
-            color: #ffffff;
-            min-width: 200px;
-        }
-        button {
-            background: #4a9eff;
-            color: #ffffff;
-            cursor: pointer;
-        }
-        button:hover {
-            background: #3a8eef;
-        }
-        button:disabled {
-            background: #555555;
-            cursor: not-allowed;
-        }
-        #status {
-            margin: 10px 5px;
-            padding: 10px;
-            background: #333333;
-            border-radius: 4px;
-            font-family: monospace;
-            font-size: 12px;
-        }
-        #barCanvas {
-            display: block;
-            background: #2a2a2a;
-            border: 2px solid #4a4a4a;
-            border-radius: 8px;
-            cursor: crosshair;
-            margin: 20px 0;
-        }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Courier New', monospace;
+        background: #0a0a0a;
+        color: #44ff88;
+        overflow: hidden;
+      }
+
+      #canvas-container {
+        width: 100vw;
+        height: 100vh;
+        position: relative;
+      }
+
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      /* Info Panel */
+      #info-panel {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        background: rgba(0, 0, 0, 0.9);
+        padding: 15px;
+        border: 1px solid #44ff88;
+        font-size: 12px;
+        max-width: 300px;
+        pointer-events: none;
+      }
+
+      #info-panel h1 {
+        color: #44ff88;
+        font-size: 16px;
+        margin-bottom: 10px;
+        text-transform: uppercase;
+      }
+
+      #info-panel p {
+        margin: 5px 0;
+        line-height: 1.4;
+      }
+
+      .zone-label {
+        color: #ffaa44;
+      }
+
+      /* Control Panel */
+      #control-panel {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: rgba(0, 0, 0, 0.9);
+        padding: 15px;
+        border: 1px solid #44ff88;
+        font-size: 12px;
+        min-width: 250px;
+        pointer-events: auto;
+      }
+
+      #control-panel h2 {
+        color: #ffaa44;
+        font-size: 14px;
+        margin-bottom: 10px;
+        text-transform: uppercase;
+      }
+
+      #control-panel input,
+      #control-panel button {
+        width: 100%;
+        padding: 8px;
+        margin: 5px 0;
+        background: #1a1a1a;
+        border: 1px solid #44ff88;
+        color: #44ff88;
+        font-family: 'Courier New', monospace;
+        font-size: 11px;
+        cursor: pointer;
+      }
+
+      #control-panel input:focus {
+        outline: none;
+        border-color: #ffaa44;
+      }
+
+      #control-panel button:hover:not(:disabled) {
+        background: #2a2a2a;
+        border-color: #ffaa44;
+      }
+
+      #control-panel button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .button-group {
+        display: flex;
+        gap: 5px;
+      }
+
+      .button-group button {
+        flex: 1;
+      }
+
+      #mute-button.muted {
+        background: #4a1a1a;
+        border-color: #ff4444;
+      }
+
+      /* Peer List */
+      #peer-section {
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid #44ff88;
+      }
+
+      #peer-list {
+        list-style: none;
+        max-height: 100px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      #peer-list li {
+        padding: 2px 0;
+        font-size: 10px;
+        color: #888;
+      }
+
+      /* Zone Movement Panel */
+      #zone-panel {
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+        background: rgba(0, 0, 0, 0.9);
+        padding: 15px;
+        border: 1px solid #44ff88;
+        font-size: 12px;
+        pointer-events: auto;
+      }
+
+      #zone-panel h2 {
+        color: #ffaa44;
+        font-size: 14px;
+        margin-bottom: 10px;
+        text-transform: uppercase;
+      }
+
+      .zone-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 5px;
+      }
+
+      .zone-button {
+        padding: 8px;
+        background: #1a1a1a;
+        border: 1px solid #44ff88;
+        color: #44ff88;
+        font-family: 'Courier New', monospace;
+        font-size: 10px;
+        cursor: pointer;
+        text-align: center;
+      }
+
+      .zone-button:hover:not(:disabled) {
+        background: #2a2a2a;
+        border-color: #ffaa44;
+      }
+
+      .zone-button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      /* Chat Panel */
+      #chat-panel {
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        background: rgba(0, 0, 0, 0.9);
+        padding: 15px;
+        border: 1px solid #44ff88;
+        font-size: 12px;
+        width: 350px;
+        pointer-events: auto;
+      }
+
+      #chat-panel h2 {
+        color: #ffaa44;
+        font-size: 14px;
+        margin-bottom: 10px;
+        text-transform: uppercase;
+      }
+
+      #messages {
+        height: 150px;
+        overflow-y: auto;
+        margin-bottom: 10px;
+        padding: 5px;
+        background: #0a0a0a;
+        border: 1px solid #333;
+      }
+
+      .message {
+        margin: 5px 0;
+        line-height: 1.4;
+        font-size: 11px;
+      }
+
+      .message.system {
+        color: #888;
+        font-style: italic;
+      }
+
+      .message strong {
+        color: #ffaa44;
+      }
+
+      #chat-input-container {
+        display: flex;
+        gap: 5px;
+      }
+
+      #chat-input {
+        flex: 1;
+        padding: 8px;
+        background: #1a1a1a;
+        border: 1px solid #44ff88;
+        color: #44ff88;
+        font-family: 'Courier New', monospace;
+        font-size: 11px;
+      }
+
+      #chat-input:focus {
+        outline: none;
+        border-color: #ffaa44;
+      }
+
+      #send-button {
+        padding: 8px 15px;
+        background: #1a1a1a;
+        border: 1px solid #44ff88;
+        color: #44ff88;
+        font-family: 'Courier New', monospace;
+        font-size: 11px;
+        cursor: pointer;
+      }
+
+      #send-button:hover:not(:disabled) {
+        background: #2a2a2a;
+        border-color: #ffaa44;
+      }
+
+      #send-button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      /* Status Bar */
+      #status {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0, 0, 0, 0.95);
+        padding: 20px 30px;
+        border: 2px solid #44ff88;
+        font-size: 14px;
+        text-align: center;
+        pointer-events: none;
+        max-width: 500px;
+      }
+
+      /* Heated Conversation Alert */
+      #heated-alert {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(50, 0, 0, 0.95);
+        padding: 30px;
+        border: 2px solid #ff4444;
+        font-size: 14px;
+        text-align: center;
+        display: none;
+        pointer-events: none;
+        max-width: 500px;
+      }
+
+      #heated-alert h3 {
+        color: #ff4444;
+        font-size: 18px;
+        margin-bottom: 15px;
+        text-transform: uppercase;
+      }
+
+      #heated-alert p {
+        color: #ffaa44;
+        line-height: 1.6;
+      }
+
+      /* Scrollbar styling */
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: #0a0a0a;
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: #44ff88;
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+        background: #ffaa44;
+      }
     </style>
-</head>
-<body>
-    <div id="controls">
-        <h1>Sounds of STFU - POC</h1>
-        <div>
-            <input type="text" id="roomCode" placeholder="Enter room code (or create new)">
-            <button id="joinRoom">Join Room</button>
+  </head>
+  <body>
+    <div id="canvas-container">
+      <canvas id="scene-canvas"></canvas>
+
+      <!-- Info Panel -->
+      <div id="info-panel">
+        <h1>// Chatsubo Virtual Bar</h1>
+        <p class="zone-label">MVP v1.0 - Core Components</p>
+        <p>✓ Spatial audio engine (wave-based falloff)</p>
+        <p>✓ Isometric 3D rendering (Three.js)</p>
+        <p>✓ P2P mesh network (PeerJS)</p>
+        <p>✓ In-browser AI (Transformers.js)</p>
+        <p style="margin-top: 10px; color: #888">48ft × 36ft · 6 zones · 10 user capacity</p>
+      </div>
+
+      <!-- Control Panel -->
+      <div id="control-panel">
+        <h2>// Connection</h2>
+        <input
+          type="text"
+          id="room-id"
+          placeholder="Room ID (default: chatsubo-main)"
+          value="chatsubo-main"
+        />
+        <div class="button-group">
+          <button id="join-button" disabled>🚪 Join Room</button>
+          <button id="leave-button" style="display: none">🚶 Leave</button>
         </div>
-        <div>
-            <button id="muteBtn" disabled>Mute</button>
-            <button id="testModeToggle" style="margin-left: 10px;">Test Mode</button>
-            <span id="connectionState" style="margin-left: 15px; padding: 5px 10px; background: #555; border-radius: 4px; font-size: 12px;">Not Connected</span>
-            <span id="roomDisplay" style="margin-left: 15px; padding: 5px 10px; background: #3a3a3a; border-radius: 4px; font-size: 12px; font-weight: bold; display: none;">Room: <span id="roomName"></span></span>
+        <button id="mute-button" disabled>🎤 Mute</button>
+
+        <div id="peer-section">
+          <h2>// Peers (<span id="peer-count">0</span>)</h2>
+          <ul id="peer-list"></ul>
         </div>
-        <div style="margin-top: 10px;">
-            <label style="margin-right: 20px;">
-                Hearing Range:
-                <input type="range" id="hearingRangeSlider" min="100" max="500" value="300" step="10" style="vertical-align: middle; min-width: 150px;">
-                <span id="hearingRangeValue" style="display: inline-block; min-width: 60px; font-weight: bold;">300px</span>
-            </label>
-            <label>
-                Falloff Curve:
-                <input type="range" id="falloffSlider" min="0.5" max="3.0" value="1.0" step="0.1" style="vertical-align: middle; min-width: 150px;">
-                <span id="falloffValue" style="display: inline-block; min-width: 40px; font-weight: bold;">1.0</span>
-            </label>
+      </div>
+
+      <!-- Zone Movement Panel -->
+      <div id="zone-panel">
+        <h2>// Move To Zone</h2>
+        <div class="zone-grid">
+          <button class="zone-button" id="move-gaming" disabled>🎮 Gaming<br />(8, 7)</button>
+          <button class="zone-button" id="move-bar" disabled>🍺 Bar<br />(24, 18)</button>
+          <button class="zone-button" id="move-card-tables" disabled>🃏 Tables<br />(40, 7)</button>
+          <button class="zone-button" id="move-firepit" disabled>🔥 Firepit<br />(24, 32)</button>
+          <button class="zone-button" id="move-booth1" disabled>🛋️ Booth 1<br />(8, 21)</button>
+          <button class="zone-button" id="move-booth2" disabled>🛋️ Booth 2<br />(24, 6)</button>
+          <button class="zone-button" id="move-stage" disabled>🎤 Stage<br />(40, 32)</button>
         </div>
-        <div style="margin-top: 10px; padding: 10px; background: #3a3a3a; border-radius: 4px;">
-            <label style="display: flex; align-items: center; margin-bottom: 8px;">
-                <input type="checkbox" id="autoComfortToggle" style="margin-right: 10px;">
-                <strong>Auto Volume Comfort</strong>
-                <span style="margin-left: 10px; font-size: 11px; color: #aaa;">(auto-move away from loud conversations)</span>
-            </label>
-            <div id="comfortControls" style="display: none; margin-left: 25px;">
-                <label style="display: block; margin-bottom: 8px;">
-                    Volume Threshold:
-                    <input type="range" id="comfortThresholdSlider" min="0.01" max="0.15" value="0.05" step="0.01" style="vertical-align: middle; min-width: 150px;">
-                    <span id="comfortThresholdValue" style="display: inline-block; min-width: 50px; font-weight: bold;">0.05</span>
-                    <span style="font-size: 10px; color: #999;">(lower = more sensitive)</span>
-                </label>
-                <label style="display: block;">
-                    Auto-Move Speed:
-                    <input type="range" id="comfortSpeedSlider" min="0.5" max="3.0" value="1.0" step="0.1" style="vertical-align: middle; min-width: 150px;">
-                    <span id="comfortSpeedValue" style="display: inline-block; min-width: 40px; font-weight: bold;">1.0x</span>
-                </label>
-            </div>
+      </div>
+
+      <!-- Chat Panel -->
+      <div id="chat-panel">
+        <h2>// Chat</h2>
+        <div id="messages"></div>
+        <div id="chat-input-container">
+          <input type="text" id="chat-input" placeholder="Type a message..." disabled />
+          <button id="send-button" disabled>Send</button>
         </div>
-        <div id="status">Status: Not connected</div>
-        <div id="participants" style="margin-top: 10px; padding: 10px; background: #333; border-radius: 4px;">
-            <strong>Participants:</strong>
-            <ul id="participantList" style="list-style: none; padding: 0;"></ul>
-        </div>
+      </div>
+
+      <!-- Status Overlay (shown during initialization) -->
+      <div id="status"><strong>Status:</strong> <span id="status-text">Initializing...</span></div>
+
+      <!-- Heated Conversation Alert -->
+      <div id="heated-alert">
+        <h3>⚠️ Heated Conversation Detected</h3>
+        <p>This conversation seems to be getting intense.</p>
+        <p>Consider moving to a private booth for more privacy.</p>
+      </div>
     </div>
 
-    <div id="instructions" style="padding: 20px; background: #2a2a2a; border-radius: 8px; margin-bottom: 20px;">
-        <h3 style="margin-top: 0;">How to Use:</h3>
-        <ol style="line-height: 1.8;">
-            <li>Enter a room code (create new or join existing room)</li>
-            <li>Click "Join Room" and allow microphone access</li>
-            <li><strong>Use WASD or arrow keys to move, or click anywhere on the canvas</strong></li>
-            <li>Get close to others to hear them clearly</li>
-            <li>Move away to reduce their volume</li>
-            <li>Adjust "Hearing Range" and "Falloff Curve" sliders to tune spatial audio</li>
-            <li><strong>Enable "Auto Volume Comfort" to automatically move away from loud conversations</strong></li>
-            <li><strong>Click "Test Mode" to spawn AI bots for solo testing</strong></li>
-            <li>Pulsing ring = someone is speaking</li>
-            <li>Bot emojis: 🎸 = music, 💬 = conversation</li>
-        </ol>
-        <p style="margin-top: 15px; padding: 10px; background: #3a3a3a; border-radius: 4px; margin-bottom: 0;">
-            <strong>Tip:</strong> The light blue circle around you shows your hearing range.
-            Move within that range to have a conversation. Adjust the sliders to experiment with different spatial audio settings.
-            <strong>Test Mode lets you spawn bots to test audio - click bots to cycle: silence → conversation → Marley music!</strong>
-        </p>
-        <p style="margin-top: 10px; padding: 10px; background: #2a3a2a; border-radius: 4px; margin-bottom: 0; border-left: 3px solid #4a9eff;">
-            <strong>Auto Volume Comfort:</strong> When enabled, your avatar automatically moves away from loud audio sources to maintain a comfortable listening level.
-            Manual movement (WASD/arrow keys/clicking) temporarily pauses auto-movement for 3 seconds, giving you full control.
-            Adjust threshold (sensitivity) and speed to your preference.
-        </p>
-    </div>
-
-    <div id="testModePanel" style="display:none; padding: 20px; background: #2a2a2a; border-radius: 8px; margin-bottom: 20px;">
-        <h3 style="margin-top: 0;">Test Mode</h3>
-
-        <div style="margin-bottom: 15px;">
-            <label style="display: block; margin-bottom: 5px;">
-                Number of Bots:
-                <input type="range" id="testBotCount" min="1" max="3" value="3" style="vertical-align: middle; margin-left: 10px;">
-                <span id="testBotCountValue" style="font-weight: bold; margin-left: 10px;">3</span>
-            </label>
-        </div>
-
-        <div style="margin-bottom: 15px;">
-            <label style="display: block; margin-bottom: 5px;">
-                Duration:
-                <select id="testDuration" style="margin-left: 10px;">
-                    <option value="30">30 seconds</option>
-                    <option value="60">1 minute</option>
-                    <option value="120" selected>2 minutes</option>
-                    <option value="300">5 minutes</option>
-                </select>
-            </label>
-        </div>
-
-        <div style="margin-bottom: 15px;">
-            <label style="display: block; margin-bottom: 5px;">
-                Movement:
-                <select id="testMovement" style="margin-left: 10px;">
-                    <option value="stationary" selected>Stationary</option>
-                    <option value="patterns">Patterns</option>
-                </select>
-            </label>
-        </div>
-
-        <div style="margin-bottom: 15px;">
-            <label style="display: block; margin-bottom: 5px;">
-                Bot Volume:
-                <input type="range" id="botVolumeSlider" min="0" max="100" value="30" style="vertical-align: middle; margin-left: 10px; min-width: 150px;">
-                <span id="botVolumeValue" style="display: inline-block; min-width: 40px; font-weight: bold; margin-left: 10px;">30%</span>
-            </label>
-        </div>
-
-        <div style="margin-bottom: 15px;">
-            <button id="startTestBtn" style="padding: 8px 16px; font-size: 14px;">Start Test</button>
-            <button id="stopTestBtn" style="display:none; margin-left: 10px; padding: 8px 16px; font-size: 14px;">Stop Test</button>
-        </div>
-
-        <div id="testTimer" style="display:none; margin-top: 10px; padding: 10px; background: #3a3a3a; border-radius: 4px; font-weight: bold; color: #4a9eff;">
-            Time Remaining: <span id="testTimerValue">2:00</span>
-        </div>
-
-        <div id="testModeStatus" style="display:none; margin-top: 10px; padding: 10px; background: #3a3a3a; border-radius: 4px; font-size: 13px;">
-            Test Mode Active (You are controlling)
-        </div>
-
-        <div id="demoModeStatus" style="display:none; margin-top: 10px; padding: 10px; background: #3a3a3a; border-radius: 4px; font-size: 13px;">
-            Demo Mode Active (Controlled by <span id="demoHostName">UserX</span>)
-        </div>
-    </div>
-
-    <canvas id="barCanvas" width="800" height="600"></canvas>
-
-    <script src="https://unpkg.com/peerjs@1.5.0/dist/peerjs.min.js"></script>
-    <script>
-    let peer = null;
-    let localStream = null;
-    let myPeerId = null;
-    let currentRoom = null;
-    let connections = {}; // { peerId: { call: MediaConnection, conn: DataConnection } }
-    let participants = {}; // { peerId: { name: string } }
-    let isMuted = false;
-
-    const roomCodeInput = document.getElementById('roomCode');
-    const joinRoomBtn = document.getElementById('joinRoom');
-    const muteBtnEl = document.getElementById('muteBtn');
-    const statusDiv = document.getElementById('status');
-    const participantListEl = document.getElementById('participantList');
-    const connectionStateEl = document.getElementById('connectionState');
-    const roomDisplayEl = document.getElementById('roomDisplay');
-    const roomNameEl = document.getElementById('roomName');
-    const hearingRangeSlider = document.getElementById('hearingRangeSlider');
-    const hearingRangeValue = document.getElementById('hearingRangeValue');
-    const falloffSlider = document.getElementById('falloffSlider');
-    const falloffValue = document.getElementById('falloffValue');
-    const testModeToggle = document.getElementById('testModeToggle');
-    const testModePanel = document.getElementById('testModePanel');
-    const autoComfortToggle = document.getElementById('autoComfortToggle');
-    const comfortControls = document.getElementById('comfortControls');
-    const comfortThresholdSlider = document.getElementById('comfortThresholdSlider');
-    const comfortThresholdValue = document.getElementById('comfortThresholdValue');
-    const comfortSpeedSlider = document.getElementById('comfortSpeedSlider');
-    const comfortSpeedValue = document.getElementById('comfortSpeedValue');
-    const testBotCount = document.getElementById('testBotCount');
-    const testBotCountValue = document.getElementById('testBotCountValue');
-    const testDuration = document.getElementById('testDuration');
-    const testMovement = document.getElementById('testMovement');
-    const startTestBtn = document.getElementById('startTestBtn');
-    const stopTestBtn = document.getElementById('stopTestBtn');
-    const testTimer = document.getElementById('testTimer');
-    const testTimerValue = document.getElementById('testTimerValue');
-    const testModeStatus = document.getElementById('testModeStatus');
-    const demoModeStatus = document.getElementById('demoModeStatus');
-    const demoHostName = document.getElementById('demoHostName');
-    const botVolumeSlider = document.getElementById('botVolumeSlider');
-    const botVolumeValue = document.getElementById('botVolumeValue');
-
-    const canvas = document.getElementById('barCanvas');
-    const ctx = canvas.getContext('2d');
-
-    let positions = {}; // { peerId: { x, y } }
-    let myPosition = { x: 400, y: 300 }; // Start in center
-
-    let audioContext = null;
-    let gainNodes = {}; // { peerId: GainNode }
-    let analyzerNodes = {}; // { peerId: AnalyserNode }
-    let speakingStates = {}; // { peerId: boolean }
-
-    // Spatial audio parameters
-    let maxHearingRange = 300; // adjustable via slider
-    let falloffCurve = 1.0; // adjustable via slider (1.0 = linear, >1 = exponential)
-    let botMasterVolume = 0.3; // bot volume (0.0 to 1.0, default 30%)
-
-    // Test mode state
-    let testBots = {}; // { botId: {id, name, position, audioType, audioSource, gainNode, analyzerNode, pattern, patternPhase, patternCenter, isDragging} }
-    let testModeState = {
-        active: false,
-        hostPeerId: null,
-        startTime: null,
-        duration: 120,
-        movementMode: 'stationary',
-        numBots: 3
-    };
-    let testTimerInterval = null;
-
-    // Drag state
-    let draggedBot = null;
-    let dragOffset = { x: 0, y: 0 };
-    let dragStartPos = { x: 0, y: 0 };
-    let hasDragged = false;
-
-    // Auto Volume Comfort state
-    let autoComfortEnabled = false;
-    let comfortThreshold = 0.05; // RMS volume threshold (0.01-0.15)
-    let comfortSpeed = 1.0; // Movement speed multiplier
-    let comfortMoveDirection = null; // { x, y } direction to move away from loud source
-    let comfortPausedUntil = 0; // Timestamp to pause auto-comfort after manual movement
-
-    // Audio type cycle order (focus on real interactions: conversations and music)
-    const AUDIO_TYPES = ['silence', 'conversation', 'marley1', 'marley2', 'marley3'];
-
-    // Embedded audio clips (base64 data URLs)
-    // Simple test tones generated as minimal WAV files
-    const botAudioClips = {
-        // Speech: 440Hz tone for 1 second (A4 note)
-        speech: 'data:audio/wav;base64,UklGRiQEAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAEAAA' +
-                'AAAAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAA' +
-                'AQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAA',
-
-        // Ambient: 220Hz tone for 1 second (A3 note - lower)
-        ambient: 'data:audio/wav;base64,UklGRiQEAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAEAAA' +
-                 'AAAAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAA' +
-                 'AQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAA',
-
-        // Music: 880Hz tone for 1 second (A5 note - higher)
-        music: 'data:audio/wav;base64,UklGRiQEAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAEAAA' +
-               'AAAAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAA' +
-               'AQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAA',
-
-        // SFX: 660Hz tone for 0.5 seconds (E5 note - short burst)
-        sfx: 'data:audio/wav;base64,UklGRiQCAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQACAAA' +
-             'AAAAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAAAQAA'
-    };
-
-    // NOTE: These placeholders should be replaced with actual audio files converted to base64.
-    // To create real audio:
-    // 1. Record/find short audio clips (speech, ambient, music, sfx)
-    // 2. Convert to base64: `base64 -i audio.mp3` or use online converter
-    // 3. Replace placeholder strings above with: data:audio/mp3;base64,[base64string]
-
-    // WASD and Arrow key keyboard movement
-    const moveSpeed = 10; // pixels per keypress
-    const keysPressed = {};
-
-    // Test mode panel toggle
-    testModeToggle.addEventListener('click', () => {
-        if (testModePanel.style.display === 'none') {
-            testModePanel.style.display = 'block';
-        } else {
-            testModePanel.style.display = 'none';
-        }
-    });
-
-    // Bot count slider updates value display
-    testBotCount.addEventListener('input', () => {
-        testBotCountValue.textContent = testBotCount.value;
-    });
-
-    // Bot volume slider updates value display and applies to bots
-    botVolumeSlider.addEventListener('input', () => {
-        const volume = parseInt(botVolumeSlider.value);
-        botVolumeValue.textContent = `${volume}%`;
-        botMasterVolume = volume / 100;
-
-        // Update all active bot volumes
-        Object.values(testBots).forEach(bot => {
-            if (bot.gainNode) {
-                updateSpatialAudio(); // This will apply new volume
-            }
-        });
-    });
-
-    // Auto Volume Comfort toggle
-    autoComfortToggle.addEventListener('change', () => {
-        autoComfortEnabled = autoComfortToggle.checked;
-        comfortControls.style.display = autoComfortEnabled ? 'block' : 'none';
-
-        if (autoComfortEnabled) {
-            updateStatus('Auto Volume Comfort enabled - will move away from loud conversations');
-        } else {
-            updateStatus('Auto Volume Comfort disabled');
-            comfortMoveDirection = null; // Reset movement
-        }
-    });
-
-    // Comfort threshold slider
-    comfortThresholdSlider.addEventListener('input', () => {
-        comfortThreshold = parseFloat(comfortThresholdSlider.value);
-        comfortThresholdValue.textContent = comfortThreshold.toFixed(2);
-    });
-
-    // Comfort speed slider
-    comfortSpeedSlider.addEventListener('input', () => {
-        comfortSpeed = parseFloat(comfortSpeedSlider.value);
-        comfortSpeedValue.textContent = `${comfortSpeed.toFixed(1)}x`;
-    });
-
-    // Start Test Mode
-    startTestBtn.addEventListener('click', () => {
-        if (!myPeerId) {
-            updateStatus('Join a room first before starting test mode');
-            return;
-        }
-
-        const numBots = parseInt(testBotCount.value);
-        const duration = parseInt(testDuration.value);
-        const movement = testMovement.value;
-
-        console.log('=== Test Mode Started ===');
-        console.log(`Bots: ${numBots}`);
-        console.log(`Duration: ${duration}s`);
-        console.log(`Movement: ${movement}`);
-        console.log('Audio types: silence → speech → tts → ambient → music → sfx');
-        console.log('Click bots to cycle audio types');
-        console.log('Drag bots to reposition');
-        console.log('========================');
-
-        // Update state
-        testModeState.active = true;
-        testModeState.hostPeerId = myPeerId;
-        testModeState.startTime = Date.now();
-        testModeState.duration = duration;
-        testModeState.movementMode = movement;
-        testModeState.numBots = numBots;
-
-        // Spawn bots
-        spawnTestBots(numBots);
-
-        // Update UI
-        startTestBtn.style.display = 'none';
-        stopTestBtn.style.display = 'inline-block';
-        testTimer.style.display = 'block';
-
-        // Show appropriate status
-        const hasOtherUsers = Object.keys(participants).length > 1;
-        if (hasOtherUsers) {
-            // Demo mode
-            demoModeStatus.style.display = 'block';
-            testModeStatus.style.display = 'none';
-        } else {
-            // Solo test mode
-            testModeStatus.style.display = 'block';
-            demoModeStatus.style.display = 'none';
-        }
-
-        // Start timer
-        startTestTimer(duration);
-
-        // Broadcast test mode start to others (if any)
-        broadcastTestModeStart();
-
-        updateStatus(`Test mode started with ${numBots} bots`);
-        draw();
-    });
-
-    // Stop Test Mode
-    stopTestBtn.addEventListener('click', () => {
-        stopTestMode();
-    });
-
-    document.addEventListener('keydown', (e) => {
-        const key = e.key.toLowerCase();
-
-        // Toggle test mode panel with 'T' key
-        if (key === 't' && !e.ctrlKey && !e.metaKey) {
-            if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'SELECT') {
-                testModeToggle.click();
-                e.preventDefault();
-                return;
-            }
-        }
-
-        if (!myPeerId) return;
-
-        // Track WASD and arrow keys
-        if (['w', 's', 'a', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)) {
-            keysPressed[key] = true;
-            e.preventDefault(); // Prevent page scrolling with arrow keys
-        }
-    });
-
-    document.addEventListener('keyup', (e) => {
-        const key = e.key.toLowerCase();
-        keysPressed[key] = false;
-    });
-
-    // Update position based on keys pressed
-    function handleKeyboardMovement() {
-        if (!myPeerId) return;
-
-        let moved = false;
-
-        // WASD or Arrow keys
-        if (keysPressed['w'] || keysPressed['arrowup']) {
-            myPosition.y = Math.max(0, myPosition.y - moveSpeed);
-            moved = true;
-        }
-        if (keysPressed['s'] || keysPressed['arrowdown']) {
-            myPosition.y = Math.min(canvas.height, myPosition.y + moveSpeed);
-            moved = true;
-        }
-        if (keysPressed['a'] || keysPressed['arrowleft']) {
-            myPosition.x = Math.max(0, myPosition.x - moveSpeed);
-            moved = true;
-        }
-        if (keysPressed['d'] || keysPressed['arrowright']) {
-            myPosition.x = Math.min(canvas.width, myPosition.x + moveSpeed);
-            moved = true;
-        }
-
-        if (moved) {
-            positions[myPeerId] = myPosition;
-            broadcastPosition();
-            updateSpatialAudio();
-
-            // Pause auto-comfort for 3 seconds when user manually moves
-            comfortPausedUntil = Date.now() + 3000;
-        }
-    }
-
-    // Canvas click to move or interact with bots
-    canvas.addEventListener('click', (e) => {
-        if (!myPeerId) return;
-
-        const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-
-        // Check if clicking on a bot
-        const clickedBot = getBotAtPosition(x, y);
-        if (clickedBot) {
-            handleBotClick(clickedBot);
-            return; // Don't move user if clicking a bot
-        }
-
-        // Regular click-to-move
-        myPosition = { x, y };
-        positions[myPeerId] = myPosition;
-
-        // Broadcast position to all peers
-        broadcastPosition();
-
-        // Update spatial audio based on new position
-        updateSpatialAudio();
-
-        // Pause auto-comfort for 3 seconds when user manually clicks to move
-        comfortPausedUntil = Date.now() + 3000;
-
-        draw();
-    });
-
-    // Canvas mousedown for bot dragging
-    canvas.addEventListener('mousedown', (e) => {
-        if (!myPeerId) return;
-
-        const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-
-        // Check if clicking on a bot
-        const clickedBot = getBotAtPosition(x, y);
-        if (clickedBot) {
-            // Check if user can interact with bots
-            if (testModeState.active && myPeerId !== testModeState.hostPeerId) {
-                // Demo mode: non-host cannot drag
-                const hostName = participants[testModeState.hostPeerId]?.name || 'Unknown';
-                updateStatus(`Demo controlled by ${hostName}`);
-                return;
-            }
-
-            // Prepare for potential drag
-            draggedBot = clickedBot;
-            dragOffset.x = clickedBot.position.x - x;
-            dragOffset.y = clickedBot.position.y - y;
-            dragStartPos = { x, y };
-            hasDragged = false;
-
-            e.preventDefault();
-        }
-    });
-
-    // Canvas mousemove for bot dragging and cursor
-    canvas.addEventListener('mousemove', (e) => {
-        const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-
-        if (draggedBot) {
-            // Check if we've moved enough to be considered dragging (5px threshold)
-            const dx = x - dragStartPos.x;
-            const dy = y - dragStartPos.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-
-            if (distance > 5) {
-                hasDragged = true;
-                draggedBot.isDragging = true;
-            }
-
-            // Update bot position while dragging
-            if (hasDragged) {
-                draggedBot.position.x = Math.max(20, Math.min(canvas.width - 20, x + dragOffset.x));
-                draggedBot.position.y = Math.max(20, Math.min(canvas.height - 20, y + dragOffset.y));
-
-                // Update positions map
-                positions[draggedBot.id] = draggedBot.position;
-
-                // Update spatial audio
-                updateSpatialAudio();
-
-                // Redraw
-                draw();
-            }
-        } else {
-            // If not dragging, check if hovering over bot
-            const hoveredBot = getBotAtPosition(x, y);
-            canvas.style.cursor = hoveredBot ? 'pointer' : 'default';
-        }
-    });
-
-    // Canvas mouseup to end dragging (or handle click)
-    canvas.addEventListener('mouseup', (e) => {
-        if (!draggedBot) return;
-
-        if (hasDragged) {
-            // This was a drag operation
-            console.log(`Stopped dragging ${draggedBot.name} at (${Math.round(draggedBot.position.x)}, ${Math.round(draggedBot.position.y)})`);
-
-            // Update pattern center if in pattern mode
-            if (testModeState.movementMode === 'patterns') {
-                draggedBot.patternCenter = {...draggedBot.position};
-            }
-
-            // Broadcast final position
-            if (myPeerId === testModeState.hostPeerId) {
-                broadcastBotState(draggedBot.id);
-            }
-
-            draggedBot.isDragging = false;
-        } else {
-            // This was a click (no movement) - cycle audio type
-            console.log(`Clicked ${draggedBot.name} - cycling audio type`);
-            cycleBotAudio(draggedBot.id);
-        }
-
-        draggedBot = null;
-        hasDragged = false;
-    });
-
-    // Canvas mouseleave to cancel dragging
-    canvas.addEventListener('mouseleave', (e) => {
-        if (draggedBot) {
-            draggedBot.isDragging = false;
-            draggedBot = null;
-        }
-    });
-
-    // ========== Bot Management Functions ==========
-
-    // Create a bot object
-    function createBot(botId, botNumber, position) {
-        return {
-            id: botId,
-            name: `BOT ${botNumber} 🤖`,
-            position: position,
-            audioType: 'silence',
-            audioSource: null,
-            gainNode: null,
-            analyzerNode: null,
-            stream: null,
-            pattern: getBotPattern(botNumber),
-            patternPhase: 0,
-            patternCenter: {...position},
-            isDragging: false
-        };
-    }
-
-    // Get pattern type based on bot number
-    function getBotPattern(botNumber) {
-        const patterns = ['circle', 'figure8', 'linear'];
-        return patterns[botNumber - 1] || 'circle';
-    }
-
-    // Get predetermined spawn position based on bot number
-    function getBotSpawnPosition(botNumber) {
-        const centerX = canvas.width / 2;
-        const centerY = canvas.height / 2;
-
-        switch(botNumber) {
-            case 1: // Near (150px from center)
-                return {x: centerX + 100, y: centerY};
-            case 2: // Medium (300px from center, diagonal)
-                return {x: centerX + 212, y: centerY + 212};
-            case 3: // Far (450px from center, bottom)
-                return {x: centerX, y: centerY + 450};
-            default:
-                return {x: centerX, y: centerY};
-        }
-    }
-
-    // Spawn test bots
-    function spawnTestBots(numBots) {
-        testBots = {};
-
-        for (let i = 1; i <= numBots; i++) {
-            const botId = `bot-${i}`;
-            const position = getBotSpawnPosition(i);
-            const bot = createBot(botId, i, position);
-            testBots[botId] = bot;
-
-            // Initialize position in positions map
-            positions[botId] = bot.position;
-
-            // Set initial audio type based on bot number
-            // Bots 1-2: conversation (talking to each other)
-            // Bot 3+: Marley music (ranch vibes)
-            if (i <= 2) {
-                bot.audioType = 'conversation';
-                // Delay TTS slightly per bot to avoid overlap
-                setTimeout(() => playConversationTTS(botId), i * 1000);
-            } else {
-                // Assign different Marley tracks for variety
-                const marleyTracks = ['marley1', 'marley2', 'marley3'];
-                const trackIndex = (i - 3) % marleyTracks.length;
-                bot.audioType = marleyTracks[trackIndex];
-
-                // Play Marley music
-                setTimeout(() => {
-                    switch(bot.audioType) {
-                        case 'marley1':
-                            playExternalAudio(botId, 'music/Marley/bob marley - AudioTrack 03.mp3');
-                            break;
-                        case 'marley2':
-                            playExternalAudio(botId, 'music/Marley/bob marley - AudioTrack 04.mp3');
-                            break;
-                        case 'marley3':
-                            playExternalAudio(botId, 'music/Marley/bob marley - AudioTrack 06.mp3');
-                            break;
-                    }
-                }, 500);
-            }
-
-            console.log(`Spawned ${bot.name} at (${position.x}, ${position.y}) with audio type: ${bot.audioType}`);
-        }
-    }
-
-    // Remove all test bots
-    function removeTestBots() {
-        Object.keys(testBots).forEach(botId => {
-            stopBotAudio(botId);
-            delete positions[botId];
-            delete speakingStates[botId];
-        });
-        testBots = {};
-        console.log('Removed all test bots');
-    }
-
-    // Stop audio for a specific bot
-    function stopBotAudio(botId) {
-        const bot = testBots[botId];
-        if (!bot) return;
-
-        // Disconnect and cleanup audio nodes
-        if (bot.gainNode) {
-            bot.gainNode.disconnect();
-            delete gainNodes[botId];
-        }
-        if (bot.analyzerNode) {
-            bot.analyzerNode.disconnect();
-            delete analyzerNodes[botId];
-        }
-        if (bot.audioSource) {
-            if (bot.audioSource.stop) bot.audioSource.stop();
-            if (bot.audioSource.disconnect) bot.audioSource.disconnect();
-        }
-
-        bot.audioSource = null;
-        bot.gainNode = null;
-        bot.analyzerNode = null;
-        bot.audioType = 'silence';
-    }
-
-    // Check if click is on a bot
-    function getBotAtPosition(canvasX, canvasY) {
-        const clickRadius = 25; // Slightly larger than bot visual radius
-
-        for (const bot of Object.values(testBots)) {
-            const dx = canvasX - bot.position.x;
-            const dy = canvasY - bot.position.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-
-            if (distance <= clickRadius) {
-                return bot;
-            }
-        }
-        return null;
-    }
-
-    // Handle bot click (cycle audio or show demo mode message)
-    function handleBotClick(bot) {
-        // Check if user is allowed to interact
-        if (testModeState.active && myPeerId !== testModeState.hostPeerId) {
-            // Demo mode: non-host clicked
-            const hostName = participants[testModeState.hostPeerId]?.name || 'Unknown';
-            updateStatus(`Demo controlled by ${hostName}`);
-            return;
-        }
-
-        // Cycle to next audio type
-        cycleBotAudio(bot.id);
-    }
-
-    // Cycle bot through audio types
-    function cycleBotAudio(botId) {
-        const bot = testBots[botId];
-        if (!bot) return;
-
-        const currentIndex = AUDIO_TYPES.indexOf(bot.audioType);
-        const nextIndex = (currentIndex + 1) % AUDIO_TYPES.length;
-        const nextType = AUDIO_TYPES[nextIndex];
-
-        bot.audioType = nextType;
-
-        console.log(`${bot.name} cycling to: ${nextType}`);
-
-        // Play audio based on type
-        switch(nextType) {
-            case 'silence':
-                stopBotAudio(botId);
-                break;
-            case 'conversation':
-                playConversationTTS(botId);
-                break;
-            case 'marley1':
-                playExternalAudio(botId, 'music/Marley/bob marley - AudioTrack 03.mp3');
-                break;
-            case 'marley2':
-                playExternalAudio(botId, 'music/Marley/bob marley - AudioTrack 04.mp3');
-                break;
-            case 'marley3':
-                playExternalAudio(botId, 'music/Marley/bob marley - AudioTrack 06.mp3');
-                break;
-        }
-
-        // Broadcast state change if host
-        if (testModeState.active && myPeerId === testModeState.hostPeerId) {
-            broadcastBotState(botId);
-        }
-
-        draw(); // Update visual
-    }
-
-    // Play embedded audio clip for bot (using generated tones)
-    function playEmbeddedAudio(botId, audioType) {
-        const bot = testBots[botId];
-        if (!bot || !audioContext) {
-            console.error(`Cannot play audio: audioContext=${!!audioContext}, bot=${!!bot}`);
-            return;
-        }
-
-        // Stop current audio
-        stopBotAudio(botId);
-
-        // Ensure AudioContext is running
-        if (audioContext.state === 'suspended') {
-            audioContext.resume();
-        }
-
-        // Create oscillator for tone generation
-        const oscillator = audioContext.createOscillator();
-
-        // Set frequency based on audio type
-        const frequencies = {
-            speech: 440,   // A4 - mid tone
-            ambient: 220,  // A3 - low tone
-            music: 880,    // A5 - high tone
-            sfx: 660       // E5 - medium-high tone
-        };
-        oscillator.frequency.value = frequencies[audioType] || 440;
-        oscillator.type = audioType === 'music' ? 'sine' : 'square';
-
-        // Create analyzer for speaking detection
-        const analyzer = audioContext.createAnalyser();
-        analyzer.fftSize = 256;
-        analyzer.smoothingTimeConstant = 0.8;
-
-        // Create gain node for spatial audio
-        const gainNode = audioContext.createGain();
-        gainNode.gain.value = botMasterVolume; // Use master volume setting
-
-        // Connect: oscillator → analyzer → gain → destination
-        oscillator.connect(analyzer);
-        analyzer.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-
-        // Store references
-        bot.audioSource = oscillator;
-        bot.gainNode = gainNode;
-        bot.analyzerNode = analyzer;
-        gainNodes[botId] = gainNode;
-        analyzerNodes[botId] = analyzer;
-
-        // Start oscillator
-        oscillator.start();
-
-        console.log(`Playing ${audioType} tone (${frequencies[audioType]}Hz) for ${bot.name}`);
-
-        // Update spatial audio
-        updateSpatialAudio();
-    }
-
-    // Play text-to-speech for bot
-    function playBotTTS(botId) {
-        const bot = testBots[botId];
-        if (!bot) return;
-
-        // Check if Web Speech API is available
-        if (!('speechSynthesis' in window)) {
-            console.warn('Web Speech API not available');
-            updateStatus('Text-to-speech not supported in this browser');
-            // Skip TTS, cycle to next type
-            cycleBotAudio(botId);
-            return;
-        }
-
-        // Stop current audio
-        stopBotAudio(botId);
-
-        // Extract bot number from ID (bot-1 → 1)
-        const botNumber = botId.split('-')[1];
-
-        // Create utterance
-        const utterance = new SpeechSynthesisUtterance(`Hello, I am Bot ${botNumber}`);
-        utterance.rate = 0.9; // Slightly slower for clarity
-        utterance.pitch = 1.0 + (parseInt(botNumber) * 0.1); // Vary pitch per bot
-        utterance.volume = 1.0;
-
-        // Note: TTS doesn't integrate with Web Audio API directly
-        // It plays through system audio, not spatial audio pipeline
-        // This is a known limitation of Web Speech API
-
-        utterance.onend = () => {
-            console.log(`TTS finished for ${bot.name}`);
-            bot.audioType = 'silence';
-            draw();
-        };
-
-        utterance.onerror = (e) => {
-            console.error(`TTS error for ${bot.name}:`, e);
-            cycleBotAudio(botId);
-        };
-
-        // Speak
-        speechSynthesis.speak(utterance);
-
-        console.log(`TTS started for ${bot.name}`);
-    }
-
-    // Play conversational TTS for bot (ranch/bar conversations)
-    //
-    // SPATIAL AUDIO IMPLEMENTATION: Uses SpeechSynthesisUtterance.volume property
-    // to approximate spatial audio by calculating distance-based gain.
-    // Each phrase recalculates volume based on current distance, providing
-    // reasonably good spatial audio behavior for conversations.
-    function playConversationTTS(botId) {
-        const bot = testBots[botId];
-        if (!bot) return;
-
-        // Check if Web Speech API is available
-        if (!('speechSynthesis' in window)) {
-            console.warn('Web Speech API not available');
-            updateStatus('Text-to-speech not supported in this browser');
-            cycleBotAudio(botId);
-            return;
-        }
-
-        // Stop current audio (cleanup Web Audio nodes if any exist)
-        stopBotAudio(botId);
-
-        // Extract bot number from ID (bot-1 → 1)
-        const botNumber = parseInt(botId.split('-')[1]);
-
-        // Conversational phrases that make it seem like bots are talking to each other
-        const conversations = [
-            // Bot 1 phrases (initiates conversation)
-            [
-                "Hey, did you catch the sunset over the mountains yesterday?",
-                "So what do you think about the new irrigation system?",
-                "I heard there might be some storms rolling in this weekend.",
-                "You know, I've been thinking about getting some more cattle.",
-                "Have you seen the herd down by the south pasture?"
-            ],
-            // Bot 2 phrases (responds)
-            [
-                "Oh yeah, it was absolutely beautiful! The colors were incredible.",
-                "It's pretty efficient, saves a lot of time compared to the old setup.",
-                "Yeah, we should probably check the fence lines before then.",
-                "That's a good idea, the grass is really coming in strong this year.",
-                "Yeah, they looked healthy. Been grazing there all week."
-            ],
-            // Bot 3 phrases (adds commentary)
-            [
-                "Nothing beats ranch life at sunset, especially with some good music.",
-                "Progress is good. Technology makes everything easier these days.",
-                "Weather's always unpredictable out here, but that's part of it.",
-                "More cattle means more work, but more reward too.",
-                "The pastures are looking great this season, best in years."
-            ]
-        ];
-
-        // Select phrase based on bot number (cycle through phrases)
-        const phraseList = conversations[Math.min(botNumber - 1, conversations.length - 1)];
-        const phrase = phraseList[Math.floor(Math.random() * phraseList.length)];
-
-        // Calculate spatial audio volume based on distance
-        let spatialVolume = 1.0; // Default if user not positioned
-        if (myPeerId && positions[myPeerId] && bot.position) {
-            const myPos = positions[myPeerId];
-            const botPos = bot.position;
-            const distance = calculateDistance(myPos, botPos);
-            const gain = calculateGain(distance);
-            // Apply both spatial gain and bot master volume
-            spatialVolume = gain * botMasterVolume;
-        }
-
-        // Create utterance
-        const utterance = new SpeechSynthesisUtterance(phrase);
-        utterance.rate = 0.85; // Natural conversational pace
-        utterance.pitch = 0.9 + (botNumber * 0.15); // Vary pitch per bot for different voices
-        utterance.volume = spatialVolume; // Apply spatial audio volume!
-
-        utterance.onend = () => {
-            console.log(`Conversation TTS finished for ${bot.name}`);
-
-            // Check if bot is still in conversation mode
-            if (bot.audioType === 'conversation') {
-                // Wait 3-8 seconds before next phrase (natural conversation pause)
-                const pauseDuration = 3000 + Math.random() * 5000;
-                setTimeout(() => {
-                    // Double-check bot still exists and is in conversation mode
-                    if (testBots[botId] && testBots[botId].audioType === 'conversation') {
-                        playConversationTTS(botId); // Loop: play another phrase
-                    }
-                }, pauseDuration);
-            }
-
-            draw();
-        };
-
-        utterance.onerror = (e) => {
-            console.error(`Conversation TTS error for ${bot.name}:`, e);
-            // On error, try again after delay if still in conversation mode
-            if (bot.audioType === 'conversation') {
-                setTimeout(() => {
-                    if (testBots[botId] && testBots[botId].audioType === 'conversation') {
-                        playConversationTTS(botId);
-                    }
-                }, 5000);
-            }
-        };
-
-        // Speak
-        speechSynthesis.speak(utterance);
-
-        console.log(`Conversation TTS started for ${bot.name}: "${phrase}"`);
-    }
-
-    // Play external MP3 file for bot
-    async function playExternalAudio(botId, audioFile) {
-        const bot = testBots[botId];
-        if (!bot || !audioContext) {
-            console.error(`Cannot play audio: audioContext=${!!audioContext}, bot=${!!bot}`);
-            return;
-        }
-
-        // Stop current audio
-        stopBotAudio(botId);
-
-        // Ensure AudioContext is running
-        if (audioContext.state === 'suspended') {
-            await audioContext.resume();
-        }
-
-        try {
-            // Fetch and decode the MP3 file
-            console.log(`Loading ${audioFile} for ${bot.name}...`);
-            const response = await fetch(audioFile);
-            const arrayBuffer = await response.arrayBuffer();
-            const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-
-            // Create buffer source
-            const source = audioContext.createBufferSource();
-            source.buffer = audioBuffer;
-            source.loop = true; // Loop the music
-
-            // Create analyzer for speaking detection
-            const analyzer = audioContext.createAnalyser();
-            analyzer.fftSize = 256;
-            analyzer.smoothingTimeConstant = 0.8;
-
-            // Create gain node for spatial audio
-            const gainNode = audioContext.createGain();
-            gainNode.gain.value = botMasterVolume; // Use master volume setting
-
-            // Connect: source → analyzer → gain → destination
-            source.connect(analyzer);
-            analyzer.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-
-            // Store references
-            bot.audioSource = source;
-            bot.gainNode = gainNode;
-            bot.analyzerNode = analyzer;
-            gainNodes[botId] = gainNode;
-            analyzerNodes[botId] = analyzer;
-
-            // Start playback
-            source.start(0);
-
-            console.log(`Playing ${audioFile} for ${bot.name}`);
-
-            // Update spatial audio
-            updateSpatialAudio();
-        } catch (error) {
-            console.error(`Error loading audio for ${bot.name}:`, error);
-            updateStatus(`Failed to load ${audioFile}`);
-        }
-    }
-
-    // Start test mode countdown timer
-    function startTestTimer(durationSeconds) {
-        const endTime = Date.now() + (durationSeconds * 1000);
-
-        testTimerInterval = setInterval(() => {
-            const remaining = Math.max(0, endTime - Date.now());
-            const seconds = Math.floor(remaining / 1000);
-            const minutes = Math.floor(seconds / 60);
-            const secs = seconds % 60;
-
-            testTimerValue.textContent = `${minutes}:${secs.toString().padStart(2, '0')}`;
-
-            if (remaining <= 0) {
-                clearInterval(testTimerInterval);
-                testTimerInterval = null;
-                endTestMode();
-            }
-        }, 100); // Update 10 times/second for smooth countdown
-    }
-
-    // End test mode (timer expired)
-    function endTestMode() {
-        console.log('Test mode timer expired, fading out...');
-
-        // Fade out all bot audio over 2 seconds
-        Object.values(testBots).forEach(bot => {
-            if (bot.gainNode && bot.audioType !== 'silence') {
-                const currentGain = bot.gainNode.gain.value;
-                bot.gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 2);
-
-                // After fade, stop audio and reset to silence
-                setTimeout(() => {
-                    stopBotAudio(bot.id);
-                    bot.audioType = 'silence';
-                    draw();
-                }, 2100);
-            }
-        });
-
-        updateStatus('Test complete (audio fading out...)');
-
-        // Bots remain visible but silent
-        // User can click "Stop Test" to remove them
-    }
-
-    function stopTestMode() {
-        console.log('Stopping test mode');
-
-        // Stop timer
-        if (testTimerInterval) {
-            clearInterval(testTimerInterval);
-            testTimerInterval = null;
-        }
-
-        // Remove all bots
-        removeTestBots();
-
-        // Update state
-        testModeState.active = false;
-        testModeState.hostPeerId = null;
-
-        // Update UI
-        startTestBtn.style.display = 'inline-block';
-        stopTestBtn.style.display = 'none';
-        testTimer.style.display = 'none';
-        testModeStatus.style.display = 'none';
-        demoModeStatus.style.display = 'none';
-
-        // Broadcast stop to others
-        broadcastTestModeStop();
-
-        updateStatus('Test mode stopped');
-        draw();
-    }
-
-    // Broadcast test mode start to all peers
-    function broadcastTestModeStart() {
-        if (!currentRoom) return;
-
-        const message = {
-            type: 'test_mode',
-            action: 'start',
-            hostPeerId: myPeerId,
-            numBots: testModeState.numBots,
-            duration: testModeState.duration,
-            movementMode: testModeState.movementMode,
-            bots: Object.values(testBots).map(bot => ({
-                id: bot.id,
-                position: bot.position,
-                audioType: bot.audioType,
-                pattern: bot.pattern
-            }))
-        };
-
-        // Broadcast to all connections
-        Object.values(connections).forEach(conn => {
-            if (conn.conn && conn.conn.open) {
-                conn.conn.send(message);
-            }
-        });
-
-        console.log('Broadcast test mode start:', message);
-    }
-
-    // Broadcast test mode stop
-    function broadcastTestModeStop() {
-        if (!currentRoom) return;
-
-        const message = {
-            type: 'test_mode',
-            action: 'stop',
-            hostPeerId: myPeerId
-        };
-
-        Object.values(connections).forEach(conn => {
-            if (conn.conn && conn.conn.open) {
-                conn.conn.send(message);
-            }
-        });
-
-        console.log('Broadcast test mode stop');
-    }
-
-    // Update bot positions based on movement patterns
-    function updateTestBots() {
-        if (!testModeState.active || testModeState.movementMode !== 'patterns') return;
-
-        const time = Date.now() / 1000;
-        let positionsChanged = false;
-
-        Object.values(testBots).forEach(bot => {
-            if (bot.isDragging) return;
-
-            const oldX = bot.position.x;
-            const oldY = bot.position.y;
-
-            const center = bot.patternCenter;
-
-            switch (bot.pattern) {
-                case 'circle':
-                    bot.position.x = center.x + 100 * Math.cos(time * Math.PI / 10);
-                    bot.position.y = center.y + 100 * Math.sin(time * Math.PI / 10);
-                    break;
-                case 'figure8':
-                    bot.position.x = center.x + 150 * Math.sin(time * Math.PI / 10);
-                    bot.position.y = center.y + 75 * Math.sin(time * Math.PI / 5);
-                    break;
-                case 'linear':
-                    bot.position.x = center.x + 150 * Math.sin(time * Math.PI / 10);
-                    bot.position.y = center.y;
-                    break;
-            }
-
-            bot.position.x = Math.max(20, Math.min(canvas.width - 20, bot.position.x));
-            bot.position.y = Math.max(20, Math.min(canvas.height - 20, bot.position.y));
-
-            if (Math.abs(bot.position.x - oldX) > 1 || Math.abs(bot.position.y - oldY) > 1) {
-                positionsChanged = true;
-                positions[bot.id] = bot.position;
-            }
-        });
-
-        // Broadcast position updates (throttled to ~10/second)
-        if (positionsChanged && myPeerId === testModeState.hostPeerId) {
-            const now = Date.now();
-            if (!updateTestBots.lastBroadcast || now - updateTestBots.lastBroadcast > 100) {
-                broadcastBotPositions();
-                updateTestBots.lastBroadcast = now;
-            }
-        }
-
-        if (positionsChanged) {
-            updateSpatialAudio();
-        }
-    }
-
-    // Broadcast bot positions to all peers
-    function broadcastBotPositions() {
-        if (!currentRoom || !testModeState.active) return;
-
-        const message = {
-            type: 'bot_positions',
-            bots: Object.values(testBots).map(bot => ({
-                id: bot.id,
-                x: Math.round(bot.position.x),
-                y: Math.round(bot.position.y)
-            }))
-        };
-
-        Object.values(connections).forEach(conn => {
-            if (conn.conn && conn.conn.open) {
-                conn.conn.send(message);
-            }
-        });
-    }
-
-    // Broadcast single bot state change
-    function broadcastBotState(botId) {
-        const bot = testBots[botId];
-        if (!bot || !currentRoom) return;
-
-        const message = {
-            type: 'bot_state',
-            botId: botId,
-            position: {
-                x: Math.round(bot.position.x),
-                y: Math.round(bot.position.y)
-            },
-            audioType: bot.audioType,
-            timestamp: Date.now()
-        };
-
-        Object.values(connections).forEach(conn => {
-            if (conn.conn && conn.conn.open) {
-                conn.conn.send(message);
-            }
-        });
-
-        console.log('Broadcast bot state:', message);
-    }
-
-    // ========== Drawing Functions ==========
-
-    // Draw the bar space
-    function draw() {
-        // Clear canvas
-        ctx.fillStyle = '#2a2a2a';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        // Draw all participants (excluding bots)
-        Object.keys(positions).forEach(peerId => {
-            // Skip bots - they'll be rendered separately
-            if (testBots[peerId]) return;
-
-            const pos = positions[peerId];
-            const isMe = peerId === myPeerId;
-            const isSpeaking = speakingStates[peerId];
-
-            // Draw pulsing ring if speaking
-            if (isSpeaking) {
-                const time = Date.now();
-                const pulseScale = 1.0 + 0.3 * Math.abs(Math.sin(time / 300));
-                const ringRadius = 30 * pulseScale;
-
-                ctx.beginPath();
-                ctx.arc(pos.x, pos.y, ringRadius, 0, Math.PI * 2);
-                ctx.strokeStyle = isMe ? '#4a9effaa' : '#ff9e4aaa';
-                ctx.lineWidth = 4;
-                ctx.stroke();
-            }
-
-            // Draw circle for user
-            ctx.beginPath();
-            ctx.arc(pos.x, pos.y, 20, 0, Math.PI * 2);
-            ctx.fillStyle = isMe ? '#4a9eff' : '#ff9e4a';
-            ctx.fill();
-            ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-
-            // Draw label
-            ctx.fillStyle = '#ffffff';
-            ctx.font = '12px monospace';
-            ctx.textAlign = 'center';
-            const label = isMe ? 'You' : peerId.substring(0, 6);
-            ctx.fillText(label, pos.x, pos.y - 30);
-        });
-
-        // Draw hearing range circle around me
-        if (myPeerId && positions[myPeerId]) {
-            const pos = positions[myPeerId];
-            ctx.beginPath();
-            ctx.arc(pos.x, pos.y, maxHearingRange, 0, Math.PI * 2);
-            ctx.strokeStyle = '#4a9eff44';
-            ctx.lineWidth = 1;
-            ctx.stroke();
-        }
-
-        // Draw test bots
-        Object.values(testBots).forEach(bot => {
-            const pos = bot.position;
-            const isSpeaking = speakingStates[bot.id];
-
-            // Speaking indicator (pulsing ring)
-            if (isSpeaking) {
-                const time = Date.now();
-                const pulseScale = 1.0 + 0.3 * Math.abs(Math.sin(time / 300));
-                const ringRadius = 30 * pulseScale;
-
-                ctx.beginPath();
-                ctx.arc(pos.x, pos.y, ringRadius, 0, Math.PI * 2);
-                ctx.strokeStyle = '#888888aa'; // Gray, semi-transparent
-                ctx.lineWidth = 4;
-                ctx.stroke();
-            }
-
-            // Bot circle (gray)
-            ctx.beginPath();
-            ctx.arc(pos.x, pos.y, 20, 0, Math.PI * 2);
-            ctx.fillStyle = '#888888';
-            ctx.fill();
-            ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-
-            // Bot label (above)
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 11px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText(bot.name, pos.x, pos.y - 28);
-
-            // Audio type emoji indicator (below bot)
-            if (bot.audioType !== 'silence') {
-                let emoji = '';
-                switch(bot.audioType) {
-                    case 'marley1':
-                    case 'marley2':
-                    case 'marley3':
-                        emoji = '🎸'; // Guitar for music
-                        break;
-                    case 'conversation':
-                        emoji = '💬'; // Speech bubble for conversation
-                        break;
-                }
-
-                if (emoji) {
-                    ctx.font = '20px sans-serif'; // Larger for visibility
-                    ctx.fillText(emoji, pos.x, pos.y + 38);
-                }
-            }
-        });
-    }
-
-    // Broadcast my position to all peers
-    function broadcastPosition() {
-        Object.keys(connections).forEach(peerId => {
-            const conn = connections[peerId]?.conn;
-            if (conn && conn.open) {
-                conn.send({
-                    type: 'position',
-                    peerId: myPeerId,
-                    x: myPosition.x,
-                    y: myPosition.y
-                });
-            }
-        });
-    }
-
-    // Detect if audio is being produced
-    function detectSpeaking(peerId) {
-        const analyzer = analyzerNodes[peerId];
-        if (!analyzer) return false;
-
-        const dataArray = new Uint8Array(analyzer.frequencyBinCount);
-        analyzer.getByteFrequencyData(dataArray);
-
-        // Calculate RMS (root mean square) volume
-        let sumSquares = 0;
-        for (let i = 0; i < dataArray.length; i++) {
-            const normalized = dataArray[i] / 255.0;
-            sumSquares += normalized * normalized;
-        }
-        const rms = Math.sqrt(sumSquares / dataArray.length);
-
-        // Speaking threshold
-        const threshold = 0.02;
-        return rms > threshold;
-    }
-
-    // Update speaking states for all peers
-    function updateSpeakingStates() {
-        Object.keys(analyzerNodes).forEach(peerId => {
-            speakingStates[peerId] = detectSpeaking(peerId);
-        });
-    }
-
-    // Check volume levels and calculate auto-comfort movement
-    function updateAutoComfortMovement() {
-        if (!autoComfortEnabled || !myPeerId || !positions[myPeerId]) {
-            comfortMoveDirection = null;
-            return;
-        }
-
-        // Check if auto-comfort is paused due to manual movement
-        if (Date.now() < comfortPausedUntil) {
-            comfortMoveDirection = null;
-            return;
-        }
-
-        const myPos = positions[myPeerId];
-        let loudestSource = null;
-        let loudestRMS = 0;
-
-        // Check all audio sources (peers and bots)
-        Object.keys(analyzerNodes).forEach(peerId => {
-            const analyzer = analyzerNodes[peerId];
-            if (!analyzer || peerId === myPeerId) return;
-
-            // Get position of this audio source
-            const sourcePos = positions[peerId];
-            if (!sourcePos) return;
-
-            // Calculate RMS volume
-            const dataArray = new Uint8Array(analyzer.frequencyBinCount);
-            analyzer.getByteFrequencyData(dataArray);
-
-            let sumSquares = 0;
-            for (let i = 0; i < dataArray.length; i++) {
-                const normalized = dataArray[i] / 255.0;
-                sumSquares += normalized * normalized;
-            }
-            const rms = Math.sqrt(sumSquares / dataArray.length);
-
-            // Check if this source exceeds comfort threshold
-            if (rms > comfortThreshold && rms > loudestRMS) {
-                loudestRMS = rms;
-                loudestSource = sourcePos;
-            }
-        });
-
-        // Calculate movement direction away from loudest source
-        if (loudestSource) {
-            const dx = myPos.x - loudestSource.x;
-            const dy = myPos.y - loudestSource.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-
-            if (distance > 0) {
-                // Normalize direction vector
-                comfortMoveDirection = {
-                    x: dx / distance,
-                    y: dy / distance
-                };
-            }
-        } else {
-            comfortMoveDirection = null;
-        }
-    }
-
-    // Apply auto-comfort movement
-    function applyAutoComfortMovement() {
-        if (!comfortMoveDirection || !myPeerId || !positions[myPeerId]) return;
-
-        const baseSpeed = 2; // pixels per frame
-        const speed = baseSpeed * comfortSpeed;
-
-        const newX = myPosition.x + (comfortMoveDirection.x * speed);
-        const newY = myPosition.y + (comfortMoveDirection.y * speed);
-
-        // Keep within canvas bounds
-        myPosition.x = Math.max(20, Math.min(canvas.width - 20, newX));
-        myPosition.y = Math.max(20, Math.min(canvas.height - 20, newY));
-
-        positions[myPeerId] = myPosition;
-
-        // Throttle position broadcasts (only every 10 frames)
-        if (!applyAutoComfortMovement.frameCount) applyAutoComfortMovement.frameCount = 0;
-        applyAutoComfortMovement.frameCount++;
-
-        if (applyAutoComfortMovement.frameCount % 10 === 0) {
-            broadcastPosition();
-            updateSpatialAudio();
-        }
-    }
-
-    // Animation loop
-    function animate() {
-        handleKeyboardMovement();
-        updateSpeakingStates();
-        updateAutoComfortMovement(); // Check for loud audio sources
-        applyAutoComfortMovement(); // Move away if needed
-        updateTestBots();
-        draw();
-
-        // Update status with user count and nearest peer info
-        if (myPeerId && currentRoom) {
-            const userCount = Object.keys(participants).length;
-            const nearestInfo = getNearestPeerInfo();
-
-            if (nearestInfo) {
-                updateStatus(
-                    `${userCount} user${userCount !== 1 ? 's' : ''} in room | ` +
-                    `Nearest: ${nearestInfo.peerId} (${nearestInfo.distance}px, ${nearestInfo.volume}% volume)`
-                );
-            } else {
-                updateStatus(`${userCount} user${userCount !== 1 ? 's' : ''} in room | Waiting for others to join...`);
-            }
-        }
-
-        requestAnimationFrame(animate);
-    }
-    animate();
-
-    function updateStatus(message) {
-        statusDiv.textContent = `Status: ${message}`;
-        console.log(message);
-    }
-
-    function updateConnectionState(state, color) {
-        connectionStateEl.textContent = state;
-        connectionStateEl.style.background = color;
-    }
-
-    // Get nearest peer info for status
-    function getNearestPeerInfo() {
-        if (!myPeerId || !positions[myPeerId]) return null;
-
-        const myPos = positions[myPeerId];
-        let nearest = null;
-        let minDistance = Infinity;
-
-        Object.keys(positions).forEach(peerId => {
-            if (peerId !== myPeerId && positions[peerId]) {
-                const distance = calculateDistance(myPos, positions[peerId]);
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    nearest = peerId;
-                }
-            }
-        });
-
-        if (nearest) {
-            const gain = calculateGain(minDistance);
-            return {
-                peerId: nearest.substring(0, 6),
-                distance: Math.round(minDistance),
-                volume: Math.round(gain * 100)
-            };
-        }
-        return null;
-    }
-
-    function updateParticipantList() {
-        participantListEl.innerHTML = '';
-        Object.keys(participants).forEach(peerId => {
-            const li = document.createElement('li');
-            li.textContent = `${participants[peerId].name || peerId.substring(0, 8)}`;
-            li.style.padding = '5px';
-            participantListEl.appendChild(li);
-        });
-    }
-
-    // Join room
-    joinRoomBtn.addEventListener('click', async () => {
-        const roomCode = roomCodeInput.value.trim();
-        if (!roomCode) {
-            updateStatus('Error: Please enter a room code');
-            updateConnectionState('Not Connected', '#cc0000');
-            return;
-        }
-
-        try {
-            // Get microphone
-            updateStatus('Requesting microphone access...');
-            updateConnectionState('Connecting...', '#ff9e4a');
-            localStream = await navigator.mediaDevices.getUserMedia({
-                audio: true,
-                video: false
-            });
-            updateStatus('Microphone access granted');
-            updateConnectionState('Setting up...', '#ff9e4a');
-
-            // Create audio context for spatial audio
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            updateStatus('Audio context created');
-
-            // Create analyzer for local microphone
-            const localSource = audioContext.createMediaStreamSource(localStream);
-            const localAnalyzer = audioContext.createAnalyser();
-            localAnalyzer.fftSize = 256;
-            localAnalyzer.smoothingTimeConstant = 0.8;
-            localSource.connect(localAnalyzer);
-            // Note: Don't connect to destination (would cause echo)
-
-            // Create peer with room code as ID prefix
-            const timestamp = Date.now().toString(36);
-            const random = Math.random().toString(36).substring(2, 6);
-            const peerId = `${roomCode}-${timestamp}-${random}`;
-
-            peer = new Peer(peerId);
-
-            peer.on('open', (id) => {
-                myPeerId = id;
-                currentRoom = roomCode;
-                updateConnectionState('Connected', '#00cc00');
-                roomDisplayEl.style.display = 'inline';
-                roomNameEl.textContent = roomCode;
-                updateStatus(`Joined room: ${roomCode}`);
-
-                // Initialize my position
-                positions[myPeerId] = myPosition;
-
-                // Store local analyzer
-                analyzerNodes[myPeerId] = localAnalyzer;
-
-                // Add self to participants
-                participants[myPeerId] = { name: 'Me' };
-                updateParticipantList();
-
-                // Try to connect to room host
-                const hostId = roomCode; // Host uses room code as peer ID
-                if (id !== hostId) {
-                    connectToHost(hostId);
-                } else {
-                    updateStatus(`Created room as host: ${roomCode}`);
-                }
-
-                joinRoomBtn.disabled = true;
-                roomCodeInput.disabled = true;
-                muteBtnEl.disabled = false;
-            });
-
-            peer.on('error', (err) => {
-                if (err.type === 'unavailable-id') {
-                    // Room host exists, that's fine
-                    console.log('Host peer ID taken, joining as participant');
-                } else if (err.type === 'peer-unavailable') {
-                    updateStatus(`Error: Cannot connect to peer - they may have left the room`);
-                    updateConnectionState('Connection Error', '#cc6600');
-                    console.error('Peer unavailable:', err);
-                } else if (err.type === 'network') {
-                    updateStatus(`Error: Network connection failed - check your internet or firewall`);
-                    updateConnectionState('Network Error', '#cc0000');
-                    console.error('Network error:', err);
-                } else if (err.type === 'server-error') {
-                    updateStatus(`Error: Signaling server error - try again in a moment`);
-                    updateConnectionState('Server Error', '#cc0000');
-                    console.error('Server error:', err);
-                } else {
-                    updateStatus(`Error: ${err.type} - ${err.message}`);
-                    updateConnectionState('Error', '#cc0000');
-                    console.error('Peer error:', err);
-                }
-            });
-
-            // Handle incoming calls
-            peer.on('call', (call) => {
-                console.log(`Incoming call from ${call.peer}`);
-                call.answer(localStream);
-
-                call.on('stream', (remoteStream) => {
-                    console.log(`Receiving audio from ${call.peer}`);
-                    playAudio(remoteStream, call.peer);
-                });
-
-                call.on('close', () => {
-                    console.log(`Call closed with ${call.peer}`);
-                    if (gainNodes[call.peer]) {
-                        gainNodes[call.peer].disconnect();
-                        delete gainNodes[call.peer];
-                    }
-                    if (analyzerNodes[call.peer]) {
-                        analyzerNodes[call.peer].disconnect();
-                        delete analyzerNodes[call.peer];
-                    }
-                    delete speakingStates[call.peer];
-                    console.log(`Cleaned up audio nodes for ${call.peer}`);
-                });
-
-                if (!connections[call.peer]) {
-                    connections[call.peer] = {};
-                }
-                connections[call.peer].call = call;
-            });
-
-            // Handle incoming data connections
-            peer.on('connection', (conn) => {
-                setupDataConnection(conn);
-            });
-
-        } catch (err) {
-            if (err.name === 'NotAllowedError') {
-                updateStatus(`Error: Microphone access denied - please allow microphone in browser settings`);
-                updateConnectionState('Mic Denied', '#cc0000');
-            } else if (err.name === 'NotFoundError') {
-                updateStatus(`Error: No microphone found - please connect a microphone`);
-                updateConnectionState('No Mic', '#cc0000');
-            } else if (err.name === 'NotReadableError') {
-                updateStatus(`Error: Microphone in use by another application`);
-                updateConnectionState('Mic Busy', '#cc0000');
-            } else {
-                updateStatus(`Error: ${err.message}`);
-                updateConnectionState('Error', '#cc0000');
-            }
-            console.error('Setup error:', err);
-        }
-    });
-
-    // Connect to room host
-    function connectToHost(hostId) {
-        updateStatus(`Connecting to room host...`);
-
-        // Open data connection to host
-        const conn = peer.connect(hostId);
-        setupDataConnection(conn);
-
-        // Call host for audio
-        const call = peer.call(hostId, localStream);
-        call.on('stream', (remoteStream) => {
-            playAudio(remoteStream, hostId);
-        });
-
-        call.on('close', () => {
-            console.log(`Call closed with ${hostId}`);
-            if (gainNodes[hostId]) {
-                gainNodes[hostId].disconnect();
-                delete gainNodes[hostId];
-            }
-            if (analyzerNodes[hostId]) {
-                analyzerNodes[hostId].disconnect();
-                delete analyzerNodes[hostId];
-            }
-            delete speakingStates[hostId];
-            console.log(`Cleaned up audio nodes for ${hostId}`);
-        });
-
-        connections[hostId] = { call, conn };
-    }
-
-    // Setup data connection for participant discovery
-    function setupDataConnection(conn) {
-        conn.on('open', () => {
-            console.log(`Data connection opened with ${conn.peer}`);
-
-            // Send hello with my peer ID
-            conn.send({
-                type: 'hello',
-                peerId: myPeerId,
-                room: currentRoom
-            });
-
-            // Send current position
-            if (myPosition) {
-                conn.send({
-                    type: 'position',
-                    peerId: myPeerId,
-                    x: myPosition.x,
-                    y: myPosition.y
-                });
-            }
-
-            if (!connections[conn.peer]) {
-                connections[conn.peer] = {};
-            }
-            connections[conn.peer].conn = conn;
-
-            // Add to participants
-            participants[conn.peer] = { name: conn.peer.substring(0, 8) };
-            updateParticipantList();
-        });
-
-        conn.on('data', (data) => {
-            handleDataMessage(data, conn.peer);
-        });
-
-        conn.on('close', () => {
-            console.log(`Data connection closed with ${conn.peer}`);
-            delete connections[conn.peer];
-            delete participants[conn.peer];
-            delete positions[conn.peer];
-
-            // Clean up audio nodes
-            if (gainNodes[conn.peer]) {
-                gainNodes[conn.peer].disconnect();
-                delete gainNodes[conn.peer];
-            }
-            if (analyzerNodes[conn.peer]) {
-                analyzerNodes[conn.peer].disconnect();
-                delete analyzerNodes[conn.peer];
-            }
-            delete speakingStates[conn.peer];
-            console.log(`Cleaned up audio nodes for ${conn.peer}`);
-
-            // Check if test mode host disconnected
-            if (testModeState.active && conn.peer === testModeState.hostPeerId) {
-                console.log('Test mode host disconnected, ending test mode');
-
-                // Stop timer
-                if (testTimerInterval) {
-                    clearInterval(testTimerInterval);
-                    testTimerInterval = null;
-                }
-
-                // Remove bots
-                removeTestBots();
-
-                // Update state
-                testModeState.active = false;
-                testModeState.hostPeerId = null;
-
-                // Update UI
-                testTimer.style.display = 'none';
-                demoModeStatus.style.display = 'none';
-                testModePanel.style.display = 'none';
-
-                updateStatus('Demo mode ended (host disconnected)');
-                draw();
-            }
-
-            updateParticipantList();
-
-            // Update status if we're alone now
-            if (Object.keys(participants).length === 1) {
-                updateStatus(`1 user in room | Waiting for others to join...`);
-            }
-        });
-    }
-
-    // Handle incoming data messages
-    function handleDataMessage(data, fromPeer) {
-        console.log('Received data:', data, 'from:', fromPeer);
-
-        if (data.type === 'hello') {
-            // Someone joined, send them current participant list
-            const conn = connections[fromPeer]?.conn;
-            if (conn) {
-                conn.send({
-                    type: 'participants',
-                    list: Object.keys(participants)
-                });
-            }
-
-            // If I'm host, broadcast new participant to others
-            if (myPeerId === currentRoom) {
-                Object.keys(connections).forEach(peerId => {
-                    if (peerId !== fromPeer && connections[peerId].conn) {
-                        connections[peerId].conn.send({
-                            type: 'new_participant',
-                            peerId: data.peerId
-                        });
-                    }
-                });
-            }
-        } else if (data.type === 'participants') {
-            // Received participant list, connect to each
-            data.list.forEach(peerId => {
-                if (peerId !== myPeerId && !connections[peerId]) {
-                    connectToPeer(peerId);
-                }
-            });
-        } else if (data.type === 'new_participant') {
-            // New participant joined, connect to them
-            if (data.peerId !== myPeerId && !connections[data.peerId]) {
-                connectToPeer(data.peerId);
-            }
-        } else if (data.type === 'position') {
-            // Update peer position
-            positions[data.peerId] = { x: data.x, y: data.y };
-            // Update spatial audio when peer moves
-            updateSpatialAudio();
-        } else if (data.type === 'test_mode' && data.action === 'start') {
-            handleTestModeStart(data, fromPeer);
-        } else if (data.type === 'test_mode' && data.action === 'stop') {
-            handleTestModeStop(data, fromPeer);
-        } else if (data.type === 'bot_state') {
-            handleBotStateUpdate(data);
-        } else if (data.type === 'bot_positions') {
-            handleBotPositionsUpdate(data);
-        }
-    }
-
-    // Handle receiving test mode start from host
-    function handleTestModeStart(data, hostPeerId) {
-        console.log('Received test mode start from', hostPeerId);
-
-        // Update state
-        testModeState.active = true;
-        testModeState.hostPeerId = hostPeerId;
-        testModeState.numBots = data.numBots;
-        testModeState.duration = data.duration;
-        testModeState.movementMode = data.movementMode;
-        testModeState.startTime = Date.now();
-
-        // Spawn bots with received state
-        testBots = {};
-        data.bots.forEach((botData, index) => {
-            const botNumber = index + 1;
-            const bot = createBot(botData.id, botNumber, botData.position);
-            bot.audioType = botData.audioType;
-            bot.pattern = botData.pattern;
-            testBots[botData.id] = bot;
-            positions[botData.id] = bot.position;
-        });
-
-        // Update UI for demo mode (non-host)
-        testModePanel.style.display = 'block';
-        startTestBtn.style.display = 'none';
-        stopTestBtn.style.display = 'none'; // Non-host can't stop
-        testTimer.style.display = 'block';
-        demoModeStatus.style.display = 'block';
-        testModeStatus.style.display = 'none';
-
-        const hostName = participants[hostPeerId]?.name || 'Unknown';
-        demoHostName.textContent = hostName;
-
-        // Start timer
-        startTestTimer(data.duration);
-
-        updateStatus(`Demo mode started by ${hostName}`);
-        draw();
-    }
-
-    // Handle receiving test mode stop from host
-    function handleTestModeStop(data, hostPeerId) {
-        console.log('Received test mode stop from', hostPeerId);
-
-        // Remove bots
-        removeTestBots();
-
-        // Stop timer
-        if (testTimerInterval) {
-            clearInterval(testTimerInterval);
-            testTimerInterval = null;
-        }
-
-        // Update state
-        testModeState.active = false;
-        testModeState.hostPeerId = null;
-
-        // Update UI
-        testTimer.style.display = 'none';
-        demoModeStatus.style.display = 'none';
-        testModePanel.style.display = 'none';
-
-        updateStatus('Demo mode ended');
-        draw();
-    }
-
-    // Handle bot state update (audio type or position)
-    function handleBotStateUpdate(data) {
-        const bot = testBots[data.botId];
-        if (!bot) return;
-
-        console.log(`Bot state update: ${data.botId} → ${data.audioType}`);
-
-        // Update position
-        if (data.position) {
-            bot.position.x = data.position.x;
-            bot.position.y = data.position.y;
-            positions[data.botId] = bot.position;
-        }
-
-        // Update audio type if changed
-        if (data.audioType && data.audioType !== bot.audioType) {
-            bot.audioType = data.audioType;
-
-            // Play corresponding audio
-            switch(data.audioType) {
-                case 'silence':
-                    stopBotAudio(data.botId);
-                    break;
-                case 'speech':
-                    playEmbeddedAudio(data.botId, 'speech');
-                    break;
-                case 'tts':
-                    playBotTTS(data.botId);
-                    break;
-                case 'ambient':
-                    playEmbeddedAudio(data.botId, 'ambient');
-                    break;
-                case 'music':
-                    playEmbeddedAudio(data.botId, 'music');
-                    break;
-                case 'sfx':
-                    playEmbeddedAudio(data.botId, 'sfx');
-                    break;
-            }
-        }
-
-        updateSpatialAudio();
-        draw();
-    }
-
-    // Handle bot positions update (for pattern movement)
-    function handleBotPositionsUpdate(data) {
-        data.bots.forEach(botData => {
-            const bot = testBots[botData.id];
-            if (bot && !bot.isDragging) {
-                bot.position.x = botData.x;
-                bot.position.y = botData.y;
-                positions[botData.id] = bot.position;
-            }
-        });
-
-        updateSpatialAudio();
-    }
-
-    // Connect to a specific peer
-    function connectToPeer(peerId) {
-        console.log(`Connecting to peer: ${peerId}`);
-
-        // Data connection
-        const conn = peer.connect(peerId);
-        setupDataConnection(conn);
-
-        // Audio call
-        const call = peer.call(peerId, localStream);
-        call.on('stream', (remoteStream) => {
-            playAudio(remoteStream, peerId);
-        });
-
-        connections[peerId] = { call, conn };
-    }
-
-    // Play audio with spatial processing
-    async function playAudio(stream, peerId) {
-        if (!audioContext) {
-            console.error('Audio context not initialized');
-            return;
-        }
-
-        // Check if audio already playing for this peer
-        if (gainNodes[peerId]) {
-            console.warn(`Audio already playing for ${peerId}, cleaning up old nodes`);
-            gainNodes[peerId].disconnect();
-            delete gainNodes[peerId];
-        }
-        if (analyzerNodes[peerId]) {
-            analyzerNodes[peerId].disconnect();
-            delete analyzerNodes[peerId];
-        }
-
-        // Resume audio context if suspended
-        if (audioContext.state === 'suspended') {
-            try {
-                await audioContext.resume();
-                console.log('AudioContext resumed');
-            } catch (err) {
-                console.error('Failed to resume AudioContext:', err);
-            }
-        }
-
-        try {
-            // Create audio source from remote stream
-            const source = audioContext.createMediaStreamSource(stream);
-
-            // Create analyzer for speaking detection
-            const analyzer = audioContext.createAnalyser();
-            analyzer.fftSize = 256;
-            analyzer.smoothingTimeConstant = 0.8;
-
-            // Create gain node for volume control
-            const gainNode = audioContext.createGain();
-            gainNode.gain.value = 1.0; // Start at full volume
-
-            // Connect: source -> analyzer -> gain -> destination
-            source.connect(analyzer);
-            analyzer.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-
-            // Store nodes
-            gainNodes[peerId] = gainNode;
-            analyzerNodes[peerId] = analyzer;
-
-            console.log(`Audio connected for ${peerId}`);
-
-            // Initialize their position if not set
-            if (!positions[peerId]) {
-                positions[peerId] = {
-                    x: Math.random() * canvas.width,
-                    y: Math.random() * canvas.height
-                };
-            }
-
-            // Update volume based on distance
-            updateSpatialAudio();
-
-        } catch (err) {
-            console.error('Error setting up spatial audio:', err);
-            // Handle autoplay policy
-            updateStatus('Click anywhere to enable audio');
-            document.body.addEventListener('click', () => {
-                if (audioContext.state === 'suspended') {
-                    audioContext.resume();
-                }
-            }, { once: true });
-        }
-    }
-
-    // Calculate distance between two points
-    function calculateDistance(pos1, pos2) {
-        const dx = pos1.x - pos2.x;
-        const dy = pos1.y - pos2.y;
-        return Math.sqrt(dx * dx + dy * dy);
-    }
-
-    // Calculate gain (volume) based on distance
-    function calculateGain(distance) {
-        const minGain = 0.0;
-        const maxGain = 1.0;
-
-        // Check if out of hearing range
-        if (distance >= maxHearingRange) {
-            return minGain;
-        }
-
-        // Calculate normalized distance (0 to 1)
-        const normalizedDistance = distance / maxHearingRange;
-
-        // Apply falloff curve
-        // falloffCurve = 1.0: linear falloff
-        // falloffCurve > 1.0: exponential falloff (steeper, sounds drop off faster)
-        // falloffCurve < 1.0: logarithmic falloff (gentler, sounds carry further)
-        const falloff = Math.pow(normalizedDistance, falloffCurve);
-
-        return maxGain - falloff;
-    }
-
-    // Update spatial audio for all peers
-    function updateSpatialAudio() {
-        if (!myPeerId || !positions[myPeerId]) return;
-
-        const myPos = positions[myPeerId];
-
-        Object.keys(gainNodes).forEach(peerId => {
-            if (positions[peerId]) {
-                const peerPos = positions[peerId];
-                const distance = calculateDistance(myPos, peerPos);
-                const gain = calculateGain(distance);
-
-                // Apply bot master volume multiplier for bots
-                const finalGain = peerId.startsWith('bot-') ? gain * botMasterVolume : gain;
-
-                // Update gain node
-                gainNodes[peerId].gain.value = finalGain;
-            }
-        });
-    }
-
-    // Mute toggle
-    muteBtnEl.addEventListener('click', () => {
-        isMuted = !isMuted;
-        localStream.getAudioTracks().forEach(track => {
-            track.enabled = !isMuted;
-        });
-        muteBtnEl.textContent = isMuted ? 'Unmute' : 'Mute';
-        updateStatus(isMuted ? 'Muted' : 'Unmuted');
-    });
-
-    // Hearing range slider
-    hearingRangeSlider.addEventListener('input', (e) => {
-        maxHearingRange = parseInt(e.target.value);
-        hearingRangeValue.textContent = `${maxHearingRange}px`;
-        updateSpatialAudio();
-    });
-
-    // Falloff curve slider
-    falloffSlider.addEventListener('input', (e) => {
-        falloffCurve = parseFloat(e.target.value);
-        falloffValue.textContent = falloffCurve.toFixed(1);
-        updateSpatialAudio();
-    });
-    </script>
-</body>
+    <script type="module" src="/src/main.js"></script>
+  </body>
 </html>
