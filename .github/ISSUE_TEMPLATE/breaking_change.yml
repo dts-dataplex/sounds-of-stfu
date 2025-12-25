@@ -1,0 +1,183 @@
+name: Breaking Change Proposal
+description: Propose a change that modifies or removes existing functionality (requires approval per ADR-004)
+title: "[BREAKING] "
+labels: ["breaking-change", "needs-architecture-review", "needs-pm-approval"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## ⚠️ Breaking Change Review Required
+
+        Per **ADR-004**, any change that modifies existing functionality requires:
+        1. **Product Manager approval** for user impact
+        2. **Infrastructure Architect approval** for technical approach
+        3. **Migration path** or justification for removal
+
+        Do not implement until both approvals are received.
+
+  - type: textarea
+    id: current-functionality
+    attributes:
+      label: Current Functionality
+      description: Describe what exists today
+      placeholder: |
+        **Feature:** Test mode with AI bots
+        **Capabilities:**
+        - AI bots with TTS, speech, music, ambient audio
+        - Click-to-cycle audio types
+        - Drag-to-reposition
+        - Pattern movement
+        - Demo mode synchronization across users
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-change
+    attributes:
+      label: Proposed Change
+      description: What will change and why?
+      placeholder: |
+        **Change:** Replace with new Three.js + Vite demo
+        **Capabilities:**
+        - Manual PeerJS connections
+        - No AI bots, no test mode
+        - Isometric Three.js scene
+
+        **Reason:** [Justify why breaking change is necessary]
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: breaking-aspects
+    attributes:
+      label: Breaking Aspects
+      description: What specifically breaks?
+      options:
+        - label: Removes or renames public methods/functions
+        - label: Changes function signatures (parameters, return types)
+        - label: Modifies data structures used across boundaries
+        - label: Changes REST API endpoints or payloads
+        - label: Alters default configuration values
+        - label: Modifies business logic assumptions
+        - label: Removes or disables existing features
+        - label: Database schema modifications
+        - label: File format changes
+        - label: Major dependency version bumps
+
+  - type: textarea
+    id: user-impact
+    attributes:
+      label: User Impact Assessment
+      description: How does this affect users?
+      placeholder: |
+        **Affected users:** Solo testers, demo presenters, early adopters
+
+        **Impact:**
+        - ❌ Can no longer test spatial audio solo (need multiple devices)
+        - ❌ Can no longer demonstrate platform to stakeholders with bots
+        - ❌ No TTS conversation testing
+        - ❌ No pattern movement testing
+
+        **Severity:** High - Blocks solo adoption path
+    validations:
+      required: true
+
+  - type: textarea
+    id: migration-path
+    attributes:
+      label: Migration Path
+      description: How will existing functionality be preserved OR what replaces it?
+      placeholder: |
+        **Option A: Parallel Implementation**
+        - Keep old test mode in poc/
+        - Add new demo in demo/
+        - Deprecate old after transition period
+
+        **Option B: Feature Flag**
+        - Toggle between old and new
+        - Allow gradual migration
+
+        **Option C: Complete Replacement** (justify!)
+        - New approach is superior because: [Reason]
+        - Old functionality not needed because: [Reason]
+        - Users can migrate by: [Steps]
+    validations:
+      required: true
+
+  - type: dropdown
+    id: recommended-approach
+    attributes:
+      label: Recommended Approach
+      description: Which migration path do you recommend?
+      options:
+        - A - Parallel implementation (both coexist)
+        - B - Feature flag (toggle between)
+        - C - Complete replacement (justify removal)
+    validations:
+      required: true
+
+  - type: textarea
+    id: rollback-plan
+    attributes:
+      label: Rollback Plan
+      description: If this breaks production, how do we recover?
+      placeholder: |
+        **Immediate rollback:**
+        1. Revert commit: git revert [hash]
+        2. Restore from branch: [branch-name]
+
+        **Data migration rollback:**
+        1. Restore database from backup
+        2. Run rollback script: [script path]
+    validations:
+      required: true
+
+  - type: textarea
+    id: testing-plan
+    attributes:
+      label: Testing Plan
+      description: How will you verify nothing else breaks?
+      placeholder: |
+        - [ ] Unit tests for new functionality
+        - [ ] Integration tests covering old + new
+        - [ ] Backward compatibility tests (if parallel approach)
+        - [ ] User acceptance testing with affected users
+        - [ ] Performance regression testing
+
+  - type: textarea
+    id: communication-plan
+    attributes:
+      label: Communication Plan
+      description: How will users be informed?
+      placeholder: |
+        **Before merge:**
+        - GitHub discussion post with RFC
+        - Email to early adopters list
+
+        **After merge:**
+        - Release notes with migration guide
+        - CHANGELOG.md entry with BREAKING CHANGE: prefix
+        - Updated documentation
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+
+        ## Approval Checklist
+
+        **Product Manager will review:**
+        - [ ] User impact justified
+        - [ ] Migration path feasible
+        - [ ] Communication plan adequate
+        - [ ] Timing appropriate
+
+        **Infrastructure Architect will review:**
+        - [ ] Technical approach sound
+        - [ ] No non-breaking alternatives
+        - [ ] Rollback plan viable
+        - [ ] Testing plan comprehensive
+
+        **Both approvals required before implementation.**

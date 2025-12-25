@@ -1,0 +1,92 @@
+name: Bug Report
+description: Report a defect or unexpected behavior
+title: "[BUG] "
+labels: ["bug"]
+assignees: []
+
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: Clear description of what's broken
+      placeholder: When I click a bot in test mode, audio doesn't cycle to the next type
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Exact steps to trigger the bug
+      placeholder: |
+        1. Open http://localhost:5173
+        2. Click "Test Mode" button
+        3. Start test with 2 bots
+        4. Click Bot 1 (silence → should play speech sample)
+        5. Click Bot 1 again (speech → should play TTS)
+        6. Observe: Audio doesn't change
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What should happen?
+      placeholder: Audio should cycle through all 6 types (silence, speech, TTS, ambient, music, effects)
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happens?
+      placeholder: Audio stays on first type (speech sample), never advances to TTS
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      description: How bad is this bug?
+      options:
+        - Critical (blocks core functionality, no workaround)
+        - High (major feature broken, workaround exists)
+        - Medium (partial functionality broken)
+        - Low (minor issue, cosmetic)
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Where does this happen?
+      placeholder: |
+        **Browser:** Chrome 120.0.6099.109
+        **OS:** macOS Sonoma 14.2
+        **Node:** v25.2.1
+        **Branch:** main / feature/#42-test-mode
+        **Commit:** abc123def456
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Console Logs / Error Messages
+      description: Copy/paste relevant console output
+      render: shell
+      placeholder: |
+        Uncaught TypeError: Cannot read property 'cycle' of undefined
+            at handleBotClick (audio.js:145)
+            at HTMLCanvasElement.<anonymous> (main.js:89)
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Screenshots, recordings, related issues
