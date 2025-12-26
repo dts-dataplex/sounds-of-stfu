@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>Chatsubo Virtual Bar - Sounds of STFU</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Courier New', monospace;
+        background: #0a0a0a;
+        color: #44ff88;
+        overflow: hidden;
+      }
+
+      #canvas-container {
+        width: 100vw;
+        height: 100vh;
+        position: relative;
+      }
+
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      /* Info Panel */
+      #info-panel {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        background: rgba(0, 0, 0, 0.9);
+        padding: 15px;
+        border: 1px solid #44ff88;
+        font-size: 12px;
+        max-width: 300px;
+        pointer-events: none;
+      }
+
+      #info-panel h1 {
+        color: #44ff88;
+        font-size: 16px;
+        margin-bottom: 10px;
+        text-transform: uppercase;
+      }
+
+      #info-panel p {
+        margin: 5px 0;
+        line-height: 1.4;
+      }
+
+      .zone-label {
+        color: #ffaa44;
+      }
+
+      /* Control Panel */
+      #control-panel {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: rgba(0, 0, 0, 0.9);
+        padding: 15px;
+        border: 1px solid #44ff88;
+        font-size: 12px;
+        min-width: 250px;
+        pointer-events: auto;
+      }
+
+      #control-panel h2 {
+        color: #ffaa44;
+        font-size: 14px;
+        margin-bottom: 10px;
+        text-transform: uppercase;
+      }
+
+      #control-panel input,
+      #control-panel button {
+        width: 100%;
+        padding: 8px;
+        margin: 5px 0;
+        background: #1a1a1a;
+        border: 1px solid #44ff88;
+        color: #44ff88;
+        font-family: 'Courier New', monospace;
+        font-size: 11px;
+        cursor: pointer;
+      }
+
+      #control-panel input:focus {
+        outline: none;
+        border-color: #ffaa44;
+      }
+
+      #control-panel button:hover:not(:disabled) {
+        background: #2a2a2a;
+        border-color: #ffaa44;
+      }
+
+      #control-panel button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .button-group {
+        display: flex;
+        gap: 5px;
+      }
+
+      .button-group button {
+        flex: 1;
+      }
+
+      #mute-button.muted {
+        background: #4a1a1a;
+        border-color: #ff4444;
+      }
+
+      /* Peer List */
+      #peer-section {
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid #44ff88;
+      }
+
+      #peer-list {
+        list-style: none;
+        max-height: 100px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      #peer-list li {
+        padding: 2px 0;
+        font-size: 10px;
+        color: #888;
+      }
+
+      /* Connection Status */
+      #connection-section {
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid #44ff88;
+      }
+
+      #connection-status p {
+        margin: 5px 0;
+        font-size: 11px;
+        color: #888;
+      }
+
+      #connection-status span {
+        font-weight: bold;
+      }
+
+      /* Zone Movement Panel */
+      #zone-panel {
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+        background: rgba(0, 0, 0, 0.9);
+        padding: 15px;
+        border: 1px solid #44ff88;
+        font-size: 12px;
+        pointer-events: auto;
+      }
+
+      #zone-panel h2 {
+        color: #ffaa44;
+        font-size: 14px;
+        margin-bottom: 10px;
+        text-transform: uppercase;
+      }
+
+      .zone-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 5px;
+      }
+
+      .zone-button {
+        padding: 8px;
+        background: #1a1a1a;
+        border: 1px solid #44ff88;
+        color: #44ff88;
+        font-family: 'Courier New', monospace;
+        font-size: 10px;
+        cursor: pointer;
+        text-align: center;
+      }
+
+      .zone-button:hover:not(:disabled) {
+        background: #2a2a2a;
+        border-color: #ffaa44;
+      }
+
+      .zone-button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      /* Chat Panel */
+      #chat-panel {
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        background: rgba(0, 0, 0, 0.9);
+        padding: 15px;
+        border: 1px solid #44ff88;
+        font-size: 12px;
+        width: 350px;
+        pointer-events: auto;
+      }
+
+      #chat-panel h2 {
+        color: #ffaa44;
+        font-size: 14px;
+        margin-bottom: 10px;
+        text-transform: uppercase;
+      }
+
+      #messages {
+        height: 150px;
+        overflow-y: auto;
+        margin-bottom: 10px;
+        padding: 5px;
+        background: #0a0a0a;
+        border: 1px solid #333;
+      }
+
+      .message {
+        margin: 5px 0;
+        line-height: 1.4;
+        font-size: 11px;
+      }
+
+      .message.system {
+        color: #888;
+        font-style: italic;
+      }
+
+      .message strong {
+        color: #ffaa44;
+      }
+
+      #chat-input-container {
+        display: flex;
+        gap: 5px;
+      }
+
+      #chat-input {
+        flex: 1;
+        padding: 8px;
+        background: #1a1a1a;
+        border: 1px solid #44ff88;
+        color: #44ff88;
+        font-family: 'Courier New', monospace;
+        font-size: 11px;
+      }
+
+      #chat-input:focus {
+        outline: none;
+        border-color: #ffaa44;
+      }
+
+      #send-button {
+        padding: 8px 15px;
+        background: #1a1a1a;
+        border: 1px solid #44ff88;
+        color: #44ff88;
+        font-family: 'Courier New', monospace;
+        font-size: 11px;
+        cursor: pointer;
+      }
+
+      #send-button:hover:not(:disabled) {
+        background: #2a2a2a;
+        border-color: #ffaa44;
+      }
+
+      #send-button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      /* Status Bar */
+      #status {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0, 0, 0, 0.95);
+        padding: 20px 30px;
+        border: 2px solid #44ff88;
+        font-size: 14px;
+        text-align: center;
+        pointer-events: none;
+        max-width: 500px;
+        transition: opacity 0.3s ease;
+      }
+
+      #status.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      /* Heated Conversation Alert */
+      #heated-alert {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(50, 0, 0, 0.95);
+        padding: 30px;
+        border: 2px solid #ff4444;
+        font-size: 14px;
+        text-align: center;
+        display: none;
+        pointer-events: none;
+        max-width: 500px;
+      }
+
+      #heated-alert h3 {
+        color: #ff4444;
+        font-size: 18px;
+        margin-bottom: 15px;
+        text-transform: uppercase;
+      }
+
+      #heated-alert p {
+        color: #ffaa44;
+        line-height: 1.6;
+      }
+
+      /* Scrollbar styling */
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: #0a0a0a;
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: #44ff88;
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+        background: #ffaa44;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="canvas-container">
+      <canvas id="scene-canvas"></canvas>
+
+      <!-- Info Panel -->
+      <div id="info-panel">
+        <h1>// Chatsubo Virtual Bar</h1>
+        <p class="zone-label">MVP v1.0 - Core Components</p>
+        <p>✓ Spatial audio engine (wave-based falloff)</p>
+        <p>✓ Isometric 3D rendering (Three.js)</p>
+        <p>✓ P2P mesh network (PeerJS)</p>
+        <p>✓ In-browser AI (Transformers.js)</p>
+        <p style="margin-top: 10px; color: #888">48ft × 36ft · 6 zones · 10 user capacity</p>
+      </div>
+
+      <!-- Control Panel -->
+      <div id="control-panel">
+        <h2>// Connection</h2>
+        <input
+          type="text"
+          id="room-id"
+          placeholder="Room ID (default: chatsubo-main)"
+          value="chatsubo-main"
+        />
+        <div class="button-group">
+          <button id="join-button" disabled>🚪 Join Room</button>
+          <button id="leave-button" style="display: none">🚶 Leave</button>
+        </div>
+        <button id="mute-button" disabled>🎤 Mute</button>
+
+        <div id="peer-section">
+          <h2>// Peers (<span id="peer-count">0</span>)</h2>
+          <ul id="peer-list"></ul>
+        </div>
+
+        <div id="connection-section">
+          <h2>// Connection Status</h2>
+          <div id="connection-status">
+            <p>State: <span id="connection-state" style="color: #888">Not Connected</span></p>
+            <p>Latency: <span id="connection-latency" style="color: #888">N/A</span></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Zone Movement Panel -->
+      <div id="zone-panel">
+        <h2>// Move To Zone</h2>
+        <div class="zone-grid">
+          <button class="zone-button" id="move-entryway" disabled>🚪 Entryway</button>
+          <button class="zone-button" id="move-gaming" disabled>🎮 Gaming</button>
+          <button class="zone-button" id="move-bar" disabled>🍺 Bar</button>
+          <button class="zone-button" id="move-card-tables" disabled>🃏 Tables</button>
+          <button class="zone-button" id="move-firepit" disabled>🔥 Firepit</button>
+          <button class="zone-button" id="move-booth1" disabled>🛋️ Booth 1</button>
+          <button class="zone-button" id="move-booth2" disabled>🛋️ Booth 2</button>
+          <button class="zone-button" id="move-stage" disabled>🎤 Stage</button>
+        </div>
+      </div>
+
+      <!-- Chat Panel -->
+      <div id="chat-panel">
+        <h2>// Chat</h2>
+        <div id="messages"></div>
+        <div id="chat-input-container">
+          <input type="text" id="chat-input" placeholder="Type a message..." disabled />
+          <button id="send-button" disabled>Send</button>
+        </div>
+      </div>
+
+      <!-- Status Overlay (shown during initialization) -->
+      <div id="status"><strong>Status:</strong> <span id="status-text">Initializing...</span></div>
+
+      <!-- Heated Conversation Alert -->
+      <div id="heated-alert">
+        <h3>⚠️ Heated Conversation Detected</h3>
+        <p>This conversation seems to be getting intense.</p>
+        <p>Consider moving to a private booth for more privacy.</p>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

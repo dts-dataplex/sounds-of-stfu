@@ -9,6 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Core Concept
 
 The platform aims to solve the problem of spatial audio in digital communication by:
+
 - Allowing multiple conversation groups to coexist in the same "room" with audio that fades based on virtual distance
 - Creating a heat map visualization of conversations to help users navigate social spaces
 - Implementing features like "talking sticks" for moderation
@@ -17,13 +18,34 @@ The platform aims to solve the problem of spatial audio in digital communication
 
 ### Current State
 
-**This repository is in the conceptual/planning phase.** Currently it contains:
+**Design phase complete - ready for development.** The repository contains:
+
+**Foundational Documents:**
+
 - `STFU-steev.md`: Original design document outlining the vision, problem statement, and desired features
 - `PRODUCT_REQUIREMENTS.md`: Comprehensive PRD with user personas, features, user stories, and success metrics
 - `BACKLOG.md`: Detailed feature backlog with 150+ prioritized tasks across MVP v1.0, v1.1, and v2.0
 - `AGENTIC_DESIGN_PATTERNS.md`: Architectural guidance using established agentic AI patterns
 
-No code has been written yet. The project is ready for initial architecture and implementation.
+**Complete Floor Plan Design (NEW - 2025-12-24):**
+
+- `docs/plans/CHATSUBO_DESIGN_SUMMARY.md`: Executive summary and design overview (start here)
+- `docs/plans/CHATSUBO_FLOOR_PLAN_SPECIFICATIONS.md`: Complete technical specifications (886 lines)
+- `docs/plans/FLOOR_PLAN_VISUAL_REFERENCE.md`: ASCII diagrams and quick reference (473 lines)
+- `docs/plans/DEVELOPER_QUICK_START.md`: Implementation guide with code examples (869 lines)
+- `docs/plans/2025-12-24-bar-layout-and-privacy-architecture.md`: Architecture decisions and user journey
+
+**Chatsubo Virtual Bar Design:**
+
+- 6 distinct zones across 2 floors (gaming, bar, card tables, firepit, booths, stage)
+- Wave-based spatial audio with distance falloff formulas
+- Isometric 3D view with semi-transparent second floor
+- Lighting-based depth perception (Neuromancer cyberpunk aesthetic)
+- Privacy-first architecture (PeerJS mesh, E2E encryption, local SLM)
+- Complete zone coordinates, acoustic parameters, lighting specs
+- Social flow analysis and implementation roadmap
+
+**Status:** No code written yet. Design complete, ready for Phase 1 implementation (Week 1: Core Layout).
 
 ## Key Design Requirements
 
@@ -39,6 +61,7 @@ From the design document, any implementation should consider:
 ## Development Approach
 
 Per the design document, the project emphasizes:
+
 - **Iterative development**: Refine, reflect, decide, implement, improve
 - **Git discipline**: Commit artifacts incrementally with clear reasoning in commit messages
 - **Sequential thinking**: Think through problems completely before implementing solutions
@@ -52,6 +75,7 @@ Per the design document, the project emphasizes:
 When designing AI-powered features for this platform, apply established agentic design patterns:
 
 ### Core Patterns
+
 1. **Reflection Pattern**: Iterative self-evaluation and refinement (use for conversation summaries, topic detection)
 2. **Tool Use Pattern**: LLMs augmented with external tools and APIs (use for data access, integrations)
 3. **Planning Pattern**: Decompose complex tasks into structured roadmaps (use for development workflow, multi-step features)
@@ -59,17 +83,20 @@ When designing AI-powered features for this platform, apply established agentic 
 5. **ReAct Pattern**: Thought → Action → Observation loops (use for conversation recommendations, smart moderation)
 
 ### Development Workflow Patterns
+
 - **Use Multi-Agent pattern** for parallel development: Separate teams for Audio, Frontend, Backend, AI/ML, DevOps
 - **Use Planning pattern** for sprint execution: Analyze backlog → Decompose → Sequence → Execute → Adapt
 - **Use Reflection pattern** for code quality: Self-review → Tests → Peer review → Refine → Merge
 - **Leverage superpowers skills**: `brainstorming`, `writing-plans`, `requesting-code-review`, `systematic-debugging`
 
 ### Feature Implementation Guidance
+
 - **MVP (v1.0)**: Keep it simple - basic Tool Use + Planning, no complex AI agents yet
 - **v1.1**: Add Reflection for quality-critical features (topic detection, recommendations)
 - **v2.0**: Full agentic features with Multi-Agent + ReAct (moderator dashboard, smart recommendations)
 
 ### Key Principles
+
 - Start simple, evolve complexity only when needed
 - Combine patterns thoughtfully (most features use multiple patterns)
 - Design for observability (log reasoning traces, agent interactions)
@@ -79,6 +106,7 @@ When designing AI-powered features for this platform, apply established agentic 
 ## When Starting Development
 
 Future instances should:
+
 1. **Understand the vision**: Review `STFU-steev.md` for the original concept and `PRODUCT_REQUIREMENTS.md` for detailed features
 2. **Review the roadmap**: Check `BACKLOG.md` for prioritized tasks and current development phase
 3. **Study agentic patterns**: Read `AGENTIC_DESIGN_PATTERNS.md` before implementing AI features
@@ -90,9 +118,77 @@ Future instances should:
 ## Commands & Development Workflow
 
 ### Not Yet Established
+
 No build commands, test runners, or development servers exist yet. These will be established once the tech stack is selected (task RES-005 in BACKLOG.md).
 
 ### Git Workflow
+
 - **Configured user**: helpdesk@thisisunsafe.ai (Ann Claude)
 - **Commit convention**: Reference backlog IDs (e.g., "feat: implement WebRTC audio (AUD-001)")
-- **Branch strategy**: TBD once development begins
+- **Branch strategy**: Feature branches per ADR-002 (see .claude/rules/)
+
+## Task Orchestrator - AI Initialization
+
+Last initialized: 2025-12-24
+
+### Critical Patterns
+
+**Template Discovery** (NEVER skip this step):
+
+- Always: `list_templates(targetEntityType, isEnabled=true)` before creating tasks/features
+- Never: Assume templates exist or hardcode template IDs
+- Apply: Use `templateIds` parameter during creation (create_task, create_feature)
+- Filter: By `targetEntityType` (TASK or FEATURE) and `isEnabled=true`
+- Templates are dynamic (database-driven), not static files
+
+**Session Start Routine**:
+
+1. Run `get_overview()` first to understand current state
+2. Check for in-progress tasks before starting new work
+3. Review priorities and dependencies
+4. Identify orphaned tasks that might need feature association
+
+**Intent Recognition Patterns**:
+
+- "Create feature for X" → Feature creation workflow with template discovery
+- "Implement X" → Task creation with implementation templates (Technical Approach, Task Implementation Workflow)
+- "Fix bug X" → Bug triage with Bug Investigation template
+- "Break down X" → Task decomposition pattern
+- "Set up project" → Project setup workflow
+- "Test X" → Testing strategy with appropriate templates
+
+**Dual Workflow Model**:
+
+- **Autonomous**: For common tasks with clear intent (faster, natural language)
+- **Explicit Workflows**: For complex scenarios or learning (comprehensive, step-by-step)
+- Let intent drive which mode to use
+
+**Git Integration**:
+
+- Auto-detect `.git` directory presence
+- Follow ADR-002 feature branch workflow (see .claude/rules/adr-002-feature-branches.md)
+- Create GitHub Issues before branches (ADR-001)
+- Never commit directly to main (enforced by pre-commit hooks)
+- Suggest git workflow templates when detected
+- Ask about PR workflows (don't assume)
+
+**Quality Standards**:
+
+- Write descriptive titles and summaries
+- Use appropriate complexity ratings (1-10)
+- Apply consistent tagging conventions (task-type-feature, task-type-bug, etc.)
+- Include acceptance criteria in summaries
+- Follow ADR-004 for breaking changes (PM + Architect approval required)
+
+**Template Categories** (from template-strategy guideline):
+
+- **AI Workflow Instructions**: Local Git Branching, GitHub PR Workflow, Task Implementation, Bug Investigation
+- **Documentation Properties**: Technical Approach, Requirements Specification, Context & Background
+- **Process & Quality**: Testing Strategy, Definition of Done
+
+**Common Template Combinations**:
+
+- **Development Task**: Technical Approach + Task Implementation Workflow + Testing Strategy
+- **Bug Fix**: Bug Investigation Workflow + Technical Approach + Definition of Done
+- **Feature Planning**: Requirements Specification + Context & Background + Testing Strategy
+- **Complex Implementation**: Technical Approach + Local Git Branching + GitHub PR + Definition of Done

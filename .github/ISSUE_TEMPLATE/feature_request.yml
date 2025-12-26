@@ -1,0 +1,96 @@
+name: Feature Request
+description: Propose a new feature or enhancement
+title: "[FEATURE] "
+labels: ["feature", "needs-pm-approval"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Before submitting
+        - Search existing issues to avoid duplicates
+        - Check BACKLOG.md to see if already planned
+        - Review PRODUCT_REQUIREMENTS.md for product vision alignment
+
+  - type: textarea
+    id: user-story
+    attributes:
+      label: User Story
+      description: Describe the feature from user perspective
+      placeholder: |
+        **As a** [type of user]
+        **I want** [goal/desire]
+        **So that** [benefit/value]
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: How will we know this feature is complete?
+      placeholder: |
+        - [ ] Criterion 1 (testable)
+        - [ ] Criterion 2 (testable)
+        - [ ] Criterion 3 (testable)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this feature?
+      options:
+        - High (critical for MVP or user-blocking)
+        - Medium (important but can wait for next release)
+        - Low (nice-to-have, future consideration)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: milestone
+    attributes:
+      label: Target Milestone
+      description: Which release should this target?
+      options:
+        - MVP v1.0 (spatial audio, test mode, basic UI)
+        - v1.1 (heat map, topic detection)
+        - v2.0 (booth privacy, moderation tools)
+        - Future (not yet prioritized)
+    validations:
+      required: true
+
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of Scope
+      description: What is explicitly NOT included in this feature?
+      placeholder: |
+        - Thing 1 that's NOT part of this feature
+        - Thing 2 deferred to separate issue
+
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: What other issues does this depend on or block?
+      placeholder: |
+        **Depends on:** #123, #456
+        **Blocks:** #789
+
+  - type: checkboxes
+    id: breaking-change
+    attributes:
+      label: Breaking Change Assessment
+      description: Does this feature modify existing functionality?
+      options:
+        - label: This feature modifies or removes existing functionality (requires ADR-004 approval)
+        - label: This feature is purely additive (no breaking changes)
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Mockups, diagrams, user research, competitive analysis
