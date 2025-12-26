@@ -4,11 +4,14 @@
  */
 
 import ChatsuboApp from './ChatsuboApp.js';
+import { SpatialAudioControls } from './components/SpatialAudioControls.js';
 
 console.log('🍺 Chatsubo Virtual Bar - Initializing...');
 
 let app = null;
 let isInRoom = false;
+let audioControls = null;
+let audioUpdateInterval = null;
 
 // UI Elements
 const getElement = (id) => document.getElementById(id);
@@ -82,6 +85,9 @@ async function joinRoom() {
 
     // Start connection metrics tracking
     startConnectionMetrics();
+
+    // Initialize spatial audio controls
+    initializeAudioControls();
   } catch (error) {
     console.error('[Main] Failed to join room:', error);
     updateStatus(`Failed to join: ${error.message}`);
@@ -101,6 +107,21 @@ function leaveRoom() {
 
   // Stop connection metrics tracking
   stopConnectionMetrics();
+
+  // Stop audio metrics updates
+  stopAudioMetricsUpdates();
+
+  // Clean up audio controls
+  if (audioControls) {
+    audioControls.destroy();
+    audioControls = null;
+  }
+
+  // Hide audio controls panel
+  const audioControlsPanel = getElement('audio-controls');
+  if (audioControlsPanel) {
+    audioControlsPanel.style.display = 'none';
+  }
 
   // Show status dialog again
   const statusDialog = getElement('status');
@@ -316,6 +337,96 @@ function updateConnectionMetrics() {
     connectionLatency.style.color =
       simulatedLatency < 50 ? '#44ff88' : simulatedLatency < 100 ? '#ffaa44' : '#ff4444';
   }
+}
+
+/**
+ * Initialize spatial audio controls
+ */
+function initializeAudioControls() {
+  if (!app || !app.spatialAudio) {
+    console.warn('[Main] Cannot initialize audio controls - spatial audio not available');
+    return;
+  }
+
+  // Create audio controls component
+  audioControls = new SpatialAudioControls({
+    spatialAudio: app.spatialAudio,
+    containerId: 'audio-controls',
+    onVolumeChange: (volume) => {
+      addSystemMessage(`Master volume: ${Math.round(volume * 100)}%`);
+    },
+    onSpatialToggle: (enabled) => {
+      addSystemMessage(`Spatial audio ${enabled ? 'enabled' : 'disabled'}`);
+    },
+  });
+
+  // Render the controls
+  audioControls.render();
+
+  // Show the audio controls panel
+  const audioControlsPanel = getElement('audio-controls');
+  if (audioControlsPanel) {
+    audioControlsPanel.style.display = 'block';
+  }
+
+  // Start periodic updates for peer distances
+  startAudioMetricsUpdates();
+}
+
+/**
+ * Start periodic updates for audio metrics
+ */
+function startAudioMetricsUpdates() {
+  if (audioUpdateInterval) {
+    clearInterval(audioUpdateInterval);
+  }
+
+  // Update audio metrics every 500ms
+  audioUpdateInterval = setInterval(() => {
+    if (!app || !audioControls || !isInRoom) {
+      stopAudioMetricsUpdates();
+      return;
+    }
+
+    updateAudioMetrics();
+  }, 500);
+
+  // Initial update
+  updateAudioMetrics();
+}
+
+/**
+ * Stop audio metrics updates
+ */
+function stopAudioMetricsUpdates() {
+  if (audioUpdateInterval) {
+    clearInterval(audioUpdateInterval);
+    audioUpdateInterval = null;
+  }
+}
+
+/**
+ * Update audio metrics display
+ */
+function updateAudioMetrics() {
+  if (!app || !audioControls) return;
+
+  // Build peer data map
+  const peerData = new Map();
+
+  for (const [peerId] of app.peerPositions.entries()) {
+    const distance = app.spatialAudio?.getDistanceToPeer(peerId);
+    const volume = app.spatialAudio?.getPeerVolume(peerId);
+
+    peerData.set(peerId, {
+      distance: distance,
+      volume: volume,
+      name: `Peer ${peerId.substring(0, 8)}`,
+    });
+  }
+
+  // Update the controls
+  audioControls.updatePeerDistances(peerData);
 }
 
 // Event listeners
