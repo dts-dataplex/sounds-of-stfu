@@ -33,10 +33,10 @@ export default class SignalingClient {
   connect() {
     return new Promise((resolve, reject) => {
       try {
-        // Determine WebSocket URL (same host as HTTP, use ws:// or wss://)
+        // Connect to standalone signaling server on port 9000
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const host = window.location.host;
-        const wsUrl = `${protocol}//${host}/signaling`;
+        const hostname = window.location.hostname;
+        const wsUrl = `${protocol}//${hostname}:9000/`;
 
         console.log(`[SignalingClient] Connecting to ${wsUrl}`);
 
