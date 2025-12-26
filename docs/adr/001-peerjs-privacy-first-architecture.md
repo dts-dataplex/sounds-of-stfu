@@ -12,6 +12,7 @@
 We need to build a proof-of-concept for spatial audio communication that validates the core concept: multiple conversations can coexist in one virtual space with distance-based volume mixing.
 
 **Key Constraints:**
+
 - Solo developer with 2-4 week timeline
 - Community values privacy, security, and transparency
 - Users are skeptical of platforms that monitor or record conversations
@@ -26,6 +27,7 @@ We need to build a proof-of-concept for spatial audio communication that validat
 We will use **PeerJS** for the proof-of-concept, accepting a 5-8 user limitation, rather than using managed services like Daily.co or Agora.
 
 **Core Principles Established:**
+
 1. **Privacy First:** Audio streams remain peer-to-peer; no third-party processing
 2. **Open Source:** All core technology must be open source and auditable
 3. **Self-Hostable:** Must be able to run entirely on infrastructure we control
@@ -38,6 +40,7 @@ We will use **PeerJS** for the proof-of-concept, accepting a 5-8 user limitation
 ### Option 1: Managed WebRTC Services (Daily.co, Agora, Dolby.io) ❌
 
 **Pros:**
+
 - Fastest to POC (4-7 days)
 - Handles all WebRTC complexity (NAT, TURN, reconnection)
 - SFU architecture scales to 50+ users on free tier
@@ -45,6 +48,7 @@ We will use **PeerJS** for the proof-of-concept, accepting a 5-8 user limitation
 - Excellent debugging and monitoring tools
 
 **Cons:**
+
 - **PRIVACY VIOLATION:** Audio flows through third-party servers
 - **SECURITY CONCERN:** Platforms could record or monitor conversations
 - **TRUST ISSUE:** Community would reject this on principle
@@ -59,12 +63,14 @@ We will use **PeerJS** for the proof-of-concept, accepting a 5-8 user limitation
 ### Option 2: Raw WebRTC (No Abstraction) ❌
 
 **Pros:**
+
 - Maximum control and learning
 - No dependencies or abstractions
 - Peer-to-peer by default
 - Free and open source
 
 **Cons:**
+
 - **TIMELINE:** 3-4 weeks minimum for solo developer (exceeds 2-4 week goal)
 - **COMPLEXITY:** Signaling server, ICE candidates, SDP negotiation, connection management
 - **RELIABILITY:** Debugging connection issues is time-consuming
@@ -77,6 +83,7 @@ We will use **PeerJS** for the proof-of-concept, accepting a 5-8 user limitation
 ### Option 3: PeerJS (Peer-to-Peer Mesh) ✅ SELECTED
 
 **Pros:**
+
 - **PRIVACY:** True peer-to-peer audio - never touches third-party servers
 - **OPEN SOURCE:** MIT license, auditable codebase
 - **SELF-HOSTABLE:** Can self-host signaling server in production
@@ -86,6 +93,7 @@ We will use **PeerJS** for the proof-of-concept, accepting a 5-8 user limitation
 - **NO VENDOR LOCK-IN:** Can migrate to mediasoup/LiveKit if needed
 
 **Cons:**
+
 - **SCALABILITY:** Mesh networking limits us to 5-8 users maximum
 - **RELIABILITY:** More connection debugging than managed services
 - **TIMELINE:** 7-12 days vs 4-7 days with Daily.co
@@ -98,12 +106,14 @@ We will use **PeerJS** for the proof-of-concept, accepting a 5-8 user limitation
 ### Option 4: Self-Hosted SFU (mediasoup, Jitsi, LiveKit) ❌
 
 **Pros:**
+
 - Privacy-first (self-hosted)
 - Scales to 50+ users
 - Open source
 - Production-ready architecture
 
 **Cons:**
+
 - **TIMELINE:** 3-6 weeks minimum to set up, learn, deploy
 - **COMPLEXITY:** Need to run servers, handle deployment, monitoring
 - **OVERKILL:** Too much infrastructure for concept validation
@@ -118,9 +128,11 @@ We will use **PeerJS** for the proof-of-concept, accepting a 5-8 user limitation
 ### Privacy is Non-Negotiable
 
 From STFU-steev.md:
+
 > "Technology has advanced sufficiently that there should be a secure way to transparently utilize the technology in a way that demonstrates protection of privacy and security..."
 
 The community this platform serves values privacy and transparency. Using Daily.co or similar services, even temporarily, would:
+
 - Undermine trust before the project begins
 - Signal that we don't take privacy seriously
 - Create cognitive dissonance ("we value privacy but use surveillance-capable tools")
@@ -130,6 +142,7 @@ The community this platform serves values privacy and transparency. Using Daily.
 ### Learning Real Constraints Early
 
 PeerJS's 5-8 user mesh limitation is a feature, not a bug, for POC:
+
 - Forces us to understand scaling constraints upfront
 - Prevents false validation (spatial audio might work differently at 50 users)
 - Reveals real architectural decisions we'll face
@@ -140,12 +153,14 @@ PeerJS's 5-8 user mesh limitation is a feature, not a bug, for POC:
 ### Avoiding Technical Debt
 
 Choosing Daily.co for speed creates guaranteed rework:
+
 - Week 1-2: Build POC on Daily.co
 - Week 3-4: Validate concept
 - Week 5-8: Rebuild entire audio layer on PeerJS/SFU
 - Result: 2 weeks wasted, learned nothing about production architecture
 
 vs. PeerJS path:
+
 - Week 1-2: Build POC on PeerJS (slower but learning)
 - Week 3-4: Validate concept and architecture together
 - Week 5+: Iterate or migrate to SFU with deep understanding
@@ -155,6 +170,7 @@ vs. PeerJS path:
 ### Community Alignment
 
 This community specifically values:
+
 - Transparency over convenience
 - Self-sovereignty over managed services
 - Understanding over abstraction
@@ -184,12 +200,14 @@ Choosing PeerJS demonstrates these values from day one, building trust and credi
 ### Accepted Trade-offs
 
 **We accept:**
+
 - Slower POC development (extra 5 days)
 - More connection debugging
 - 5-8 user limit for testing
 - Less polished developer experience
 
 **In exchange for:**
+
 - Community trust and alignment with values
 - No technical debt or future rework
 - Understanding of real production constraints
@@ -204,18 +222,21 @@ Choosing PeerJS demonstrates these values from day one, building trust and credi
 If spatial audio proves compelling and we need to scale beyond 8 users:
 
 **Option A: Self-Hosted SFU (mediasoup)**
+
 - Open source, high performance
 - Full control and privacy
 - Requires server infrastructure
 - 2-3 week migration from PeerJS
 
 **Option B: Self-Hosted Platform (Jitsi)**
+
 - Complete platform, mature codebase
 - Includes signaling, TURN, recording, etc.
 - Heavier infrastructure requirements
 - 3-4 week migration
 
 **Option C: Managed Self-Hostable (LiveKit)**
+
 - Modern architecture, good DX
 - Can self-host or use their cloud
 - Newer, smaller ecosystem
@@ -226,6 +247,7 @@ If spatial audio proves compelling and we need to scale beyond 8 users:
 ### If Mesh Proves Sufficient
 
 If 8 users is enough for the community size:
+
 - Self-host PeerJS signaling server
 - Add TURN server for NAT traversal
 - Build features on top of proven foundation
@@ -238,6 +260,7 @@ If 8 users is enough for the community size:
 ### Success Indicators
 
 After POC completion, evaluate:
+
 1. **Did PeerJS connections work reliably?** (>80% success rate)
 2. **Was 5-8 user limit acceptable for testing?** (got meaningful feedback)
 3. **Did we finish in 7-12 days?** (timeline was realistic)
@@ -246,6 +269,7 @@ After POC completion, evaluate:
 ### Failure Indicators
 
 If we observe:
+
 1. Connection failures >50% of attempts (PeerJS too unreliable)
 2. Need >8 users to validate concept (mesh insufficient)
 3. Timeline exceeds 15 days (too complex for solo developer)
@@ -266,6 +290,7 @@ Then: Document learnings, write ADR-002 for SFU migration
 ### Deferred Decisions
 
 Not deciding now (wait for POC results):
+
 - Exact SFU technology for scaling
 - Whether to add TURN servers
 - Self-hosting vs. managed hosting
@@ -276,18 +301,21 @@ Not deciding now (wait for POC results):
 ## References
 
 ### Internal Documents
+
 - **STFU-steev.md:** Original vision emphasizing privacy and security
 - **PRODUCT_REQUIREMENTS.md:** User personas (Quiet Observer needs privacy guarantees)
 - **BACKLOG.md:** MVP tasks this POC addresses
 - **docs/plans/2025-12-23-peerjs-poc-design.md:** Full technical design
 
 ### External Resources
+
 - **PeerJS Documentation:** https://peerjs.com/docs/
 - **PeerJS GitHub:** https://github.com/peers/peerjs (MIT License)
 - **WebRTC Standards:** https://www.w3.org/TR/webrtc/
 - **mediasoup (future migration):** https://mediasoup.org/
 
 ### Privacy & Security
+
 - **WebRTC Security:** https://webrtc-security.github.io/
 - **P2P Communication Patterns:** https://martin.kleppmann.com/papers/p2p-encyclopedia19.pdf
 
@@ -302,19 +330,20 @@ Not deciding now (wait for POC results):
 
 ## Appendix: Comparison Matrix
 
-| Criteria | Daily.co | Raw WebRTC | PeerJS | SFU (mediasoup) |
-|---|---|---|---|---|
-| **Privacy** | ❌ Third-party servers | ✅ P2P | ✅ P2P | ✅ Self-hosted |
-| **Open Source** | ❌ Proprietary | ✅ Spec | ✅ MIT | ✅ ISC |
-| **Timeline** | ⭐⭐⭐ 4-7 days | ❌ 3-4 weeks | ⭐⭐ 7-12 days | ❌ 3-6 weeks |
-| **Scalability** | ⭐⭐⭐ 50+ users | ⭐⭐⭐ Unlimited | ❌ 5-8 users | ⭐⭐⭐ 50+ users |
-| **Complexity** | ⭐⭐⭐ Very simple | ❌ Very complex | ⭐⭐ Moderate | ❌ Complex |
-| **Cost** | ❌ Paid plans | ✅ Free | ✅ Free | ⭐⭐ Hosting costs |
-| **Community Trust** | ❌ Rejected | ✅ Trusted | ✅ Trusted | ✅ Trusted |
-| **Self-Hostable** | ❌ No | ✅ Yes | ✅ Yes | ✅ Yes |
-| **Dependencies** | ❌ Vendor lock-in | ✅ None | ⭐⭐ Minimal | ⭐⭐ Moderate |
+| Criteria            | Daily.co               | Raw WebRTC       | PeerJS         | SFU (mediasoup)    |
+| ------------------- | ---------------------- | ---------------- | -------------- | ------------------ |
+| **Privacy**         | ❌ Third-party servers | ✅ P2P           | ✅ P2P         | ✅ Self-hosted     |
+| **Open Source**     | ❌ Proprietary         | ✅ Spec          | ✅ MIT         | ✅ ISC             |
+| **Timeline**        | ⭐⭐⭐ 4-7 days        | ❌ 3-4 weeks     | ⭐⭐ 7-12 days | ❌ 3-6 weeks       |
+| **Scalability**     | ⭐⭐⭐ 50+ users       | ⭐⭐⭐ Unlimited | ❌ 5-8 users   | ⭐⭐⭐ 50+ users   |
+| **Complexity**      | ⭐⭐⭐ Very simple     | ❌ Very complex  | ⭐⭐ Moderate  | ❌ Complex         |
+| **Cost**            | ❌ Paid plans          | ✅ Free          | ✅ Free        | ⭐⭐ Hosting costs |
+| **Community Trust** | ❌ Rejected            | ✅ Trusted       | ✅ Trusted     | ✅ Trusted         |
+| **Self-Hostable**   | ❌ No                  | ✅ Yes           | ✅ Yes         | ✅ Yes             |
+| **Dependencies**    | ❌ Vendor lock-in      | ✅ None          | ⭐⭐ Minimal   | ⭐⭐ Moderate      |
 
 **Legend:**
+
 - ✅ Meets requirement
 - ⭐⭐⭐ Excellent
 - ⭐⭐ Good

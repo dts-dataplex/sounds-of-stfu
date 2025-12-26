@@ -12,6 +12,7 @@
 This design outlines a minimal proof-of-concept to validate the core spatial audio concept for Sounds of STFU. The POC will demonstrate that distance-based volume mixing creates a natural "bar-like" experience where multiple conversations can coexist in the same virtual space.
 
 **Key Constraints:**
+
 - Solo developer
 - 2-4 week timeline (targeting 7-12 days)
 - Privacy-first: no third-party audio processing
@@ -26,22 +27,26 @@ This design outlines a minimal proof-of-concept to validate the core spatial aud
 ### Core Technologies
 
 **PeerJS** - WebRTC peer-to-peer connections
+
 - Open source (MIT license)
 - Mesh networking architecture (all connections peer-to-peer)
 - Can self-host signaling server
 - Audio never touches third-party servers (except signaling setup)
 
 **Web Audio API** - Spatial audio processing
+
 - Calculate distance between users
 - Apply gain (volume) based on distance
 - Mix multiple audio streams client-side
 
 **Canvas API** - 2D visualization
+
 - Render virtual bar space
 - Click-to-move positioning
 - Visual feedback (avatars, speaking indicators)
 
 **Single HTML File** - Zero build complexity
+
 - Embedded CSS and JavaScript
 - ~300-400 lines total
 - Just open in browser to run
@@ -49,6 +54,7 @@ This design outlines a minimal proof-of-concept to validate the core spatial aud
 ### Why PeerJS Over Alternatives
 
 See ADR-001 for full rationale. Summary:
+
 - **vs Daily.co/Agora:** Privacy - audio stays peer-to-peer, no third-party processing
 - **vs Raw WebRTC:** Simplicity - PeerJS abstracts connection complexity
 - **vs Self-hosted Jitsi:** Scope - full platform is overkill for POC
@@ -75,6 +81,7 @@ See ADR-001 for full rationale. Summary:
 ### Three Core Components
 
 **1. Connection Manager (PeerJS wrapper)**
+
 - Handles peer discovery and connection establishment
 - Maintains list of active participants
 - Broadcasts position updates to all peers via data channel
@@ -82,6 +89,7 @@ See ADR-001 for full rationale. Summary:
 - Manages reconnection logic
 
 **2. Spatial Audio Engine (Web Audio API)**
+
 - Receives raw audio from each peer
 - Calculates Euclidean distance: `sqrt((x1-x2)² + (y1-y2)²)`
 - Applies gain based on distance: `volume = 1.0 / (1 + distance/falloffRadius)`
@@ -89,6 +97,7 @@ See ADR-001 for full rationale. Summary:
 - Mixes all adjusted streams for playback
 
 **3. Visual Canvas (Canvas API)**
+
 - Renders 2D bar space (simple rectangle for POC)
 - Shows user avatars at their positions
 - Click-to-move positioning
@@ -116,28 +125,28 @@ See ADR-001 for full rationale. Summary:
 ```html
 <!DOCTYPE html>
 <html>
-<head>
-  <title>Sounds of STFU - POC</title>
-  <style>
-    /* Simple CSS: canvas styling, basic UI */
-  </style>
-</head>
-<body>
-  <canvas id="bar"></canvas>
-  <div id="controls">
-    <input id="roomCode" placeholder="Room code">
-    <button id="join">Join</button>
-    <button id="mute">Mute</button>
-  </div>
+  <head>
+    <title>Sounds of STFU - POC</title>
+    <style>
+      /* Simple CSS: canvas styling, basic UI */
+    </style>
+  </head>
+  <body>
+    <canvas id="bar"></canvas>
+    <div id="controls">
+      <input id="roomCode" placeholder="Room code" />
+      <button id="join">Join</button>
+      <button id="mute">Mute</button>
+    </div>
 
-  <script src="https://unpkg.com/peerjs@1.5.0/dist/peerjs.min.js"></script>
-  <script>
-    // PeerConnection class (~100 lines)
-    // SpatialAudio class (~80 lines)
-    // BarCanvas class (~80 lines)
-    // App coordinator (~40 lines)
-  </script>
-</body>
+    <script src="https://unpkg.com/peerjs@1.5.0/dist/peerjs.min.js"></script>
+    <script>
+      // PeerConnection class (~100 lines)
+      // SpatialAudio class (~80 lines)
+      // BarCanvas class (~80 lines)
+      // App coordinator (~40 lines)
+    </script>
+  </body>
 </html>
 ```
 
@@ -148,6 +157,7 @@ See ADR-001 for full rationale. Summary:
 **Problem:** How do new users discover existing participants in a mesh network?
 
 **Solution (Host-based):**
+
 - First user to join creates Peer with room code as ID
 - Becomes "room host" (just a convention, not privileged)
 - New users connect to host first
@@ -156,6 +166,7 @@ See ADR-001 for full rationale. Summary:
 - New user sends their ID to host, host broadcasts to others
 
 **Alternative (if host-based is unreliable):**
+
 - Use Firebase Realtime Database just for room participant lists
 - Minimal backend: just stores `{ roomCode: [peerId1, peerId2, ...] }`
 - Each client updates this list on join/leave
@@ -210,16 +221,19 @@ connection.on('data', (data) => {
 **4. Distance-to-Volume Formula**
 
 **Start simple (linear):**
+
 ```javascript
-volume = Math.max(0, 1 - distance / maxHearingRange)
+volume = Math.max(0, 1 - distance / maxHearingRange);
 ```
 
 **Experiment with logarithmic (more realistic):**
+
 ```javascript
-volume = 1 / (1 + distance / falloffRadius)
+volume = 1 / (1 + distance / falloffRadius);
 ```
 
 **Tunable parameters:**
+
 - `maxHearingRange`: Distance at which volume = 0 (e.g., 300px)
 - `falloffRadius`: How quickly volume drops (smaller = faster falloff)
 
@@ -234,6 +248,7 @@ volume = 1 / (1 + distance / falloffRadius)
 **Goal:** Get two browsers exchanging audio
 
 **Tasks:**
+
 - Set up basic HTML page with PeerJS CDN
 - Create Peer instance, get peer ID
 - Second browser connects to first peer's ID
@@ -243,6 +258,7 @@ volume = 1 / (1 + distance / falloffRadius)
 **Milestone:** Two people can talk (no spatial audio yet)
 
 **Debugging focus:**
+
 - Microphone permissions
 - Audio playback issues (autoplay policy)
 - Connection failures (STUN server config)
@@ -254,6 +270,7 @@ volume = 1 / (1 + distance / falloffRadius)
 **Goal:** 3-5 users all connected
 
 **Tasks:**
+
 - Implement room coordination (host-based or Firebase)
 - Handle N connections per client (N-1 peers)
 - Track all peer IDs and connection states
@@ -263,6 +280,7 @@ volume = 1 / (1 + distance / falloffRadius)
 **Milestone:** 3-5 people can join same room and talk
 
 **Debugging focus:**
+
 - Connection failures when scaling to 3+ users
 - Reconnection logic when someone drops
 - Race conditions (two people join simultaneously)
@@ -274,6 +292,7 @@ volume = 1 / (1 + distance / falloffRadius)
 **Goal:** Movement affects volume
 
 **Tasks:**
+
 - Add canvas, render as simple rectangle
 - Implement click-to-move (onclick → new position)
 - Broadcast position updates via data channel
@@ -284,6 +303,7 @@ volume = 1 / (1 + distance / falloffRadius)
 **Milestone:** Core spatial audio works - moving closer = louder!
 
 **Debugging focus:**
+
 - Audio glitches when updating gains too frequently
 - Position sync delays (throttling data channel)
 - Volume curve tuning (too aggressive vs too subtle)
@@ -295,6 +315,7 @@ volume = 1 / (1 + distance / falloffRadius)
 **Goal:** Feels natural and usable
 
 **Tasks:**
+
 - Tune distance-to-volume curve with real users
 - Add visual feedback:
   - Speaking indicators (analyze audio levels)
@@ -307,6 +328,7 @@ volume = 1 / (1 + distance / falloffRadius)
 **Milestone:** "It feels like a real bar" - multiple conversations work
 
 **Feedback questions:**
+
 - Does moving between conversations feel natural?
 - Can you have a private conversation in one corner?
 - Is the volume curve realistic?
@@ -319,6 +341,7 @@ volume = 1 / (1 + distance / falloffRadius)
 **Goal:** Easy sharing for wider testing
 
 **Tasks:**
+
 - Push to GitHub Pages
 - Add onboarding instructions (how to join, how to move)
 - Self-host PeerJS signaling server (if needed for reliability)
@@ -335,7 +358,7 @@ volume = 1 / (1 + distance / falloffRadius)
 
 1. **Scalability: 5-8 users maximum**
    - Mesh networking doesn't scale
-   - Each user connects to everyone: N users = N*(N-1)/2 connections
+   - Each user connects to everyone: N users = N\*(N-1)/2 connections
    - Beyond 8 users, bandwidth and CPU become bottlenecks
    - **Migration path:** SFU architecture (mediasoup, LiveKit, Jitsi)
 
@@ -382,12 +405,14 @@ volume = 1 / (1 + distance / falloffRadius)
 ### Technical Success
 
 **Connection Reliability:**
+
 - ✅ 3 users connect successfully >80% of attempts
 - ✅ Audio quality comparable to phone call (clear, low latency)
 - ✅ Reconnection works after network hiccup
 - ✅ Latency <300ms (acceptable for conversation)
 
 **Spatial Audio Accuracy:**
+
 - ✅ Volume clearly correlates with distance
 - ✅ Moving closer → louder (feels immediate)
 - ✅ Two conversations can coexist without interference
@@ -396,17 +421,20 @@ volume = 1 / (1 + distance / falloffRadius)
 ### User Experience Success
 
 **"It Feels Like a Real Bar":**
+
 - ✅ Users naturally move to join conversations
 - ✅ Can "overhear" distant conversations at low volume
 - ✅ Moving between groups feels fluid, not jarring
 - ✅ Quiet corner feels private even with activity nearby
 
 **Solves the Discord Problem:**
+
 - ✅ Two groups can talk simultaneously in same room
 - ✅ Don't have to "switch channels" to change conversations
 - ✅ Ambient awareness of overall activity
 
 **Usability:**
+
 - ✅ New user can join and understand it in <2 minutes
 - ✅ Click to move is intuitive
 - ✅ Clear who's talking, who's where
@@ -429,17 +457,20 @@ volume = 1 / (1 + distance / falloffRadius)
 ### If POC Succeeds
 
 **Immediate Next Steps:**
+
 1. Document learnings (what worked, what didn't)
 2. Write ADR for scaling decisions
 3. Identify critical next features from user feedback
 
 **Scaling Options (if need >8 users):**
+
 - **mediasoup:** Self-hosted SFU, open source, excellent performance
 - **LiveKit:** Newer, good developer experience, self-hostable
 - **Jitsi:** Full platform, mature, self-hosted
 - All maintain privacy/self-hosting principles
 
 **Feature Evolution:**
+
 - Add Firebase/Supabase for persistence
 - Implement heat map using activity data
 - Build proper UI (React/Vue)
@@ -449,12 +480,14 @@ volume = 1 / (1 + distance / falloffRadius)
 ### If POC Reveals Issues
 
 **Possible Discoveries:**
+
 - Spatial audio doesn't feel natural (volume curve problems)
 - Mesh networking too unreliable (need SFU sooner)
 - Canvas UI too limiting (need proper 3D or better 2D)
 - Users don't naturally move (need different UX)
 
 **Response:**
+
 - Iterate on core mechanics before adding features
 - Consider alternative approaches (3D audio, different positioning)
 - Validate assumptions with smaller tests
@@ -468,6 +501,7 @@ volume = 1 / (1 + distance / falloffRadius)
 **Likelihood:** Medium
 **Impact:** High (POC doesn't work)
 **Mitigation:**
+
 - Test early (Phase 1-2 focus)
 - Configure STUN servers properly
 - Have backup plan (use Firebase for signaling)
@@ -478,6 +512,7 @@ volume = 1 / (1 + distance / falloffRadius)
 **Likelihood:** Medium
 **Impact:** High (concept doesn't validate)
 **Mitigation:**
+
 - Make distance curve easily tunable
 - Test with real users early (Phase 4)
 - Experiment with multiple formulas (linear, log, inverse square)
@@ -488,6 +523,7 @@ volume = 1 / (1 + distance / falloffRadius)
 **Likelihood:** Medium
 **Impact:** Medium (delayed validation)
 **Mitigation:**
+
 - Prioritize ruthlessly (Phase 3 is MVP)
 - Phase 4-5 are optional polish
 - Acceptable to ship "works but rough" for initial feedback
@@ -498,6 +534,7 @@ volume = 1 / (1 + distance / falloffRadius)
 **Likelihood:** Low (POC should test with 3-5)
 **Impact:** Medium (can't test real scenarios)
 **Mitigation:**
+
 - Accept limitation for POC
 - Document SFU migration path
 - Focus on "does spatial audio work" not "does it scale"
@@ -530,6 +567,7 @@ volume = 1 / (1 + distance / falloffRadius)
 ---
 
 **Next Steps:**
+
 1. Review and approve this design
 2. Create ADR-001 documenting PeerJS decision
 3. Set up git worktree for isolated development

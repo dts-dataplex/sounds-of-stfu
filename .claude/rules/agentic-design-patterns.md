@@ -25,22 +25,26 @@ This document defines the agentic design patterns implemented in the site-ranch 
 **Purpose:** Execute multi-step infrastructure changes in deterministic order where each step depends on the previous step's success.
 
 **Implementation:**
+
 ```
 Request → Homelab Admin → Domain Expert 1 → Domain Expert 2 → Human Approval → Execution → Verification
 ```
 
 **Use Cases:**
+
 - Storage expansion (disk validation → pool creation → VM migration → verification)
 - Network reconfiguration (firewall backup → VLAN change → routing update → connectivity test)
 - System updates (backup verification → package update → service restart → health check)
 
 **Benefits:**
+
 - Predictable execution flow
 - Minimal latency and cost
 - Clear failure point identification
 - Simplified rollback procedures
 
 **Current Implementation:**
+
 - Homelab-admin agent orchestrates the sequence
 - Each domain expert validates prerequisites before execution
 - GitHub Issues track the complete sequence with status updates
@@ -52,25 +56,30 @@ Request → Homelab Admin → Domain Expert 1 → Domain Expert 2 → Human Appr
 **Purpose:** Execute independent tasks simultaneously to reduce overall completion time.
 
 **Implementation:**
+
 ```
 Request → Homelab Admin → [Network Expert || Storage Expert || Security Expert] → Consolidation → Human Review
 ```
 
 **Use Cases:**
+
 - Multi-domain assessments (parallel security audit + network scan + storage health check)
 - Initial system configuration (parallel user creation + VLAN setup + monitoring deployment)
 - Incident investigation (parallel log collection from multiple systems)
 
 **Benefits:**
+
 - Reduced total execution time
 - Efficient resource utilization
 - Independent failure domains
 
 **Tradeoffs:**
+
 - Higher instantaneous resource consumption
 - Requires careful dependency analysis to ensure true independence
 
 **Current Implementation:**
+
 - Homelab-admin identifies independent tasks during analysis phase
 - Domain experts execute in parallel
 - Results consolidated before human review
@@ -82,22 +91,26 @@ Request → Homelab Admin → [Network Expert || Storage Expert || Security Expe
 **Purpose:** Break complex infrastructure changes into manageable sub-tasks with clear ownership.
 
 **Implementation:**
+
 ```
 Complex Request → Strategic Planning → Tactical Breakdown → Domain Assignment → Execution → Integration → Validation
 ```
 
 **Use Cases:**
+
 - Major infrastructure migrations (e.g., ZFS pool migration with multiple VMs)
 - Multi-phase deployments (monitoring stack: metrics → alerting → dashboards → documentation)
 - Disaster recovery exercises (backup validation → restore procedure → verification → documentation)
 
 **Benefits:**
+
 - Manageable complexity
 - Clear ownership boundaries
 - Independent progress tracking
 - Simplified testing and validation
 
 **Current Implementation:**
+
 - Homelab-admin uses sequential thinking MCP for complex decomposition
 - GitHub Issues track each sub-task independently
 - Dependencies explicitly documented in issue relationships
@@ -111,12 +124,14 @@ Complex Request → Strategic Planning → Tactical Breakdown → Domain Assignm
 **Purpose:** Gracefully handle failures with transparent communication and efficient recovery.
 
 **Core Principles:**
+
 - **Clear Communication**: Plain language error descriptions with remediation steps
 - **State Preservation**: Maintain full context to enable retry without starting over
 - **Transparent Recovery**: Document what failed, why, and what changed during recovery
 - **Automatic Rollback**: Revert to known-good state when safe to do so
 
 **Implementation Checklist:**
+
 - [ ] Pre-flight validation catches common errors before execution
 - [ ] Each step includes explicit success criteria
 - [ ] Failures preserve full state for analysis and retry
@@ -124,6 +139,7 @@ Complex Request → Strategic Planning → Tactical Breakdown → Domain Assignm
 - [ ] Human notification on all failures
 
 **Current Implementation:**
+
 - Domain experts validate prerequisites before execution
 - GitHub Issues maintain complete state across retries
 - Memory MCP stores recovery context
@@ -136,26 +152,31 @@ Complex Request → Strategic Planning → Tactical Breakdown → Domain Assignm
 **Purpose:** Add validation checkpoints before changes affect production systems.
 
 **Implementation:**
+
 ```
 Proposed Change → Domain Expert Review → Peer Review (if multi-domain) → Security Review → Human Approval → Execution
 ```
 
 **Use Cases:**
+
 - Firewall rule changes (network expert proposes → security expert reviews → human approves)
 - Storage encryption changes (storage expert proposes → security expert reviews → human approves)
 - VM resource allocation (compute expert proposes → finops expert reviews cost → human approves)
 
 **Benefits:**
+
 - Catch errors before execution
 - Cross-domain expertise applied
 - Security implications evaluated
 - Cost impacts assessed
 
 **Tradeoffs:**
+
 - Additional latency per change
 - Higher token consumption for review cycles
 
 **Current Implementation:**
+
 - Homelab-admin coordinates multi-agent review
 - Security-expert proactively reviews changes with security implications
 - Finops-expert reviews resource allocation changes for cost impact
@@ -168,12 +189,14 @@ Proposed Change → Domain Expert Review → Peer Review (if multi-domain) → S
 **Purpose:** Prevent infinite loops and runaway costs in iterative workflows.
 
 **Safeguards:**
+
 - **Iteration Limits**: Hard cap on retry attempts (default: 3)
 - **Circuit Breakers**: Automatic halt on repeated failures
 - **Cost Monitors**: Alert when token consumption exceeds thresholds
 - **Human Escalation**: Automatic escalation on loop detection
 
 **Implementation:**
+
 ```python
 MAX_RETRIES = 3
 attempt = 0
@@ -188,6 +211,7 @@ while attempt < MAX_RETRIES:
 ```
 
 **Current Implementation:**
+
 - Homelab-admin enforces retry limits
 - GitHub Issues track retry attempts
 - Human operator notified after 3 consecutive failures
@@ -201,6 +225,7 @@ while attempt < MAX_RETRIES:
 **Purpose:** Route requests to specialized agents with deep domain knowledge.
 
 **Agent Roster:**
+
 - **homelab-admin**: Orchestrator and coordinator
 - **network-expert**: VLANs, firewall, routing, DNS
 - **storage-expert**: ZFS, backups, encryption, replication
@@ -210,6 +235,7 @@ while attempt < MAX_RETRIES:
 - **finops-expert**: Cost tracking, budget optimization
 
 **Delegation Decision Tree:**
+
 ```
 Request Type → Domain Classification → Expert Assignment
 
@@ -220,6 +246,7 @@ Examples:
 ```
 
 **Current Implementation:**
+
 - Homelab-admin analyzes request and identifies required expertise
 - Explicit delegation with clear scope and expected deliverables
 - Results consolidated before human review
@@ -231,22 +258,26 @@ Examples:
 **Purpose:** Separate execution from validation for high-risk operations.
 
 **Implementation:**
+
 ```
 Maker (Domain Expert) → Proposes Change → Checker (Security/Peer) → Validates → Human → Approves → Executor → Implements
 ```
 
 **Use Cases:**
+
 - Firewall rule changes (network makes, security checks, human approves)
 - SSH key additions (requestor makes, security checks, human approves)
 - Backup configuration changes (storage makes, security checks, human approves)
 
 **Benefits:**
+
 - Segregation of duties
 - Reduced insider threat risk
 - Compliance with audit requirements
 - Additional validation layer
 
 **Current Implementation:**
+
 - Network-expert proposes firewall changes
 - Security-expert validates security implications
 - Homelab-admin coordinates approval workflow
@@ -259,17 +290,20 @@ Maker (Domain Expert) → Proposes Change → Checker (Security/Peer) → Valida
 **Purpose:** Intelligently route requests to the most appropriate expert in real-time.
 
 **Implementation:**
+
 ```
 Request → Homelab Admin Analysis → Dynamic Routing Decision → Expert Assignment → Execution
 ```
 
 **Routing Logic:**
+
 - Keywords trigger initial routing ("firewall" → network-expert, "backup" → storage-expert)
 - Complexity assessment determines if multiple experts needed
 - Security implications trigger automatic security-expert involvement
 - Cost implications trigger automatic finops-expert review
 
 **Current Implementation:**
+
 - Homelab-admin performs initial classification
 - Multi-domain requests trigger parallel expert assignment
 - Security-expert automatically consulted for access control changes
@@ -285,19 +319,21 @@ Request → Homelab Admin Analysis → Dynamic Routing Decision → Expert Assig
 
 **Approval Tiers:**
 
-| Risk Level | Examples | Approval Required | Execution Timing |
-|------------|----------|-------------------|------------------|
-| **LOW** | Monitoring config changes, non-production tweaks | Logged for audit | Can proceed after logging |
-| **MEDIUM** | Production config changes, storage modifications | Explicit written approval | Wait for approval before execution |
-| **HIGH** | Destructive operations, security changes, multi-node updates | Signed approval with rationale | Requires review meeting + approval |
+| Risk Level | Examples                                                     | Approval Required              | Execution Timing                   |
+| ---------- | ------------------------------------------------------------ | ------------------------------ | ---------------------------------- |
+| **LOW**    | Monitoring config changes, non-production tweaks             | Logged for audit               | Can proceed after logging          |
+| **MEDIUM** | Production config changes, storage modifications             | Explicit written approval      | Wait for approval before execution |
+| **HIGH**   | Destructive operations, security changes, multi-node updates | Signed approval with rationale | Requires review meeting + approval |
 
 **Implementation:**
+
 - All changes create GitHub Issue with risk assessment
 - Homelab-admin presents consolidated plan with risk tier
 - Human operator provides explicit approval in GitHub Issue
 - Execution only proceeds after approval documented
 
 **Current Implementation:**
+
 - GitHub Issues serve as approval mechanism
 - Risk assessment included in every issue
 - Homelab-admin waits for explicit approval comment before delegating execution
@@ -310,12 +346,14 @@ Request → Homelab Admin Analysis → Dynamic Routing Decision → Expert Assig
 **Purpose:** Enforce safety boundaries to prevent unauthorized or dangerous operations.
 
 **Architectural Guardrails:**
+
 - **No secret leakage**: Secrets never in git, logs, or responses
 - **No direct production access**: All changes via IaC (Terraform/Ansible)
 - **No unauthorized escalation**: Privilege elevation requires human approval
 - **No data destruction**: Backup verification required before destructive operations
 
 **Implementation Checks:**
+
 ```python
 def validate_change_request(request):
     # Pre-execution validation
@@ -326,6 +364,7 @@ def validate_change_request(request):
 ```
 
 **Current Implementation:**
+
 - Security-expert enforces secrets management guardrails
 - Storage-expert verifies backups before destructive operations
 - Homelab-admin validates approval before any execution
@@ -339,21 +378,23 @@ def validate_change_request(request):
 
 **Trust Phases:**
 
-| Phase | Autonomy Level | Human Oversight | Example Operations |
-|-------|----------------|-----------------|-------------------|
-| **Phase 0** | Suggestion only | Review all suggestions | Initial setup, learning infrastructure |
+| Phase       | Autonomy Level              | Human Oversight          | Example Operations                      |
+| ----------- | --------------------------- | ------------------------ | --------------------------------------- |
+| **Phase 0** | Suggestion only             | Review all suggestions   | Initial setup, learning infrastructure  |
 | **Phase 1** | Execution with pre-approval | Approve before execution | Standard operations (95%+ success rate) |
-| **Phase 2** | Execution with post-review | Review after execution | Routine maintenance (99%+ success rate) |
-| **Phase 3** | Autonomous execution | Periodic audits | Monitoring adjustments, log rotation |
+| **Phase 2** | Execution with post-review  | Review after execution   | Routine maintenance (99%+ success rate) |
+| **Phase 3** | Autonomous execution        | Periodic audits          | Monitoring adjustments, log rotation    |
 
 **Current Status:** Phase 1 (Execution with pre-approval)
 
 **Progression Criteria:**
+
 - 95%+ success rate over 50 operations → Phase 1 to Phase 2
 - 99%+ success rate over 200 operations → Phase 2 to Phase 3
 - Any security incident → Immediate regression to Phase 0
 
 **Current Implementation:**
+
 - All operations in Phase 1 (human approval required)
 - Success metrics tracked in GitHub Issues
 - Quarterly review of trust progression
@@ -368,21 +409,25 @@ def validate_change_request(request):
 **Purpose:** Adaptive problem-solving that alternates between reasoning and action based on real-time observations.
 
 **Cycle:**
+
 ```
 Observe Environment → Reason About State → Decide Next Action → Execute Action → Observe Results → [Repeat or Conclude]
 ```
 
 **Use Cases:**
+
 - Incident response (observe symptoms → reason about cause → test hypothesis → observe results → adjust)
 - Performance troubleshooting (measure metrics → analyze patterns → apply optimization → measure impact → iterate)
 - Configuration optimization (observe behavior → reason about bottlenecks → adjust settings → observe effect → refine)
 
 **Benefits:**
+
 - Adapts to unexpected situations
 - Self-correcting behavior
 - Reduced need for predefined playbooks
 
 **Current Implementation:**
+
 - Domain experts use ReAct for troubleshooting and optimization tasks
 - Homelab-admin oversees iteration cycles and enforces iteration limits
 - GitHub Issues document each observation-action cycle
@@ -395,17 +440,20 @@ Observe Environment → Reason About State → Decide Next Action → Execute Ac
 **Purpose:** Self-assessment to catch errors and iterate without constant human intervention.
 
 **Reflection Triggers:**
+
 - Before execution: "Does this plan achieve the stated goal?"
 - After execution: "Did the result match expectations?"
 - On error: "What went wrong and how should I adjust?"
 - Before escalation: "Have I exhausted reasonable approaches?"
 
 **Implementation:**
+
 ```
 Proposed Action → Self-Critique → Adjustment → Final Proposal → Execution → Results Validation → Reflection
 ```
 
 **Current Implementation:**
+
 - Domain experts perform self-critique before submitting proposals
 - Homelab-admin performs reflection on consolidated plans
 - Security-expert reflects on security implications of all proposals
@@ -418,6 +466,7 @@ Proposed Action → Self-Critique → Adjustment → Final Proposal → Executio
 **Purpose:** Decompose complex workflows into actionable tasks with dependency tracking.
 
 **Planning Process:**
+
 ```
 1. Understand goal and constraints
 2. Identify dependencies and prerequisites
@@ -429,11 +478,13 @@ Proposed Action → Self-Critique → Adjustment → Final Proposal → Executio
 ```
 
 **Use Cases:**
+
 - Multi-VM migration (dependency mapping → sequencing → execution → validation)
 - Disaster recovery (inventory → prioritization → restoration → verification)
 - Major infrastructure changes (impact analysis → phasing → execution → monitoring)
 
 **Current Implementation:**
+
 - Homelab-admin uses sequential thinking MCP for complex planning
 - Plans documented in GitHub Issues with task breakdowns
 - Dependencies explicitly noted in issue relationships
@@ -448,6 +499,7 @@ Proposed Action → Self-Critique → Adjustment → Final Proposal → Executio
 **Purpose:** Extend agent capabilities through integration with external systems and APIs.
 
 **Available Tools:**
+
 - **Infrastructure:** Terraform (BPG Proxmox provider), Ansible
 - **Monitoring:** Proxmox API, Prometheus metrics, Grafana dashboards
 - **Security:** VaultWarden API, Lynis, Trivy
@@ -455,12 +507,14 @@ Proposed Action → Self-Critique → Adjustment → Final Proposal → Executio
 - **MCP Servers:** Memory (project context), Sequential Thinking (complex planning)
 
 **Tool Selection Criteria:**
+
 1. Use existing tools before requesting new ones
 2. Prefer open-source solutions (budget constraint)
 3. Validate tool security before integration
 4. Document tool usage patterns for future reference
 
 **Current Implementation:**
+
 - Domain experts have access to domain-specific tools
 - Tool invocations logged in GitHub Issues
 - Tool results stored in project memory for future reference
@@ -470,24 +524,24 @@ Proposed Action → Self-Critique → Adjustment → Final Proposal → Executio
 
 ## Implementation Status
 
-| Pattern | Status | Priority | Notes |
-|---------|--------|----------|-------|
-| Sequential Orchestration | ✅ Implemented | Critical | Core workflow pattern |
-| Parallel Orchestration | ✅ Implemented | High | Used for multi-domain assessments |
-| Hierarchical Decomposition | ✅ Implemented | High | Via sequential thinking MCP |
-| Error Handling & Recovery | ✅ Implemented | Critical | Core reliability pattern |
-| Review and Critique | ✅ Implemented | High | Security/finops reviews |
-| Loop Protection | ✅ Implemented | Critical | Hard-coded retry limits |
-| Domain Expert Delegation | ✅ Implemented | Critical | Core coordination pattern |
-| Maker-Checker | ✅ Implemented | High | Security-sensitive operations |
-| Dynamic Handoff | ✅ Implemented | Medium | Homelab-admin routing logic |
-| Human-in-the-Loop | ✅ Implemented | Critical | All changes require approval |
-| Guardrails | ✅ Implemented | Critical | Secrets, backups, access control |
-| Progressive Trust | 🔄 In Progress | Medium | Currently in Phase 1 |
-| ReAct | ✅ Implemented | High | Troubleshooting workflows |
-| Reflection | ✅ Implemented | High | Self-critique before proposals |
-| Planning | ✅ Implemented | High | Sequential thinking MCP |
-| Tool Use | ✅ Implemented | Critical | Terraform, Ansible, gh CLI |
+| Pattern                    | Status         | Priority | Notes                             |
+| -------------------------- | -------------- | -------- | --------------------------------- |
+| Sequential Orchestration   | ✅ Implemented | Critical | Core workflow pattern             |
+| Parallel Orchestration     | ✅ Implemented | High     | Used for multi-domain assessments |
+| Hierarchical Decomposition | ✅ Implemented | High     | Via sequential thinking MCP       |
+| Error Handling & Recovery  | ✅ Implemented | Critical | Core reliability pattern          |
+| Review and Critique        | ✅ Implemented | High     | Security/finops reviews           |
+| Loop Protection            | ✅ Implemented | Critical | Hard-coded retry limits           |
+| Domain Expert Delegation   | ✅ Implemented | Critical | Core coordination pattern         |
+| Maker-Checker              | ✅ Implemented | High     | Security-sensitive operations     |
+| Dynamic Handoff            | ✅ Implemented | Medium   | Homelab-admin routing logic       |
+| Human-in-the-Loop          | ✅ Implemented | Critical | All changes require approval      |
+| Guardrails                 | ✅ Implemented | Critical | Secrets, backups, access control  |
+| Progressive Trust          | 🔄 In Progress | Medium   | Currently in Phase 1              |
+| ReAct                      | ✅ Implemented | High     | Troubleshooting workflows         |
+| Reflection                 | ✅ Implemented | High     | Self-critique before proposals    |
+| Planning                   | ✅ Implemented | High     | Sequential thinking MCP           |
+| Tool Use                   | ✅ Implemented | Critical | Terraform, Ansible, gh CLI        |
 
 ## Success Metrics
 

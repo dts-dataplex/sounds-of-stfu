@@ -17,24 +17,28 @@ Breaking changes can invalidate existing work, user expectations, or integration
 ## What Constitutes a Breaking Change?
 
 ### API/Interface Changes
+
 - Removing or renaming public methods/functions
 - Changing function signatures (parameters, return types)
 - Modifying data structures used across boundaries
 - Changing REST API endpoints or payloads
 
 ### Behavior Changes
+
 - Altering default configuration values
 - Modifying business logic assumptions
 - Changing error handling semantics
 - Removing or disabling existing features
 
 ### Data/Schema Changes
+
 - Database schema modifications
 - File format changes
 - Configuration file structure updates
 - Message queue payload changes
 
 ### Dependency Changes
+
 - Major version bumps with breaking changes
 - Removing or replacing core libraries
 - Changing runtime requirements (Node version, Python version)
@@ -44,16 +48,20 @@ Breaking changes can invalidate existing work, user expectations, or integration
 ### 1. Identify Breaking Change
 
 **Before starting work:**
+
 ```markdown
 # In GitHub Issue
+
 ## Breaking Change Assessment
 
 **Current functionality:**
+
 - Test mode with AI bots (TTS, 6 audio types, movement patterns)
 - Synchronized across users
 - Click-to-cycle audio, drag-to-reposition
 
 **Proposed change:**
+
 - New Three.js + Vite demo with manual PeerJS connections
 - No AI bots, no test mode
 
@@ -61,6 +69,7 @@ Breaking changes can invalidate existing work, user expectations, or integration
 ✅ YES - Removes test mode functionality completely
 
 **Impact:**
+
 - Solo testing no longer possible without multiple devices
 - TTS bot conversations gone
 - Pattern movement and demo mode synchronization removed
@@ -71,11 +80,13 @@ Breaking changes can invalidate existing work, user expectations, or integration
 ### 2. Propose Migration Path
 
 **Include in issue:**
+
 - How existing functionality will be preserved OR
 - Why removal is justified AND what replaces it OR
 - Detailed migration steps for users
 
 **Options:**
+
 - A) **Parallel implementation**: Keep old + new, deprecate old later
 - B) **Feature flag**: Toggle between implementations
 - C) **Migration tool**: Automated conversion from old to new
@@ -84,12 +95,14 @@ Breaking changes can invalidate existing work, user expectations, or integration
 ### 3. Architect Review
 
 **Infrastructure-architect evaluates:**
+
 - Is breaking change necessary?
 - Are there non-breaking alternatives?
 - What's the migration complexity?
 - What's the rollback plan?
 
 **Product-manager evaluates:**
+
 - User impact assessment
 - Feature parity with existing
 - Timeline for migration
@@ -98,12 +111,14 @@ Breaking changes can invalidate existing work, user expectations, or integration
 ### 4. Approval or Alternative
 
 **If approved:**
+
 - Document in ADR with migration plan
 - Create feature flag or parallel branch
 - Update tests to cover both old and new
 - Plan deprecation timeline
 
 **If rejected:**
+
 - Propose non-breaking alternative
 - Implement as additive feature
 - Use adapter pattern to maintain compatibility
@@ -146,6 +161,7 @@ def before_implementing_feature(feature_spec):
 ## Red Flags - STOP and Seek Approval
 
 **Immediate red flags:**
+
 - "This will replace the existing..."
 - "The old way won't work anymore..."
 - "We need to remove X to add Y..."
@@ -153,6 +169,7 @@ def before_implementing_feature(feature_spec):
 - "The API will now return different..."
 
 **When you think these thoughts, STOP:**
+
 - "It's simpler to start from scratch"
 - "The old code was technical debt anyway"
 - "Users can just update their code"
@@ -162,11 +179,13 @@ def before_implementing_feature(feature_spec):
 ## Exceptions
 
 **Emergency security fixes:**
+
 - Can break to fix critical vulnerability
 - MUST document in security advisory
 - MUST provide patch within 24 hours
 
 **Experimental features (flagged):**
+
 - Can change freely if behind feature flag
 - MUST be clearly marked as experimental
 - MUST not affect default behavior
@@ -174,12 +193,14 @@ def before_implementing_feature(feature_spec):
 ## Consequences
 
 **Benefits:**
+
 - Prevents unintended regressions
 - Forces consideration of migration paths
 - Architectural review improves quality
 - User expectations managed proactively
 
 **Costs:**
+
 - Approval process adds time
 - May require additional implementation work
 - Need architect availability for reviews
@@ -188,12 +209,14 @@ def before_implementing_feature(feature_spec):
 ## Recent Violation Example
 
 **Commit 19d721c** (Reverted in 6675f6c):
+
 - ❌ Built new demo on main (violates ADR-002)
 - ❌ Replaced test mode without approval (violates ADR-004)
 - ❌ No migration path provided
 - ❌ No issue created for breaking change
 
 **Correct process would have been:**
+
 1. Create issue: "Proposal: Replace test mode with Three.js demo"
 2. Document what breaks (AI bots, TTS, synchronization)
 3. Propose migration (keep both, feature flag, or replacement)

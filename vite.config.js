@@ -1,6 +1,8 @@
 import { defineConfig } from 'vite';
+import chatsuboSignaling from './vite-plugin-chatsubo-signaling.js';
 
 export default defineConfig({
+  plugins: [chatsuboSignaling()],
   worker: {
     format: 'es',
   },

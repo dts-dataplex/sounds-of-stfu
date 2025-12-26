@@ -19,6 +19,7 @@ Privacy-first architecture requires processing sensitive data locally. Small Lan
 ### 1. Problem Domain Analysis
 
 **For each AI feature, identify:**
+
 - Input data characteristics (text, audio, image)
 - Privacy sensitivity (PII, conversations, metadata)
 - Latency requirements (real-time, near-real-time, batch)
@@ -28,6 +29,7 @@ Privacy-first architecture requires processing sensitive data locally. Small Lan
 ### 2. SLM Candidate Selection
 
 **Model families to evaluate:**
+
 - **Phi-3.5-mini** (3.8B) - General reasoning, coding
 - **Qwen2.5** (0.5B-7B) - Multilingual, efficiency
 - **Gemma 2** (2B-9B) - Google, instruction-following
@@ -35,6 +37,7 @@ Privacy-first architecture requires processing sensitive data locally. Small Lan
 - **SmolLM2** (135M-1.7B) - Ultra-efficient, on-device
 
 **Domain-specific models:**
+
 - **Whisper** (39M-1.5B) - Speech-to-text (already using)
 - **Kokoro** - Text-to-speech (already using)
 - **DistilBERT** (66M) - Sentiment analysis, classification
@@ -43,6 +46,7 @@ Privacy-first architecture requires processing sensitive data locally. Small Lan
 ### 3. Deployment Options
 
 **In-Browser (Transformers.js):**
+
 ```javascript
 // Example: Sentiment analysis with DistilBERT
 import { pipeline } from '@xenova/transformers';
@@ -52,17 +56,19 @@ const classifier = await pipeline(
   'Xenova/distilbert-base-uncased-finetuned-sst-2-english'
 );
 
-const result = await classifier("This conversation is getting heated.");
+const result = await classifier('This conversation is getting heated.');
 // { label: 'NEGATIVE', score: 0.87 }
 ```
 
 **Local Server (Ollama/llama.cpp):**
+
 ```bash
 # Run Phi-3.5-mini for conversation summaries
 ollama run phi3.5:mini "Summarize this bar conversation: ..."
 ```
 
 **Web Workers (Non-blocking):**
+
 ```javascript
 // Heavy computation in background thread
 const worker = new Worker('sentiment-worker.js');
@@ -74,15 +80,16 @@ worker.onmessage = (e) => updateHeatmap(e.data.sentiment);
 
 **Test each candidate across:**
 
-| Metric | Target | Measurement |
-|--------|--------|-------------|
-| **Accuracy** | >85% F1 score | Against labeled test set |
-| **Latency** | <200ms p95 | Local benchmark suite |
-| **Memory** | <500MB peak | Browser DevTools profiling |
-| **Model size** | <100MB ONNX | Download size for web |
-| **Privacy** | 100% local | No external API calls |
+| Metric         | Target        | Measurement                |
+| -------------- | ------------- | -------------------------- |
+| **Accuracy**   | >85% F1 score | Against labeled test set   |
+| **Latency**    | <200ms p95    | Local benchmark suite      |
+| **Memory**     | <500MB peak   | Browser DevTools profiling |
+| **Model size** | <100MB ONNX   | Download size for web      |
+| **Privacy**    | 100% local    | No external API calls      |
 
 **Comparison methodology:**
+
 ```python
 # Example: Sentiment analysis comparison
 models = {
@@ -107,32 +114,38 @@ generate_report(results, output="docs/slm-evaluation/sentiment-analysis.md")
 ### 5. RAG vs Fine-tuning Decision
 
 **Use RAG (Retrieval-Augmented Generation) when:**
+
 - Domain knowledge changes frequently
 - Need to cite sources for transparency
 - Model size constraints prevent knowledge embedding
 - Knowledge corpus is large (>10k documents)
 
 **Use fine-tuning when:**
+
 - Domain vocabulary is specialized
 - Need consistent output format
 - Latency is critical (no retrieval overhead)
 - Knowledge is stable and bounded
 
 **Hybrid approach:**
+
 - Fine-tune for domain vocabulary + output format
 - RAG for up-to-date knowledge retrieval
 
 ## Sounds of STFU Use Cases
 
 ### Sentiment Analysis (Booth Privacy)
+
 **Requirement:** Detect when conversation becomes "heated" for privacy prompts
 
 **SLM Candidate:** DistilBERT (66M params)
+
 - In-browser via Transformers.js
 - <100ms latency per message
 - 100% local, no API calls
 
 **Evaluation:**
+
 ```javascript
 // Test against labeled Chatsubo conversations
 const testData = loadTestConversations();
@@ -145,14 +158,17 @@ const results = await evaluateSentimentModel(
 ```
 
 ### Topic Detection (Heat Map)
+
 **Requirement:** Cluster conversations by topic for heat map visualization
 
 **SLM Candidate:** BERT-tiny (4.4M params) + K-means clustering
+
 - Embed conversation messages
 - Cluster similar embeddings
 - Label clusters with representative keywords
 
 **Evaluation:**
+
 ```python
 # Compare embeddings quality
 models = ["bert-tiny", "all-MiniLM-L6-v2", "e5-small"]
@@ -164,19 +180,23 @@ results = evaluate_topic_clustering(
 ```
 
 ### Conversation Summarization
+
 **Requirement:** Generate summaries for newcomers joining mid-conversation
 
 **SLM Candidate:** Phi-3.5-mini (3.8B params)
+
 - Local Ollama server (not in-browser due to size)
 - Batch processing every 5 minutes
 - Output: 2-3 sentence summary
 
 **RAG approach:**
+
 - Retrieve last 20 messages from conversation
 - Pass to Phi-3.5-mini with prompt: "Summarize this bar conversation in 2-3 sentences"
 - Cache summary, update incrementally
 
 **Evaluation:**
+
 ```bash
 # Test summary quality
 ollama run phi3.5:mini < test_conversations.txt > summaries.txt
@@ -187,6 +207,7 @@ ollama run phi3.5:mini < test_conversations.txt > summaries.txt
 ## Privacy-First Requirements
 
 **MUST enforce:**
+
 - ✅ All AI processing happens client-side OR local server
 - ✅ No conversation data sent to external APIs
 - ✅ Model weights loaded from local cache (service worker)
@@ -194,11 +215,13 @@ ollama run phi3.5:mini < test_conversations.txt > summaries.txt
 - ✅ Clear labeling: "AI-generated summary" vs user content
 
 **MAY use external APIs for:**
+
 - ✅ Public data retrieval (Wikipedia, news APIs)
 - ✅ Publishing aggregated/anonymized metrics
 - ✅ Model weight downloads (one-time, cached)
 
 **MUST NOT:**
+
 - ❌ Send conversation text to OpenAI/Anthropic/etc
 - ❌ Use cloud-based sentiment/topic APIs
 - ❌ Upload audio for transcription (already using local Whisper)
@@ -208,33 +231,40 @@ ollama run phi3.5:mini < test_conversations.txt > summaries.txt
 **For each SLM evaluation, create:**
 
 `docs/slm-evaluation/<use-case>.md`:
+
 ```markdown
 # SLM Evaluation: Sentiment Analysis
 
 ## Problem Domain
+
 Detect conversation sentiment for booth privacy prompts
 
 ## Candidates Evaluated
+
 1. DistilBERT (66M) - Winner ✅
 2. BERT-tiny (4.4M)
 3. VADER lexicon (baseline)
 
 ## Results
-| Model | Accuracy | Latency p95 | Memory | Size |
-|-------|----------|-------------|--------|------|
-| DistilBERT | 89.2% | 145ms | 280MB | 67MB |
-| BERT-tiny | 81.5% | 68ms | 95MB | 16MB |
-| VADER | 76.3% | 8ms | 5MB | 500KB |
+
+| Model      | Accuracy | Latency p95 | Memory | Size  |
+| ---------- | -------- | ----------- | ------ | ----- |
+| DistilBERT | 89.2%    | 145ms       | 280MB  | 67MB  |
+| BERT-tiny  | 81.5%    | 68ms        | 95MB   | 16MB  |
+| VADER      | 76.3%    | 8ms         | 5MB    | 500KB |
 
 ## Decision
+
 Selected DistilBERT: Best accuracy/latency trade-off, acceptable memory.
 
 ## Implementation
+
 - Transformers.js in web worker
 - Model cached in service worker
 - Batch processing (10 messages at a time)
 
 ## Privacy Verification
+
 ✅ No external API calls
 ✅ All processing in-browser
 ✅ Model loaded from local cache
@@ -243,6 +273,7 @@ Selected DistilBERT: Best accuracy/latency trade-off, acceptable memory.
 ## Consequences
 
 **Benefits:**
+
 - Privacy-first AI without cloud dependencies
 - Transparent evaluation process
 - Observable performance metrics
@@ -250,6 +281,7 @@ Selected DistilBERT: Best accuracy/latency trade-off, acceptable memory.
 - Lower operational costs (no API fees)
 
 **Costs:**
+
 - Upfront evaluation effort
 - Model selection complexity
 - Need to maintain local infrastructure (Ollama/llama.cpp)

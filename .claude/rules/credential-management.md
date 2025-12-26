@@ -23,6 +23,7 @@ All credentials follow the data classification framework:
 ### 1. Proxmox VE Infrastructure
 
 #### 1.1 Proxmox VE Web UI Access
+
 - **Type:** Administrative Account
 - **Classification:** SECRETS
 - **Account:** `root@pam`
@@ -36,6 +37,7 @@ All credentials follow the data classification framework:
   - API token generation
 
 #### 1.2 Proxmox API Tokens
+
 - **Type:** Service Account API Token
 - **Classification:** SECRETS
 - **Account:** `terraform@pve` (to be created)
@@ -48,6 +50,7 @@ All credentials follow the data classification framework:
 - **Permissions:** PVEAdmin on /
 
 #### 1.3 SSH Keys for Proxmox Host
+
 - **Type:** Ed25519 SSH Key Pair
 - **Classification:** SECRETS
 - **Key Name:** `id_ed25519_proxmox_admin`
@@ -66,6 +69,7 @@ All credentials follow the data classification framework:
 ### 2. VaultWarden (Secrets Management)
 
 #### 2.1 VaultWarden Master Password
+
 - **Type:** Master Account
 - **Classification:** SECRETS
 - **Account:** Admin user (to be created during setup)
@@ -77,6 +81,7 @@ All credentials follow the data classification framework:
   - Service account passwords
 
 #### 2.2 VaultWarden API Token
+
 - **Type:** API Access Token
 - **Classification:** SECRETS
 - **Usage:** Automated secret retrieval for pipelines
@@ -90,6 +95,7 @@ All credentials follow the data classification framework:
 ### 3. External Identity & Cloud Services
 
 #### 3.1 Microsoft 365 / Azure Entra ID
+
 - **Type:** Administrative Account
 - **Classification:** SECRETS
 - **Account:** `dataplex@dataplextechnology.net`
@@ -102,6 +108,7 @@ All credentials follow the data classification framework:
   - Email notifications
 
 #### 3.2 Agent Service Account
+
 - **Type:** Service Account
 - **Classification:** SECRETS
 - **Account:** `helpdesk@thisisunsafe.ai`
@@ -117,6 +124,7 @@ All credentials follow the data classification framework:
 ### 4. Version Control & CI/CD
 
 #### 4.1 GitHub Personal Access Token (PAT)
+
 - **Type:** API Token
 - **Classification:** SECRETS
 - **Account:** Personal GitHub account
@@ -132,6 +140,7 @@ All credentials follow the data classification framework:
   - GitHub Actions (if implemented)
 
 #### 4.2 SSH Key for GitHub
+
 - **Type:** Ed25519 SSH Key Pair
 - **Classification:** SECRETS
 - **Key Name:** `id_ed25519_github`
@@ -148,6 +157,7 @@ All credentials follow the data classification framework:
 ### 5. Monitoring & Alerting
 
 #### 5.1 SMTP Credentials for Email Alerts
+
 - **Type:** Email Account / App Password
 - **Classification:** SECRETS
 - **Account:** TBD (Gmail, Microsoft 365, or custom)
@@ -163,6 +173,7 @@ All credentials follow the data classification framework:
 ### 6. Network Infrastructure
 
 #### 6.1 Ubiquiti UniFi Controller
+
 - **Type:** Administrative Account
 - **Classification:** SECRETS
 - **Account:** Admin user for UniFi Dream Machine SE
@@ -179,6 +190,7 @@ All credentials follow the data classification framework:
 ### 7. Storage & Backup
 
 #### 7.1 ZFS Encryption Keys
+
 - **Type:** Encryption Key Files
 - **Classification:** SECRETS
 - **Storage Location:**
@@ -192,6 +204,7 @@ All credentials follow the data classification framework:
 - **Note:** Required for any encrypted ZFS pool/dataset access
 
 #### 7.2 Backup Encryption Passphrase
+
 - **Type:** Passphrase / Key
 - **Classification:** SECRETS
 - **Storage Location:**
@@ -215,6 +228,7 @@ All credential presentation follows these protocols:
 **Use Case:** Sharing credentials with human operator securely
 
 **Workflow:**
+
 1. Admin stores credential in VaultWarden
 2. Create time-limited, view-limited secure share link
 3. Send link via encrypted channel (Signal, encrypted email)
@@ -222,11 +236,13 @@ All credential presentation follows these protocols:
 5. Link auto-expires after configured time/views
 
 **Configuration:**
+
 - Max Views: 1-3
 - Expiration: 1 hour - 7 days (depending on urgency)
 - Delete after access: Yes
 
 **Example:**
+
 ```bash
 # Admin creates secure send via VaultWarden CLI (bw)
 bw send create --text "$(bw get password 'Proxmox Root')" \
@@ -242,12 +258,14 @@ bw send create --text "$(bw get password 'Proxmox Root')" \
 **Use Case:** Verifying credentials already in possession
 
 **Workflow:**
+
 1. Admin: "I will need the Proxmox root password"
 2. Operator: Retrieves from personal BitWarden
 3. Admin: Provides first 3 and last 3 characters for verification
 4. Operator: Confirms match without transmitting full credential
 
 **Example:**
+
 ```
 Admin: "Verify Proxmox root password - starts with 'X9k' and ends with 'w2Z'"
 Operator: "Confirmed"
@@ -260,12 +278,14 @@ Operator: "Confirmed"
 **Use Case:** Bulk credential setup or complex configurations
 
 **Workflow:**
+
 1. Admin creates credentials document (YAML/JSON)
 2. Encrypt file using GPG with operator's public key
 3. Share encrypted file via git repository or secure channel
 4. Operator decrypts with private key
 
 **Example:**
+
 ```bash
 # Admin encrypts credential file
 gpg --encrypt --recipient operator@example.com credentials.yaml
@@ -287,16 +307,19 @@ shred -vfz -n 10 credentials.yaml
 **Use Case:** Initial setup or emergency situations
 
 **Workflow:**
+
 1. Admin prepares credential requirements document (no secrets)
 2. Operator generates/retrieves credentials offline
 3. Operator manually enters credentials into VaultWarden
 4. Verification performed via out-of-band method
 
 **Example:**
+
 ```markdown
 # Credential Requirements - Proxmox Initial Setup
 
 ## Required Credentials:
+
 1. Proxmox root@pam password
    - Length: 24+ characters
    - Complexity: Uppercase, lowercase, numbers, symbols
@@ -315,6 +338,7 @@ shred -vfz -n 10 credentials.yaml
 **Use Case:** Pipeline automation requiring credentials
 
 **Workflow:**
+
 1. Credentials stored in VaultWarden
 2. Pipeline retrieves credential via VaultWarden API
 3. Credential injected as environment variable (never logged)
@@ -322,6 +346,7 @@ shred -vfz -n 10 credentials.yaml
 5. Credential cleared after process completes
 
 **Example:**
+
 ```bash
 # Terraform provider configuration
 export PROXMOX_VE_ENDPOINT="https://10.2.0.1:8006"
@@ -337,14 +362,14 @@ unset PROXMOX_VE_API_TOKEN
 
 ## Credential Rotation Schedule
 
-| Credential Type | Rotation Frequency | Trigger |
-|----------------|-------------------|---------|
-| Root Passwords | Every 90 days | Calendar |
-| API Tokens | Every 180 days | Calendar |
-| SSH Keys | Every 365 days | Calendar |
-| Service Account Passwords | Every 90 days | Calendar |
-| Emergency Access Credentials | After every use | Event |
-| Encryption Keys | Only on compromise | Event |
+| Credential Type              | Rotation Frequency | Trigger  |
+| ---------------------------- | ------------------ | -------- |
+| Root Passwords               | Every 90 days      | Calendar |
+| API Tokens                   | Every 180 days     | Calendar |
+| SSH Keys                     | Every 365 days     | Calendar |
+| Service Account Passwords    | Every 90 days      | Calendar |
+| Emergency Access Credentials | After every use    | Event    |
+| Encryption Keys              | Only on compromise | Event    |
 
 **Automated Reminders:** Monitoring system sends rotation reminders 14 days before expiration
 
@@ -384,6 +409,7 @@ unset PROXMOX_VE_API_TOKEN
 ### Scenario 1: VaultWarden Unavailable
 
 **Procedure:**
+
 1. Access BitWarden Premium (external, always available)
 2. Retrieve emergency root@pam password
 3. Access Proxmox Web UI
@@ -393,6 +419,7 @@ unset PROXMOX_VE_API_TOKEN
 ### Scenario 2: Forgotten VaultWarden Master Password
 
 **Procedure:**
+
 1. Access BitWarden Premium
 2. Retrieve VaultWarden master password backup
 3. Log into VaultWarden
@@ -402,6 +429,7 @@ unset PROXMOX_VE_API_TOKEN
 ### Scenario 3: BitWarden Premium Unavailable
 
 **Procedure:**
+
 1. Access offline encrypted USB backup drive
 2. Decrypt emergency credentials file
 3. Use emergency root@pam password for Proxmox access
@@ -411,11 +439,13 @@ unset PROXMOX_VE_API_TOKEN
 ### Scenario 4: Total Credential Loss
 
 **Prevention:**
+
 - Encrypted USB backup drive stored in secure physical location
 - Emergency credentials printed on paper, stored in safe
 - Recovery procedures tested quarterly
 
 **Recovery:**
+
 1. Access Proxmox via console (IPMI/physical)
 2. Reset root password (requires physical access/IPMI)
 3. Restore VaultWarden from backup
@@ -427,17 +457,20 @@ unset PROXMOX_VE_API_TOKEN
 ## Compliance & Audit
 
 ### Logging Requirements:
+
 - All credential access logged to VaultWarden audit log
 - Proxmox authentication attempts logged
 - SSH access logged via syslog
 - Unusual access patterns trigger alerts
 
 ### Audit Schedule:
+
 - Monthly: Review VaultWarden access logs
 - Quarterly: Verify credential inventory completeness
 - Annually: Full credential rotation and security review
 
 ### Documentation Requirements:
+
 - All new credentials documented in this inventory within 24 hours
 - Credential changes logged in GitHub Issues
 - Emergency access events documented in incident reports
@@ -464,6 +497,7 @@ unset PROXMOX_VE_API_TOKEN
 When setting up the Proxmox infrastructure, complete credentials in this order:
 
 ### Phase 1: Initial Access
+
 - [ ] Set Proxmox root@pam password (via console)
 - [ ] Generate SSH key pair for Proxmox access
 - [ ] Add SSH public key to Proxmox authorized_keys
@@ -471,6 +505,7 @@ When setting up the Proxmox infrastructure, complete credentials in this order:
 - [ ] Store credentials in temporary secure location
 
 ### Phase 2: VaultWarden Deployment
+
 - [ ] Deploy VaultWarden container on Proxmox
 - [ ] Create VaultWarden master password
 - [ ] Store VaultWarden master password in BitWarden Premium
@@ -478,6 +513,7 @@ When setting up the Proxmox infrastructure, complete credentials in this order:
 - [ ] Verify VaultWarden backups configured
 
 ### Phase 3: Automation Setup
+
 - [ ] Create Proxmox API token for Terraform
 - [ ] Store API token in VaultWarden
 - [ ] Configure Terraform to retrieve token from VaultWarden
@@ -486,12 +522,14 @@ When setting up the Proxmox infrastructure, complete credentials in this order:
 - [ ] Store GitHub PAT in VaultWarden
 
 ### Phase 4: Monitoring & Alerting
+
 - [ ] Configure SMTP credentials for alerts
 - [ ] Store SMTP credentials in VaultWarden
 - [ ] Test email alert delivery
 - [ ] Configure credential rotation reminders
 
 ### Phase 5: Backup & Recovery
+
 - [ ] Generate backup encryption passphrase
 - [ ] Store in VaultWarden and BitWarden Premium
 - [ ] Create encrypted USB emergency backup
@@ -502,16 +540,17 @@ When setting up the Proxmox infrastructure, complete credentials in this order:
 
 ## Quick Reference: Credential Presentation Methods
 
-| Scenario | Recommended Method | Security Level | Example |
-|----------|-------------------|----------------|---------|
-| One-time credential share | VaultWarden Send | High | Initial setup password |
-| Verification only | Out-of-band verification | High | Password confirmation |
-| Bulk credential setup | Encrypted file exchange | High | Full credential export |
-| Emergency access | Interactive terminal | Medium | Console password reset |
-| Pipeline automation | Environment variable injection | High | Terraform API token |
-| Documentation | Credential requirements (no secrets) | Safe | Setup checklist |
+| Scenario                  | Recommended Method                   | Security Level | Example                |
+| ------------------------- | ------------------------------------ | -------------- | ---------------------- |
+| One-time credential share | VaultWarden Send                     | High           | Initial setup password |
+| Verification only         | Out-of-band verification             | High           | Password confirmation  |
+| Bulk credential setup     | Encrypted file exchange              | High           | Full credential export |
+| Emergency access          | Interactive terminal                 | Medium         | Console password reset |
+| Pipeline automation       | Environment variable injection       | High           | Terraform API token    |
+| Documentation             | Credential requirements (no secrets) | Safe           | Setup checklist        |
 
 **NEVER:**
+
 - Transmit credentials via unencrypted email
 - Store credentials in git repositories
 - Include credentials in chat transcripts

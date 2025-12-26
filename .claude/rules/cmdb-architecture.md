@@ -8,6 +8,7 @@
 ## Overview
 
 This document defines the CMDB architecture for site-ranch and site-satx homelab infrastructure. The CMDB serves as the single source of truth for:
+
 - IT asset inventory (hardware, software, virtual resources)
 - Configuration items (CIs) and their relationships
 - Credential lifecycle tracking
@@ -17,6 +18,7 @@ This document defines the CMDB architecture for site-ranch and site-satx homelab
 ## Core Requirements
 
 ### Functional Requirements
+
 1. **Asset Inventory Management**: Track all physical and virtual assets across both sites
 2. **Relationship Mapping**: Document dependencies between configuration items
 3. **Credential Lifecycle Tracking**: Monitor credential creation, usage, rotation, and retirement
@@ -26,6 +28,7 @@ This document defines the CMDB architecture for site-ranch and site-satx homelab
 7. **Integration Ready**: APIs for VaultWarden, Proxmox, Terraform, Ansible
 
 ### Non-Functional Requirements
+
 1. **Self-Hosted**: Must run on Proxmox infrastructure (budget: free/open source)
 2. **Lightweight**: Minimal resource consumption (homelab constraint)
 3. **API-First**: RESTful API for agent integration
@@ -39,6 +42,7 @@ This document defines the CMDB architecture for site-ranch and site-satx homelab
 ### Recommended Solution: **i-doit Open** (Primary) with **NetBox** (Alternative)
 
 #### i-doit Open
+
 - **Pros:**
   - True open-source CMDB (AGPLv3 license)
   - Web-based, PHP/MariaDB stack (LAMP compatible)
@@ -62,6 +66,7 @@ This document defines the CMDB architecture for site-ranch and site-satx homelab
   - Runtime: PHP 7.4+ with Apache/Nginx
 
 #### NetBox (Alternative - DCIM focused)
+
 - **Pros:**
   - Purpose-built for infrastructure documentation
   - Excellent network device management
@@ -85,6 +90,7 @@ This document defines the CMDB architecture for site-ranch and site-satx homelab
   - Runtime: Python 3.8+, Redis
 
 **Decision: Deploy both solutions**
+
 - **i-doit Open**: Primary CMDB for general asset/credential tracking
 - **NetBox**: Specialized DCIM for network infrastructure
 - Integration between them via APIs
@@ -136,24 +142,28 @@ This document defines the CMDB architecture for site-ranch and site-satx homelab
 #### 1. Configuration Items (CIs)
 
 **Physical Assets:**
+
 - Servers (Proxmox nodes, NAS devices)
 - Network Equipment (switches, routers, access points, UPS)
 - Endpoints (desktops, laptops, mobile devices)
 - Storage Devices (hard drives, SSDs, NVMe)
 
 **Virtual Assets:**
+
 - Virtual Machines (Proxmox VMs)
 - Containers (LXC containers)
 - Virtual Networks (VLANs, bridges)
 - Storage Pools (ZFS, Ceph)
 
 **Software/Services:**
+
 - Operating Systems
 - Applications
 - Services (Docker containers, systemd services)
 - Licenses
 
 **Logical Assets:**
+
 - IP Addresses
 - DNS Entries
 - SSL/TLS Certificates
@@ -172,6 +182,7 @@ This document defines the CMDB architecture for site-ranch and site-satx homelab
 #### 3. Credential Lifecycle Entities
 
 **Credential Types:**
+
 - User Accounts (human interactive)
 - Service Accounts (automated processes)
 - API Tokens
@@ -181,6 +192,7 @@ This document defines the CMDB architecture for site-ranch and site-satx homelab
 - Database Credentials
 
 **Lifecycle States:**
+
 - `pending` - Requested but not yet created
 - `active` - In use and valid
 - `expiring_soon` - Within rotation window (14 days)
@@ -189,6 +201,7 @@ This document defines the CMDB architecture for site-ranch and site-satx homelab
 - `retired` - Decommissioned, kept for audit
 
 **Tracked Attributes:**
+
 - Created date
 - Last rotation date
 - Next rotation due date
@@ -205,6 +218,7 @@ This document defines the CMDB architecture for site-ranch and site-satx homelab
 **Purpose:** CMDB tracks credential metadata; VaultWarden stores actual secrets
 
 **Integration Method:**
+
 - CMDB stores VaultWarden item ID (not the secret itself)
 - CMDB tracks lifecycle metadata
 - Agents retrieve actual credentials from VaultWarden using item ID
@@ -212,6 +226,7 @@ This document defines the CMDB architecture for site-ranch and site-satx homelab
 - Actual rotation executed via VaultWarden API
 
 **API Workflow:**
+
 ```python
 # CMDB queries for expiring credentials
 expiring_creds = cmdb.query("SELECT * FROM credentials WHERE next_rotation < NOW() + INTERVAL 14 DAY")
@@ -234,6 +249,7 @@ for cred in expiring_creds:
 **Purpose:** Automated discovery of VMs, containers, storage, network
 
 **Integration Method:**
+
 - Proxmox API polling (scheduled every 6-24 hours)
 - Discover new VMs/containers automatically
 - Update resource allocations (CPU, RAM, disk)
@@ -241,6 +257,7 @@ for cred in expiring_creds:
 - Sync storage pool information
 
 **Discovery Agent:**
+
 ```python
 # Proxmox discovery script (runs via cron)
 proxmox_api = ProxmoxAPI(endpoint, api_token)
@@ -264,12 +281,14 @@ for vm in vms:
 **Purpose:** Track infrastructure-as-code managed resources
 
 **Integration Method:**
+
 - Terraform state parsing
 - Track which resources are IaC-managed vs manually created
 - Store Terraform resource ID for correlation
 - Update CMDB as part of terraform apply workflow
 
 **Post-Apply Hook:**
+
 ```hcl
 # terraform/modules/vm/main.tf
 resource "null_resource" "cmdb_update" {
@@ -297,6 +316,7 @@ resource "null_resource" "cmdb_update" {
 **Purpose:** Link CMDB changes to change requests and approvals
 
 **Integration Method:**
+
 - CMDB changes create GitHub Issues
 - Issue ID stored in CMDB change history
 - Agents query CMDB for context when working on issues
@@ -306,6 +326,7 @@ resource "null_resource" "cmdb_update" {
 **Purpose:** Enrich alerts with CMDB context
 
 **Integration Method:**
+
 - Prometheus/Grafana alert includes CI ID
 - Alert handler queries CMDB for:
   - CI owner/responsible party
@@ -390,31 +411,37 @@ Track resolution
 ## Agent Integration
 
 ### Storage Expert
+
 - **Queries:** Storage devices, ZFS pools, backup systems
 - **Updates:** Storage capacity, health status, backup schedules
 - **Credentials:** ZFS encryption keys, backup encryption keys
 
 ### Network Expert
+
 - **Queries:** Network devices, VLANs, firewall rules, IP allocations
 - **Updates:** Network topology changes, VLAN assignments
 - **Credentials:** Network device admin passwords, SNMP credentials
 
 ### Compute Expert
+
 - **Queries:** VMs, containers, resource allocations
 - **Updates:** VM lifecycle events, resource changes
 - **Credentials:** VM root passwords, SSH keys
 
 ### Security Expert
+
 - **Queries:** All credential lifecycle data, CI security metadata
 - **Updates:** Credential rotations, security classifications
 - **Credentials:** ALL - responsible for rotation
 
 ### Monitoring Expert
+
 - **Queries:** Monitoring targets, alert recipients, service dependencies
 - **Updates:** Monitoring configuration, alert rules
 - **Credentials:** SMTP credentials, API tokens for alert destinations
 
 ### Integration Expert (NEW)
+
 - **Queries:** CI relationships, dependencies, automation status
 - **Updates:** Terraform state sync, Ansible inventory sync
 - **Credentials:** API tokens for automation
@@ -423,17 +450,18 @@ Track resolution
 
 CMDB data is classified according to the data classification framework:
 
-| Data Type | Classification | Access Control |
-|-----------|---------------|----------------|
-| Credential secrets (actual passwords) | **SECRET** | VaultWarden only, never in CMDB |
-| Credential metadata (rotation dates, owner) | **PRIVATE** | CMDB, accessible to agents with need-to-know |
-| VaultWarden item IDs | **PRIVATE** | CMDB, restricted to security/domain experts |
-| Asset serial numbers, purchase dates | **PRIVATE** | CMDB, accessible to authorized personnel |
-| Network topology, IP addresses | **PRIVATE** | CMDB, accessible to network/security experts |
-| CI names, basic attributes | **PRIVATE** | CMDB, accessible to all domain experts |
-| Publicly documented services | **PUBLIC** | Can be in public documentation |
+| Data Type                                   | Classification | Access Control                               |
+| ------------------------------------------- | -------------- | -------------------------------------------- |
+| Credential secrets (actual passwords)       | **SECRET**     | VaultWarden only, never in CMDB              |
+| Credential metadata (rotation dates, owner) | **PRIVATE**    | CMDB, accessible to agents with need-to-know |
+| VaultWarden item IDs                        | **PRIVATE**    | CMDB, restricted to security/domain experts  |
+| Asset serial numbers, purchase dates        | **PRIVATE**    | CMDB, accessible to authorized personnel     |
+| Network topology, IP addresses              | **PRIVATE**    | CMDB, accessible to network/security experts |
+| CI names, basic attributes                  | **PRIVATE**    | CMDB, accessible to all domain experts       |
+| Publicly documented services                | **PUBLIC**     | Can be in public documentation               |
 
 **Critical Security Rules:**
+
 1. CMDB **NEVER** stores actual credentials (passwords, keys, tokens)
 2. CMDB stores VaultWarden item IDs for reference only
 3. Credential retrieval requires VaultWarden API call with proper authentication
@@ -449,20 +477,21 @@ CMDB data is classified according to the data classification framework:
 ostemplate: debian-12-standard
 hostname: cmdb
 cores: 2
-memory: 4096  # 4GB RAM
+memory: 4096 # 4GB RAM
 swap: 2048
-rootfs: local-lvm:20  # 20GB root filesystem
+rootfs: local-lvm:20 # 20GB root filesystem
 net0: name=eth0,bridge=vmbr1,tag=201,ip=10.2.1.10/24,gw=10.2.1.1
 nameserver: 10.2.1.1
 searchdomain: site-ranch.local
 unprivileged: 1
 features: nesting=1
-startup: order=3  # Start after network, before VMs
+startup: order=3 # Start after network, before VMs
 ```
 
 ### Software Stack
 
 **i-doit Open Installation:**
+
 ```bash
 # Base packages
 apt update && apt install -y apache2 mariadb-server php php-{cli,mysql,ldap,gd,xml,zip,curl,mbstring}
@@ -482,6 +511,7 @@ chown -R www-data:www-data /var/www/html/idoit
 ```
 
 **NetBox Installation:**
+
 ```bash
 # Install dependencies
 apt update && apt install -y python3 python3-pip postgresql redis-server
@@ -503,17 +533,20 @@ systemctl start netbox netbox-rq
 ### Backup Strategy
 
 **Backup Scope:**
+
 - CMDB database (MariaDB/PostgreSQL dumps)
 - Configuration files (/etc/apache2, /etc/nginx)
 - Application files (/var/www/html/idoit)
 - API credentials (stored in VaultWarden)
 
 **Backup Schedule:**
+
 - Daily: Incremental database backup
 - Weekly: Full database backup + file system backup
 - Monthly: Long-term retention backup
 
 **Backup Location:**
+
 - Primary: Local ZFS snapshot (nvme-pool)
 - Secondary: Proxmox Backup Server
 - Tertiary: Offsite backup (encrypted)
@@ -522,23 +555,25 @@ systemctl start netbox netbox-rq
 
 ### User Roles
 
-| Role | Access Level | Permissions |
-|------|-------------|-------------|
-| **Admin** | Full access | All CRUD operations, user management, system config |
-| **Domain Expert** | Read + limited write | Query CIs, update assigned CIs, no credential access |
-| **Security Expert** | Read + credential management | Full credential lifecycle access, security audits |
-| **Automation** | API only | Limited to specific CI types via API token |
-| **Read-Only** | View only | Query data, generate reports, no modifications |
+| Role                | Access Level                 | Permissions                                          |
+| ------------------- | ---------------------------- | ---------------------------------------------------- |
+| **Admin**           | Full access                  | All CRUD operations, user management, system config  |
+| **Domain Expert**   | Read + limited write         | Query CIs, update assigned CIs, no credential access |
+| **Security Expert** | Read + credential management | Full credential lifecycle access, security audits    |
+| **Automation**      | API only                     | Limited to specific CI types via API token           |
+| **Read-Only**       | View only                    | Query data, generate reports, no modifications       |
 
 ### API Authentication
 
 **Token-Based Authentication:**
+
 - Each domain expert agent has dedicated API token
 - Tokens stored in VaultWarden
 - Tokens rotated every 180 days
 - Token scopes limit access to specific CI types
 
 **Example Token Permissions:**
+
 ```json
 {
   "token_id": "storage-expert-api",
@@ -567,6 +602,7 @@ Track these metrics to measure CMDB effectiveness:
 ## Implementation Phases
 
 ### Phase 1: Foundation (Week 1-2)
+
 - [ ] Deploy CMDB LXC container
 - [ ] Install i-doit Open
 - [ ] Configure database and backups
@@ -574,12 +610,14 @@ Track these metrics to measure CMDB effectiveness:
 - [ ] Document manual data entry procedures
 
 ### Phase 2: Core Assets (Week 3-4)
+
 - [ ] Manually inventory site-ranch assets
 - [ ] Manually inventory site-satx assets (when available)
 - [ ] Document CI relationships
 - [ ] Create baseline reports
 
 ### Phase 3: Credential Integration (Week 5-6)
+
 - [ ] Design credential lifecycle schema
 - [ ] Integrate with VaultWarden API
 - [ ] Import existing credentials as CMDB entries
@@ -587,6 +625,7 @@ Track these metrics to measure CMDB effectiveness:
 - [ ] Test rotation workflow
 
 ### Phase 4: Automation (Week 7-8)
+
 - [ ] Implement Proxmox discovery agent
 - [ ] Implement Terraform integration
 - [ ] Create API tokens for domain experts
@@ -594,6 +633,7 @@ Track these metrics to measure CMDB effectiveness:
 - [ ] Deploy NetBox for network DCIM
 
 ### Phase 5: Operations (Ongoing)
+
 - [ ] Train domain expert agents on CMDB usage
 - [ ] Establish audit schedule
 - [ ] Monitor CMDB health metrics
@@ -602,12 +642,14 @@ Track these metrics to measure CMDB effectiveness:
 ## References
 
 **Open Source CMDB Solutions:**
+
 - [i-doit Open Source IT Documentation](https://i-doit.org/en/)
 - [NetBox - Network Documentation](https://netbox.dev/)
 - [Top 6 Open Source CMDB Solutions (Faddom)](https://faddom.com/top-6-open-source-cmdb-solutions-and-their-pros-cons/)
 - [CMDBuild - Enterprise Asset Management](https://www.cmdbuild.org/en)
 
 **CMDB Best Practices:**
+
 - [Configuration Management Database Guide (Flexera)](https://www.flexera.com/blog/it-visibility/understanding-configuration-management-databases-cmdbs-a-comprehensive-guide/)
 - [CMDB Best Practices 2025 (Faddom)](https://faddom.com/cmdb-4-key-capabilities-pros-cons-and-best-practices-2025/)
 - [How to Nail an ITIL CMDB (Invgate)](https://blog.invgate.com/itil-cmdb)

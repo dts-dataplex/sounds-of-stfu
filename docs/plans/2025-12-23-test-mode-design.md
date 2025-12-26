@@ -12,6 +12,7 @@
 Test mode spawns AI-controlled bots that produce audio, allowing solo evaluation of spatial audio quality, network performance, and platform behavior without needing multiple people or browser windows. When other users join, test mode automatically becomes "demo mode" for collaborative showcasing.
 
 **Key Design Principles:**
+
 - Solo testing without multiple devices
 - Interactive audio type selection (click to cycle)
 - Automatic adaptation to solo vs. multi-user scenarios
@@ -24,6 +25,7 @@ Test mode spawns AI-controlled bots that produce audio, allowing solo evaluation
 ### Solo Test Mode
 
 **Activation:**
+
 1. User clicks "Test Mode" button in controls area
 2. Panel expands showing configuration options:
    - **Bots slider**: 1-3 bots
@@ -33,6 +35,7 @@ Test mode spawns AI-controlled bots that produce audio, allowing solo evaluation
 3. Bots spawn at predetermined positions on canvas
 
 **Interacting with Bots:**
+
 - Bots appear as gray circles (#888888) with "BOT 1 🤖", "BOT 2 🤖", "BOT 3 🤖" labels
 - Initially silent (default state)
 - **Click bot** → starts playing first audio type
@@ -41,6 +44,7 @@ Test mode spawns AI-controlled bots that produce audio, allowing solo evaluation
 - **Drag bot** → reposition manually (works in all movement modes)
 
 **Audio Types (6-state cycle):**
+
 1. **Silence** - Off state, no audio
 2. **Speech sample** - Pre-recorded "Testing, one, two, three" (~2 seconds)
 3. **Text-to-speech** - Web Speech API: "Hello, I am Bot 1"
@@ -49,6 +53,7 @@ Test mode spawns AI-controlled bots that produce audio, allowing solo evaluation
 6. **Sound effects** - Applause/laughter (~2 seconds)
 
 **Test Completion:**
+
 - Timer displays countdown: "Time: 1:32"
 - When timer expires: 2-3 second fade-out on all bot audio
 - Bots remain visible but return to silence
@@ -79,6 +84,7 @@ When real users are present in the room, test mode becomes "demo mode" - a colla
   - Clicking bots shows tooltip: "Demo controlled by [Host]"
 
 **Synchronization:**
+
 - Bot positions, audio states, and movements sync to all users
 - Data channel protocol (same as peer positions)
 - When host clicks bot → all users hear audio change immediately
@@ -86,6 +92,7 @@ When real users are present in the room, test mode becomes "demo mode" - a colla
 - New joiners receive full bot state on connection
 
 **Edge Cases:**
+
 - **Host leaves room**: Test mode ends, bots removed for everyone
 - **Non-host leaves**: Bots continue for remaining users
 - **New user joins mid-test**: Bots sync to them immediately with current state
@@ -139,6 +146,7 @@ When enabled, each bot follows a distinct pattern to demonstrate dynamic spatial
   - Formula: `x = centerX + 150 * sin(time), y = centerY`
 
 **Movement Parameters:**
+
 - Speed: ~50px/second (visible but not jarring)
 - Update frequency: 10 times per second
 - Position broadcasts use existing data channel protocol
@@ -165,12 +173,12 @@ Small audio clips embedded directly in HTML to maintain single-file design:
 
 ```html
 <script>
-const botAudioClips = {
-  speech: 'data:audio/mp3;base64,//uQx...',  // "Testing, one, two, three" (~2s)
-  ambient: 'data:audio/mp3;base64,//uQx...', // Background chatter loop (~5s)
-  music: 'data:audio/mp3;base64,//uQx...',   // Catchy melody (~10s)
-  sfx: 'data:audio/mp3;base64,//uQx...'      // Applause/laughter (~2s)
-};
+  const botAudioClips = {
+    speech: 'data:audio/mp3;base64,//uQx...', // "Testing, one, two, three" (~2s)
+    ambient: 'data:audio/mp3;base64,//uQx...', // Background chatter loop (~5s)
+    music: 'data:audio/mp3;base64,//uQx...', // Catchy melody (~10s)
+    sfx: 'data:audio/mp3;base64,//uQx...', // Applause/laughter (~2s)
+  };
 </script>
 ```
 
@@ -181,8 +189,8 @@ const botAudioClips = {
 ```javascript
 function playBotTTS(botId) {
   const utterance = new SpeechSynthesisUtterance(`Hello, I am Bot ${botId}`);
-  utterance.rate = 0.9;  // Slightly slower for clarity
-  utterance.pitch = 1.0 + (botId * 0.1);  // Vary pitch per bot
+  utterance.rate = 0.9; // Slightly slower for clarity
+  utterance.pitch = 1.0 + botId * 0.1; // Vary pitch per bot
   speechSynthesis.speak(utterance);
 }
 ```
@@ -228,29 +236,33 @@ const testBots = {
   'bot-1': {
     id: 'bot-1',
     name: 'BOT 1 🤖',
-    position: {x: 500, y: 300},
-    audioType: 'silence',     // Current audio state (silence/speech/tts/ambient/music/sfx)
-    audioSource: null,         // AudioNode reference for cleanup
-    gainNode: null,            // GainNode for spatial audio
-    analyzerNode: null,        // AnalyserNode for speaking detection
-    stream: null,              // MediaStream (if applicable)
-    pattern: 'circle',         // Movement pattern (circle/figure8/linear/none)
-    patternPhase: 0,           // Animation phase (radians)
-    patternCenter: {x: 500, y: 300},  // Pattern origin point
-    isDragging: false          // True when user is dragging this bot
+    position: { x: 500, y: 300 },
+    audioType: 'silence', // Current audio state (silence/speech/tts/ambient/music/sfx)
+    audioSource: null, // AudioNode reference for cleanup
+    gainNode: null, // GainNode for spatial audio
+    analyzerNode: null, // AnalyserNode for speaking detection
+    stream: null, // MediaStream (if applicable)
+    pattern: 'circle', // Movement pattern (circle/figure8/linear/none)
+    patternPhase: 0, // Animation phase (radians)
+    patternCenter: { x: 500, y: 300 }, // Pattern origin point
+    isDragging: false, // True when user is dragging this bot
   },
-  'bot-2': { /* ... */ },
-  'bot-3': { /* ... */ }
+  'bot-2': {
+    /* ... */
+  },
+  'bot-3': {
+    /* ... */
+  },
 };
 
 // Test mode state
 const testModeState = {
   active: false,
-  hostPeerId: null,           // Who started test mode
-  startTime: null,            // timestamp
-  duration: 120,              // seconds
+  hostPeerId: null, // Who started test mode
+  startTime: null, // timestamp
+  duration: 120, // seconds
   movementMode: 'stationary', // 'stationary' or 'patterns'
-  numBots: 3
+  numBots: 3,
 };
 ```
 
@@ -283,6 +295,7 @@ Extend existing data channel messaging to support bot state:
 ```
 
 Broadcast when:
+
 - Host clicks bot (audio type change)
 - Host drags bot (position change)
 - Pattern movement updates position (throttled to 10/second)
@@ -328,10 +341,12 @@ Broadcast when:
 ```
 
 Sent:
+
 - When new user joins mid-test
 - Every 5 seconds as periodic sync (recovery from packet loss)
 
 **Non-Host Behavior:**
+
 - Receive bot state updates
 - Render bots locally with same positions/audio
 - Cannot send bot state changes
@@ -347,13 +362,23 @@ Sent:
 Add to controls div, initially hidden:
 
 ```html
-<div id="testModePanel" style="display:none; margin-top: 15px; padding: 15px; background: #2a2a2a; border-radius: 8px;">
+<div
+  id="testModePanel"
+  style="display:none; margin-top: 15px; padding: 15px; background: #2a2a2a; border-radius: 8px;"
+>
   <h4 style="margin-top: 0;">Test Mode</h4>
 
   <div style="margin-bottom: 10px;">
     <label>
       Number of Bots:
-      <input type="range" id="testBotCount" min="1" max="3" value="3" style="vertical-align: middle;">
+      <input
+        type="range"
+        id="testBotCount"
+        min="1"
+        max="3"
+        value="3"
+        style="vertical-align: middle;"
+      />
       <span id="testBotCountValue" style="font-weight: bold;">3</span>
     </label>
   </div>
@@ -389,17 +414,24 @@ Add to controls div, initially hidden:
     Time Remaining: <span id="testTimerValue">2:00</span>
   </div>
 
-  <div id="testModeStatus" style="display:none; margin-top: 10px; padding: 8px; background: #3a3a3a; border-radius: 4px; font-size: 12px;">
+  <div
+    id="testModeStatus"
+    style="display:none; margin-top: 10px; padding: 8px; background: #3a3a3a; border-radius: 4px; font-size: 12px;"
+  >
     Test Mode Active (You are controlling)
   </div>
 
-  <div id="demoModeStatus" style="display:none; margin-top: 10px; padding: 8px; background: #3a3a3a; border-radius: 4px; font-size: 12px;">
+  <div
+    id="demoModeStatus"
+    style="display:none; margin-top: 10px; padding: 8px; background: #3a3a3a; border-radius: 4px; font-size: 12px;"
+  >
     Demo Mode Active (Controlled by <span id="demoHostName">UserX</span>)
   </div>
 </div>
 ```
 
 **Toggle Test Mode Panel:**
+
 - Add "Test Mode" button next to mute button
 - Click to expand/collapse panel
 - Disabled if user is not host and test already active
@@ -410,7 +442,7 @@ Add to controls div, initially hidden:
 
 ```javascript
 // Render bots alongside real users
-Object.values(testBots).forEach(bot => {
+Object.values(testBots).forEach((bot) => {
   const pos = bot.position;
   const isSpeaking = speakingStates[bot.id];
 
@@ -422,7 +454,7 @@ Object.values(testBots).forEach(bot => {
 
     ctx.beginPath();
     ctx.arc(pos.x, pos.y, ringRadius, 0, Math.PI * 2);
-    ctx.strokeStyle = '#888888aa';  // Gray, semi-transparent
+    ctx.strokeStyle = '#888888aa'; // Gray, semi-transparent
     ctx.lineWidth = 4;
     ctx.stroke();
   }
@@ -477,26 +509,26 @@ Test Bots (3):
 function updateTestBots() {
   if (!testModeState.active || testModeState.movementMode !== 'patterns') return;
 
-  const time = Date.now() / 1000;  // seconds
+  const time = Date.now() / 1000; // seconds
 
-  Object.values(testBots).forEach(bot => {
-    if (bot.isDragging) return;  // Skip bots being dragged
+  Object.values(testBots).forEach((bot) => {
+    if (bot.isDragging) return; // Skip bots being dragged
 
     const center = bot.patternCenter;
 
     switch (bot.pattern) {
       case 'circle':
-        bot.position.x = center.x + 100 * Math.cos(time * Math.PI / 10);
-        bot.position.y = center.y + 100 * Math.sin(time * Math.PI / 10);
+        bot.position.x = center.x + 100 * Math.cos((time * Math.PI) / 10);
+        bot.position.y = center.y + 100 * Math.sin((time * Math.PI) / 10);
         break;
 
       case 'figure8':
-        bot.position.x = center.x + 150 * Math.sin(time * Math.PI / 10);
-        bot.position.y = center.y + 75 * Math.sin(time * Math.PI / 5);
+        bot.position.x = center.x + 150 * Math.sin((time * Math.PI) / 10);
+        bot.position.y = center.y + 75 * Math.sin((time * Math.PI) / 5);
         break;
 
       case 'linear':
-        bot.position.x = center.x + 150 * Math.sin(time * Math.PI / 10);
+        bot.position.x = center.x + 150 * Math.sin((time * Math.PI) / 10);
         bot.position.y = center.y;
         break;
     }
@@ -519,7 +551,7 @@ function updateTestBots() {
 function animate() {
   handleKeyboardMovement();
   updateSpeakingStates();
-  updateTestBots();  // <-- Add this
+  updateTestBots(); // <-- Add this
   draw();
   requestAnimationFrame(animate);
 }
@@ -568,6 +600,7 @@ function playBotTTS(botId) {
 ```
 
 **Fallback Strategy:**
+
 1. Try to play requested audio type
 2. If fails, log error to console
 3. Skip to next audio type in cycle
@@ -647,6 +680,7 @@ function checkTestModeSupport() {
 ```
 
 **Supported Browsers:**
+
 - ✅ Chrome/Chromium (fully supported)
 - ✅ Firefox (fully supported)
 - ✅ Edge (Chromium) (fully supported)
@@ -654,6 +688,7 @@ function checkTestModeSupport() {
 - ❌ Mobile browsers (not optimized for test mode)
 
 **Graceful Degradation:**
+
 - If TTS unavailable: skip TTS audio type, use embedded clips only
 - If audio decode fails: skip that audio type
 - If spatial audio fails: bots still render, just no audio
@@ -670,7 +705,7 @@ function checkTestModeSupport() {
 let testTimerInterval = null;
 
 function startTestTimer(durationSeconds) {
-  const endTime = Date.now() + (durationSeconds * 1000);
+  const endTime = Date.now() + durationSeconds * 1000;
 
   testTimerInterval = setInterval(() => {
     const remaining = Math.max(0, endTime - Date.now());
@@ -685,7 +720,7 @@ function startTestTimer(durationSeconds) {
       clearInterval(testTimerInterval);
       endTestMode();
     }
-  }, 100);  // Update 10 times/second for smooth countdown
+  }, 100); // Update 10 times/second for smooth countdown
 }
 ```
 
@@ -698,7 +733,7 @@ function endTestMode() {
   console.log('Test mode timer expired, fading out...');
 
   // Fade out all bot audio over 2 seconds
-  Object.values(testBots).forEach(bot => {
+  Object.values(testBots).forEach((bot) => {
     if (bot.gainNode && bot.audioType !== 'silence') {
       const currentGain = bot.gainNode.gain.value;
       bot.gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 2);
@@ -729,7 +764,7 @@ function stopTestMode() {
   }
 
   // Stop all bot audio immediately
-  Object.values(testBots).forEach(bot => {
+  Object.values(testBots).forEach((bot) => {
     stopBotAudio(bot.id);
   });
 
@@ -762,9 +797,7 @@ Currently movement is global (all bots stationary or all moving patterns). Futur
 
 ```javascript
 // Per-bot movement toggle
-<button onclick="toggleBotMovement('bot-1')">
-  Lock Position
-</button>
+<button onclick="toggleBotMovement('bot-1')">Lock Position</button>
 ```
 
 Allows mixing: Bot 1 stationary, Bot 2 moving, Bot 3 stationary.
@@ -774,11 +807,13 @@ Allows mixing: Bot 1 stationary, Bot 2 moving, Bot 3 stationary.
 More complex AI movement:
 
 **Follow Mode:**
+
 - Bot maintains distance of ~100px from user
 - Useful for testing close-proximity audio while moving
 - Path-finding to avoid obstacles (other bots)
 
 **Avoid Mode:**
+
 - Bot maintains minimum distance of ~200px from user
 - Runs away when user approaches
 - Tests distance falloff dynamically
@@ -790,27 +825,27 @@ Implementation: Add `follow` and `avoid` to movement pattern options.
 Not part of test mode - separate feature for v1.1:
 
 **Concept:**
+
 - Dedicated "News Anchor" bot that spawns in a fixed location
 - Fetches RSS feed or news API (e.g., NewsAPI, Reddit)
 - Reads headlines aloud using Web Speech API
 - Updates every 5-10 minutes with fresh news
 
 **Implementation Approach:**
+
 ```javascript
 async function fetchNewsHeadlines() {
   const response = await fetch('https://newsapi.org/v2/top-headlines?country=us&apiKey=...');
   const data = await response.json();
-  return data.articles.slice(0, 5);  // Top 5 headlines
+  return data.articles.slice(0, 5); // Top 5 headlines
 }
 
 function readNewsAloud(headlines) {
   headlines.forEach((article, index) => {
     setTimeout(() => {
-      const utterance = new SpeechSynthesisUtterance(
-        `Headline ${index + 1}: ${article.title}`
-      );
+      const utterance = new SpeechSynthesisUtterance(`Headline ${index + 1}: ${article.title}`);
       speechSynthesis.speak(utterance);
-    }, index * 10000);  // 10 seconds between headlines
+    }, index * 10000); // 10 seconds between headlines
   });
 }
 ```
@@ -832,6 +867,7 @@ Could be triggered by clicking a "News" button, or auto-spawn in certain rooms.
 7. ✅ **Graceful degradation**: Works even if some audio types fail
 
 **Validation Method:**
+
 1. Solo test: Spawn 3 bots, cycle through all audio types, verify spatial audio works
 2. Multi-user test: Two users in same room, host controls bots, verify sync
 3. Movement test: Enable pattern mode, verify bots move and audio updates correctly
@@ -843,6 +879,7 @@ Could be triggered by clicking a "News" button, or auto-spawn in certain rooms.
 ## Implementation Notes
 
 **Development Approach:**
+
 - Build on completed POC (v1.0) in existing worktree or new branch
 - Estimated effort: 1-2 days for core test mode
 - Estimated effort: +0.5 days for demo mode sync
@@ -850,17 +887,20 @@ Could be triggered by clicking a "News" button, or auto-spawn in certain rooms.
 - Total: 2-3 days
 
 **Testing Strategy:**
+
 - Unit test: Each audio type loads and plays
 - Integration test: Bots integrate with spatial audio engine
 - Multi-user test: Demo mode synchronization
 - Performance test: 3 bots + 5 real users (stress test)
 
 **Deployment:**
+
 - Single HTML file maintained (add ~200-300 lines)
 - Embedded audio adds ~20-30KB to file size
 - No external dependencies added
 
 **Code Organization:**
+
 - All bot logic in dedicated section of `<script>`
 - Data channel handlers extend existing protocol
 - UI elements added to controls div
@@ -871,11 +911,13 @@ Could be triggered by clicking a "News" button, or auto-spawn in certain rooms.
 ## References
 
 **Internal Documents:**
+
 - POC Design: `docs/plans/2025-12-23-peerjs-poc-design.md`
 - POC Implementation: `docs/plans/2025-12-23-peerjs-poc-implementation.md`
 - ADR-001: `docs/adr/001-peerjs-privacy-first-architecture.md`
 
 **External Resources:**
+
 - Web Speech API: https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API
 - Web Audio API: https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API
 - Data URLs: https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/Data_URLs

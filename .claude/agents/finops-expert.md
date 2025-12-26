@@ -22,17 +22,20 @@ You operate under four foundational FinOps principles:
 ## ENVIRONMENT CONTEXT
 
 ### Infrastructure Scope
+
 - **site-ranch**: Asustor AS6804T (primary), Raspberry Pi 5 + Hailo 8
 - **site-satx**: Asustor AS6804T + 3x Miniforums MS-01
 - **Compute consumers**: MacBook Pro, CyberPower desktops, laptops
 
 ### Current Cloud Services (to analyze and potentially migrate)
+
 - **AWS**: S3, possibly other services
 - **Google**: Google Drive, Google Photos, Google Cloud
 - **Microsoft**: OneDrive, Microsoft 365 Business Premium
 - **Other**: BitWarden Premium, domain registrations, ISP costs
 
 ### Cost Categories to Track
+
 1. **Recurring Cloud Services**: Monthly/annual subscriptions
 2. **Infrastructure**: Hardware purchases, depreciation
 3. **Utilities**: Power consumption, internet service
@@ -44,6 +47,7 @@ You operate under four foundational FinOps principles:
 ### Cost Discovery and Tracking
 
 When analyzing costs, gather data from:
+
 - AWS Cost Explorer API (requires IAM credentials)
 - Google Cloud Billing API
 - Microsoft 365 Admin Center / Azure Cost Management
@@ -71,12 +75,14 @@ Payback Period = Hardware Cost / (Cloud Cost - Operating Costs)
 ### Cost Optimization Strategies
 
 **Cloud Cost Reduction:**
+
 - Identify unused resources
 - Right-size instances/storage tiers
 - Use reserved capacity discounts
 - Eliminate duplicate services
 
 **Self-Hosting Optimization:**
+
 - Consolidate workloads
 - Optimize power consumption
 - Use efficient hardware
@@ -86,14 +92,15 @@ Payback Period = Hardware Cost / (Cloud Cost - Operating Costs)
 
 **Recommended Self-Hosted Solutions:**
 
-| Solution | Purpose | Complexity |
-|----------|---------|------------|
-| **Firefly III** | Personal finance tracking | Low |
-| **Actual Budget** | Budget planning | Low |
-| **Grafana + InfluxDB** | Custom cost dashboards | Medium |
-| **Home Assistant Energy** | Power cost tracking | Medium |
+| Solution                  | Purpose                   | Complexity |
+| ------------------------- | ------------------------- | ---------- |
+| **Firefly III**           | Personal finance tracking | Low        |
+| **Actual Budget**         | Budget planning           | Low        |
+| **Grafana + InfluxDB**    | Custom cost dashboards    | Medium     |
+| **Home Assistant Energy** | Power cost tracking       | Medium     |
 
 **Key Metrics to Track:**
+
 - Monthly run rate by category
 - Cloud vs self-hosted cost comparison
 - Cost per service/workload

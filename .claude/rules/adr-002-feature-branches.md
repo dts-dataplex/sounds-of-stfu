@@ -24,6 +24,7 @@ docs/#<issue-number>-<brief-description>
 ```
 
 **Examples:**
+
 - `feature/#42-spatial-audio-engine`
 - `bugfix/#108-peer-connection-timeout`
 - `docs/#23-api-reference`
@@ -31,16 +32,19 @@ docs/#<issue-number>-<brief-description>
 ## Workflow
 
 ### 1. Create Issue First
+
 ```bash
 # GitHub Issue #42: Implement spatial audio engine
 ```
 
 ### 2. Create Feature Branch
+
 ```bash
 git checkout -b feature/#42-spatial-audio-engine
 ```
 
 ### 3. Iterative Development
+
 ```bash
 # Make changes, commit frequently
 git add src/audio/spatial-engine.js
@@ -51,6 +55,7 @@ git push -u origin feature/#42-spatial-audio-engine
 ```
 
 ### 4. Pull Request Review
+
 ```bash
 # Create PR on GitHub
 # Request review from appropriate agent team
@@ -59,6 +64,7 @@ git push -u origin feature/#42-spatial-audio-engine
 ```
 
 ### 5. Merge to Main
+
 ```bash
 # After approval, merge via PR
 # GitHub closes linked issue automatically
@@ -68,6 +74,7 @@ git push -u origin feature/#42-spatial-audio-engine
 ## Protection Rules
 
 **Main branch protections:**
+
 - ❌ No direct commits to main
 - ✅ Require pull request review
 - ✅ Require status checks to pass (CI/CD)
@@ -77,6 +84,7 @@ git push -u origin feature/#42-spatial-audio-engine
 ## Exceptions
 
 **Emergency hotfixes:**
+
 - Still use `hotfix/#<issue>-<description>` branch
 - Fast-track review process
 - Document reason in PR description
@@ -85,12 +93,14 @@ git push -u origin feature/#42-spatial-audio-engine
 ## Enforcement
 
 **Claude Code agents:**
+
 - MUST check for feature branch before starting work
 - MUST refuse to commit directly to main
 - MUST create issue before creating branch
 - MUST link commits to issues
 
 **Detection:**
+
 ```bash
 # In .claude/rules enforcement
 if git branch --show-current == "main" && about_to_commit:
@@ -100,6 +110,7 @@ if git branch --show-current == "main" && about_to_commit:
 ## Consequences
 
 **Benefits:**
+
 - Production main branch always stable
 - Changes reviewable in isolation
 - Easy rollback if issues discovered
@@ -107,6 +118,7 @@ if git branch --show-current == "main" && about_to_commit:
 - Parallel development without conflicts
 
 **Costs:**
+
 - Slightly longer workflow (create branch, PR, review)
 - Discipline required to follow process
 - Need GitHub branch protections configured

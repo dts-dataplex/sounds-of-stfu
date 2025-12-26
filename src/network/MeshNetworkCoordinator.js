@@ -6,11 +6,13 @@
 
 import PeerConnectionManager from './PeerConnectionManager.js';
 import AudioStreamManager from './AudioStreamManager.js';
+import SignalingClient from './SignalingClient.js';
 
 export default class MeshNetworkCoordinator {
   constructor() {
     this.peerManager = new PeerConnectionManager({ maxPeers: 10 });
     this.audioManager = new AudioStreamManager();
+    this.signalingClient = new SignalingClient();
     this.roomId = null;
     this.peerList = new Set(); // All peers in room (including self)
     this.eventHandlers = new Map();
@@ -32,8 +34,18 @@ export default class MeshNetworkCoordinator {
     const peerId = await this.peerManager.initialize();
     this.peerList.add(peerId);
 
-    // Get local audio stream
-    await this.audioManager.getLocalAudioStream();
+    // Get local audio stream (optional - may fail on non-HTTPS connections)
+    try {
+      await this.audioManager.getLocalAudioStream();
+      console.log('[MeshNetworkCoordinator] Audio stream initialized');
+    } catch (audioError) {
+      console.warn(
+        '[MeshNetworkCoordinator] Audio unavailable (continuing without audio):',
+        audioError.message
+      );
+      // Continue room joining even without audio
+      // Users can still chat and see others, just no voice
+    }
 
     // Set up event handlers
     this.setupPeerManagerHandlers();
@@ -51,13 +63,28 @@ export default class MeshNetworkCoordinator {
 
   /**
    * Discover and connect to existing peers in room
-   * In production, this would use a signaling server to get peer list
-   * For MVP, we'll use a simple broadcast/discovery mechanism
+   * Uses WebSocket signaling server for automatic peer discovery
    */
   async discoverPeers() {
-    // TODO: Implement signaling server integration for peer discovery
-    // For now, peers must manually connect by sharing peer IDs
-    console.log('[MeshNetworkCoordinator] Peer discovery (manual mode)');
+    console.log('[MeshNetworkCoordinator] Starting automatic peer discovery...');
+
+    // Set up signaling event handlers
+    this.setupSignalingHandlers();
+
+    // Connect to signaling server
+    try {
+      await this.signalingClient.connect();
+      console.log('[MeshNetworkCoordinator] Connected to signaling server');
+
+      // Join room on signaling server
+      const peerId = this.peerManager.peerId;
+      await this.signalingClient.joinRoom(this.roomId, peerId);
+      console.log(`[MeshNetworkCoordinator] Joined signaling room: ${this.roomId}`);
+    } catch (error) {
+      console.error('[MeshNetworkCoordinator] Signaling connection failed:', error);
+      // Continue without automatic discovery - users can still connect manually
+      this.emit('signalingError', { error });
+    }
   }
 
   /**
@@ -207,6 +234,59 @@ export default class MeshNetworkCoordinator {
   }
 
   /**
+   * Set up SignalingClient event handlers
+   */
+  setupSignalingHandlers() {
+    this.signalingClient.on('peerList', ({ peers }) => {
+      console.log(`[MeshNetworkCoordinator] Received peer list:`, peers);
+
+      // Connect to all discovered peers
+      peers.forEach(async (peerId) => {
+        if (!this.peerList.has(peerId)) {
+          console.log(`[MeshNetworkCoordinator] Auto-connecting to peer: ${peerId}`);
+          try {
+            await this.connectToPeer(peerId);
+          } catch (error) {
+            console.error(`[MeshNetworkCoordinator] Failed to connect to ${peerId}:`, error);
+          }
+        }
+      });
+    });
+
+    this.signalingClient.on('peerJoined', ({ peerId, peers: _peers }) => {
+      console.log(`[MeshNetworkCoordinator] Peer joined via signaling: ${peerId}`);
+
+      // Connect to the new peer
+      if (!this.peerList.has(peerId)) {
+        console.log(`[MeshNetworkCoordinator] Auto-connecting to new peer: ${peerId}`);
+        this.connectToPeer(peerId).catch((error) => {
+          console.error(`[MeshNetworkCoordinator] Failed to connect to ${peerId}:`, error);
+        });
+      }
+    });
+
+    this.signalingClient.on('peerLeft', ({ peerId }) => {
+      console.log(`[MeshNetworkCoordinator] Peer left via signaling: ${peerId}`);
+      // PeerConnectionManager will handle the disconnection
+    });
+
+    this.signalingClient.on('roomFull', ({ message }) => {
+      console.warn(`[MeshNetworkCoordinator] ${message}`);
+      this.emit('roomFull', { message });
+    });
+
+    this.signalingClient.on('disconnected', () => {
+      console.warn('[MeshNetworkCoordinator] Signaling server disconnected');
+      this.emit('signalingDisconnected');
+    });
+
+    this.signalingClient.on('reconnectFailed', () => {
+      console.error('[MeshNetworkCoordinator] Failed to reconnect to signaling server');
+      this.emit('signalingReconnectFailed');
+    });
+  }
+
+  /**
    * Handle incoming data messages
    */
   handleDataMessage(peerId, data) {
@@ -300,6 +380,9 @@ export default class MeshNetworkCoordinator {
    */
   leaveRoom() {
     console.log('[MeshNetworkCoordinator] Leaving room...');
+
+    // Disconnect from signaling server
+    this.signalingClient.disconnect();
 
     this.peerManager.destroy();
     this.audioManager.destroy();

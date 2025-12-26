@@ -33,6 +33,18 @@ export default class AudioStreamManager {
       return this.localStream;
     }
 
+    // Check if getUserMedia is available (requires secure context: HTTPS or localhost)
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      const error = new Error(
+        'Microphone access requires HTTPS or localhost. ' +
+          'Connect via https:// or localhost to enable audio. ' +
+          'You can still use the app without audio.'
+      );
+      console.warn('[AudioStreamManager] getUserMedia not available (insecure context)');
+      this.emit('localStreamError', { error });
+      throw error;
+    }
+
     try {
       console.log('[AudioStreamManager] Requesting microphone access...');
       this.localStream = await navigator.mediaDevices.getUserMedia(this.audioConstraints);

@@ -9,11 +9,13 @@
 ## Team Structure
 
 ### Product & Architecture
+
 - **product-manager** - Requirements, priorities, user advocacy
 - **infrastructure-architect** - System design, technology decisions
 - **workflow-coordinator** - Process orchestration, team sync
 
 ### Infrastructure & DevOps
+
 - **compute-expert** - Compute resources, optimization
 - **storage-expert** - Data persistence, caching
 - **network-expert** - P2P topology, WebRTC optimization
@@ -22,6 +24,7 @@
 - **homelab-admin** - Local development environment
 
 ### Development
+
 - **integration-expert** - System integration, API design
 - **finops-expert** - Cost optimization, resource budgeting
 
@@ -76,6 +79,7 @@ Either rejects? → Propose alternative
 ```
 
 **Recent example:** Commit 19d721c (reverted)
+
 - ❌ Skipped PM review - Test mode removed without approval
 - ❌ Skipped architect review - No migration plan
 - ✅ Correct process: Revert → Create issue → Seek approval
@@ -97,6 +101,7 @@ Fast-track review → Merge → Post-mortem
 ### 4. Daily Standup (Async)
 
 Each agent updates GitHub Issue with:
+
 - ✅ Completed yesterday
 - 🔄 Working on today
 - ⚠️ Blockers/risks
@@ -108,25 +113,30 @@ Each agent updates GitHub Issue with:
 ## Communication Channels
 
 ### GitHub Issues
+
 - **Feature requests**: `feature`, `needs-pm-approval`
 - **Breaking changes**: `breaking-change`, `needs-architecture-review`
 - **Bugs**: `bug`, severity label
 - **Security**: `security`, `critical` if urgent
 
 ### GitHub Wiki
+
 - **ADR registry**: All architectural decisions
 - **Runbooks**: Operational procedures
 - **Team guides**: Agent onboarding, best practices
 
 ### Pull Requests
+
 - **Template**: Includes checklist for PR description
 - **Required reviews**: Based on changed files
-  - .claude/rules/*.md → infrastructure-architect
-  - src/audio/* → network-expert, integration-expert
-  - docs/adr/*.md → infrastructure-architect, product-manager
+  - .claude/rules/\*.md → infrastructure-architect
+  - src/audio/\* → network-expert, integration-expert
+  - docs/adr/\*.md → infrastructure-architect, product-manager
 
 ### Comments
+
 Use @mentions to route to appropriate agent:
+
 - `@product-manager` - Requirements, priorities
 - `@infrastructure-architect` - Technical decisions
 - `@security-expert` - Security concerns
@@ -136,21 +146,22 @@ Use @mentions to route to appropriate agent:
 
 ## Decision Authority Matrix
 
-| Decision Type | Primary | Approval Required |
-|---------------|---------|-------------------|
-| **Feature priority** | product-manager | None |
-| **Breaking changes** | infrastructure-architect | product-manager |
-| **Tech stack changes** | infrastructure-architect | None |
-| **Security exceptions** | security-expert | infrastructure-architect |
-| **MVP scope cuts** | product-manager | infrastructure-architect |
-| **Dependency versions** | security-expert | None |
-| **ADR creation** | infrastructure-architect | product-manager (if user-facing) |
+| Decision Type           | Primary                  | Approval Required                |
+| ----------------------- | ------------------------ | -------------------------------- |
+| **Feature priority**    | product-manager          | None                             |
+| **Breaking changes**    | infrastructure-architect | product-manager                  |
+| **Tech stack changes**  | infrastructure-architect | None                             |
+| **Security exceptions** | security-expert          | infrastructure-architect         |
+| **MVP scope cuts**      | product-manager          | infrastructure-architect         |
+| **Dependency versions** | security-expert          | None                             |
+| **ADR creation**        | infrastructure-architect | product-manager (if user-facing) |
 
 ---
 
 ## Escalation Paths
 
 ### Conflicting Requirements
+
 **Example:** PM wants feature, Architect says infeasible
 
 1. Workflow-coordinator facilitates discussion
@@ -160,6 +171,7 @@ Use @mentions to route to appropriate agent:
 5. Document in GitHub Issue
 
 ### Urgent Hotfix Needed
+
 **Example:** Security vulnerability in production
 
 1. Security-expert creates issue with `critical` label
@@ -169,6 +181,7 @@ Use @mentions to route to appropriate agent:
 5. Post-mortem issue created immediately
 
 ### Agent Unavailable
+
 **Example:** Integration-expert needed but not responding
 
 1. Workflow-coordinator identifies blocker
@@ -183,35 +196,41 @@ Use @mentions to route to appropriate agent:
 ### When to Activate Each Agent
 
 **product-manager:**
+
 - New feature request
 - Breaking change proposal
 - User feedback
 - MVP scope questions
 
 **infrastructure-architect:**
+
 - Technology decisions
 - System design
 - Breaking changes
 - ADR creation
 
 **security-expert:**
+
 - Pre-commit hooks
 - Dependency updates
 - Threat modeling
 - Incident response
 
 **network-expert:**
+
 - WebRTC optimization
 - PeerJS topology
 - P2P connection issues
 - Spatial audio sync
 
 **finops-expert:**
+
 - SLM model selection (ADR-005)
 - Resource optimization
 - Cost/benefit analysis
 
 **integration-expert:**
+
 - API design
 - Component interfaces
 - System integration
@@ -223,7 +242,7 @@ Use @mentions to route to appropriate agent:
 1. **Read core docs**:
    - PRODUCT_REQUIREMENTS.md
    - BACKLOG.md
-   - All .claude/rules/*.md (ADRs)
+   - All .claude/rules/\*.md (ADRs)
 
 2. **Review existing work**:
    - Recent GitHub Issues
@@ -246,6 +265,7 @@ Use @mentions to route to appropriate agent:
 **Scenario:** Implement Test Mode with AI Bots
 
 ### Phase 1: Planning
+
 ```
 PM: Creates #42 "Test Mode with AI Bots"
      - User story, acceptance criteria
@@ -263,6 +283,7 @@ PM: Approves plan → Ready for implementation
 ```
 
 ### Phase 2: Implementation
+
 ```
 Integration: Creates feature/#42-test-mode branch
      - Implements bot state management
@@ -279,6 +300,7 @@ Security: Pre-commit scan
 ```
 
 ### Phase 3: Review
+
 ```
 PM: Validates against acceptance criteria
      - ✅ 1-3 bots configurable
@@ -302,12 +324,14 @@ Workflow: Merges to main
 ## Continuous Improvement
 
 ### Retrospective Questions
+
 - Which agent coordination worked well?
 - Where did handoffs break down?
 - What decisions took too long?
 - How can we improve clarity?
 
 ### Process Updates
+
 - ADRs evolve based on lessons learned
 - Agent roles refined as needs change
 - Communication patterns optimized
@@ -318,16 +342,19 @@ Workflow: Merges to main
 ## Tools Integration
 
 ### Pre-commit Hooks (ADR-003)
+
 - Security: gitleaks (secrets)
 - Quality: prettier, eslint
 - Compliance: ADR-002 branch check
 
 ### GitHub Actions
+
 - CI/CD: npm test, npm run build
 - Security: Dependency scanning
 - Deployment: Automated when tests pass
 
 ### GitHub Projects
+
 - Kanban board for sprint planning
 - Columns: Backlog, In Progress, Review, Done
 - Filter by label, milestone, assignee

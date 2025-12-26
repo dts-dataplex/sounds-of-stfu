@@ -1,4 +1,5 @@
 # Bar Layout & Privacy-First Architecture Design
+
 ## Sounds of STFU - Spatial Audio Platform
 
 **Date:** 2025-12-24
@@ -19,6 +20,7 @@ This document captures the design for two critical aspects of the Sounds of STFU
 ## Part 1: Comic Strip Walkthrough - User Experience
 
 ### Purpose
+
 Illustrate the spatial audio experience through a 12-15 panel comic strip showing a user's journey through the virtual bar, demonstrating key interactions and features.
 
 ### Comic Strip Panels
@@ -26,6 +28,7 @@ Illustrate the spatial audio experience through a 12-15 panel comic strip showin
 #### **Panels 1-4: Bar Entry & Discovery**
 
 **Panel 1: "The Entrance"**
+
 - **Visual**: Alex enters the Sounds of STFU virtual bar. Bird's-eye 2D view of two-story layout.
 - **Heat Map Overlay**:
   - Orange glow near gaming zone (high energy)
@@ -35,6 +38,7 @@ Illustrate the spatial audio experience through a 12-15 panel comic strip showin
 - **Purpose**: Introduce heat map navigation and spatial awareness
 
 **Panel 2: "Approaching the Gaming Zone"**
+
 - **Visual**: Alex's avatar moving toward gaming zone on floor 1
 - **Audio Fade-In**: Volume gradually increases as distance decreases
 - **Word Cloud**: Appears above zone showing "combo!" "nice shot!" "push mid!"
@@ -43,6 +47,7 @@ Illustrate the spatial audio experience through a 12-15 panel comic strip showin
 - **Purpose**: Demonstrate spatial audio distance-based volume
 
 **Panel 3: "Overhearing the Firepit"**
+
 - **Visual**: Alex now IN gaming zone (audio at 100%)
 - **Mixing Controls**: Alex adjusts settings, sets Firepit to "Overheard" (20%)
 - **Split Audio Visualization**:
@@ -52,6 +57,7 @@ Illustrate the spatial audio experience through a 12-15 panel comic strip showin
 - **Purpose**: Show audio mixing controls and multi-conversation awareness
 
 **Panel 4: "Reading the Room"**
+
 - **Visual**: Heat map detail view expanded
 - **Information Display**:
   - Gaming zone: 6 people, topic "multiplayer FPS"
@@ -63,6 +69,7 @@ Illustrate the spatial audio experience through a 12-15 panel comic strip showin
 #### **Panels 5-8: Movement & Spatial Audio Dynamics**
 
 **Panel 5: "Joining the Conversation"**
+
 - **Visual**: Dotted path line from gaming zone to firepit
 - **Audio Transition Visualization**:
   - Gaming audio: 100% → 60% → 20% (fading out)
@@ -72,6 +79,7 @@ Illustrate the spatial audio experience through a 12-15 panel comic strip showin
 - **Purpose**: Show smooth spatial audio transitions during movement
 
 **Panel 6: "Finding a Seat at the Firepit"**
+
 - **Visual**: Alex arrives at firepit with 4 other people
 - **Spatial Audio Layout**:
   - Person A (across): Clear, centered audio
@@ -83,6 +91,7 @@ Illustrate the spatial audio experience through a 12-15 panel comic strip showin
 - **Purpose**: Demonstrate spatial positioning and local SLM sentiment analysis
 
 **Panel 7: "Going Upstairs - Private Booth"**
+
 - **Visual**: Alex clicks stairs icon, avatar transitions to floor 2, enters Booth #3
 - **Environment Change**: Slightly dimmed lighting, background conversations drop to 5%
 - **Alex invites friend Sam to booth**
@@ -91,6 +100,7 @@ Illustrate the spatial audio experience through a 12-15 panel comic strip showin
 - **Purpose**: Show second-floor navigation and private conversation spaces
 
 **Panel 8: "The Stage - Live Music"**
+
 - **Visual**: Pan to second-floor stage, Digi (guitarist) setting up
 - **Performance Mode**: Special indicator active
 - **Audio Broadcast**: Digi's music at 40% volume to entire bar, spatially enhanced
@@ -101,6 +111,7 @@ Illustrate the spatial audio experience through a 12-15 panel comic strip showin
 #### **Panels 9-12: Moderation & Privacy Features**
 
 **Panel 9: "The Heated Debate - Talking Stick Deployed"**
+
 - **Visual**: Back at firepit, philosophical discussion getting intense
 - **Word Cloud**: Warning colors indicating tension
 - **Moderator Action**: Bartender avatar clicks group → "Deploy Talking Stick"
@@ -114,6 +125,7 @@ Illustrate the spatial audio experience through a 12-15 panel comic strip showin
 - **Purpose**: Show moderation tools and talking stick feature
 
 **Panel 10: "The Snoop - Privacy Protection"**
+
 - **Split Panel Design**:
 
   **LEFT SIDE - External Attacker (Sneaky Steve):**
@@ -129,6 +141,7 @@ Illustrate the spatial audio experience through a 12-15 panel comic strip showin
 - **Purpose**: Demonstrate end-to-end encryption and privacy from external threats
 
 **Panel 11: "SLM Sentiment Analysis - The Acoustic Earmuffs"**
+
 - **Visual**: Close-up of Alex's HUD (only they can see)
 - **Local SLM Processing Firepit Conversation**:
 
@@ -144,6 +157,7 @@ Illustrate the spatial audio experience through a 12-15 panel comic strip showin
 - **Purpose**: Show local privacy-preserving sentiment analysis
 
 **Panel 12: "The Bartender's AI Assistant"**
+
 - **Visual**: Bartender dashboard (moderator view only)
 - **Dashboard Display**:
   - Heat map showing tension levels across zones (no specific content)
@@ -159,6 +173,7 @@ Illustrate the spatial audio experience through a 12-15 panel comic strip showin
 #### **Future Panel (To-Do)**
 
 **Panel 0: "The Bartender Greets a Newcomer"**
+
 - **Visual**: Bartender AI sees Alex walk in
 - **Emotional Recognition**: Alex's avatar has uncertain color/aura (not familiar with current crowd)
 - **Bartender Response**: Welcoming gesture, perhaps suggests starting areas based on Alex's comfort level
@@ -178,15 +193,18 @@ Illustrate the spatial audio experience through a 12-15 panel comic strip showin
 ### Architecture Decision: Pure PeerJS Mesh (MVP v1.0)
 
 #### Selected Approach
+
 **Pure PeerJS Mesh Network** - Direct peer-to-peer connections with no server relay for audio.
 
 #### Rationale
+
 - **Maximum Privacy**: Audio streams never touch a server that could intercept/store them
 - **Simplicity**: Fastest path to validating core spatial audio concept
 - **Philosophy Alignment**: "A community is a group of two people sharing an experience"
 - **Clear Upgrade Path**: Smart zoning and SFU relay can be added in v1.1 for scaling
 
 #### Technical Constraints
+
 - **User Capacity**: 10 concurrent users maximum for MVP
 - **Connection Math**: With N users, total connections = N(N-1)/2
   - 10 users = 45 peer connections (manageable for modern browsers)
@@ -194,6 +212,7 @@ Illustrate the spatial audio experience through a 12-15 panel comic strip showin
 - **Network Requirements**: Each user needs sufficient upload bandwidth for N-1 audio streams
 
 #### Upgrade Path to v1.1 (Documented but Not Implemented in MVP)
+
 - **Smart Audio Zones**: Only maintain active WebRTC connections to users within hearing range
 - **Signaling-Only Connections**: Low-bandwidth connections to distant users for presence/positioning
 - **Estimated Capacity**: 15-20 users with zoning optimization
@@ -202,12 +221,14 @@ Illustrate the spatial audio experience through a 12-15 panel comic strip showin
 ### WebRTC Technology Stack
 
 #### Core Technologies
+
 - **PeerJS**: High-level WebRTC wrapper for simplified peer connections
 - **WebRTC**: Browser-native peer-to-peer audio streaming
 - **STUN Server**: Public STUN servers for NAT traversal (e.g., Google's stun:stun.l.google.com:19302)
 - **TURN Server**: Optional fallback for restrictive NAT environments (consider Cloudflare TURN or self-hosted coturn)
 
 #### Audio Configuration
+
 - **Codec**: Opus (WebRTC default, excellent quality at low bitrates)
 - **Bitrate**: 32-64 kbps per audio stream (optimize for speech)
 - **Sample Rate**: 48 kHz (Opus standard)
@@ -218,6 +239,7 @@ Illustrate the spatial audio experience through a 12-15 panel comic strip showin
 #### Architecture: Two-Tier Sentiment Model
 
 **Tier 1: User's Local SLM (Privacy-First)**
+
 - **Location**: Runs entirely in user's browser via Transformers.js
 - **Frequency**: Smart intervals (10-30 seconds, increases if conversation shifts detected)
 - **Input**: Local audio transcription via Web Speech API (browser-native STT)
@@ -231,6 +253,7 @@ Illustrate the spatial audio experience through a 12-15 panel comic strip showin
 - **Privacy**: Never leaves the user's device, never transmitted
 
 **Tier 2: Bartender's Aggregate AI (Community Pulse)**
+
 - **Location**: Server-side aggregation (content-blind)
 - **Data Received**: Users voluntarily share ONLY: "my current sentiment: calm/engaged/tense" (one-word enum, no context)
 - **Visibility**: Aggregate statistics per zone
@@ -244,12 +267,13 @@ Illustrate the spatial audio experience through a 12-15 panel comic strip showin
 
 **Candidate Models (via Transformers.js):**
 
-| Model | Parameters | Quantized Size | Inference Time | Notes |
-|-------|------------|----------------|----------------|-------|
-| Phi-3.5-mini | 3.8B | ~500MB | 200-500ms | Recommended for sentiment analysis, good accuracy |
-| Llama-3.2-1B | 1B | ~800MB | 100-300ms | Faster inference, slightly lower accuracy |
+| Model        | Parameters | Quantized Size | Inference Time | Notes                                             |
+| ------------ | ---------- | -------------- | -------------- | ------------------------------------------------- |
+| Phi-3.5-mini | 3.8B       | ~500MB         | 200-500ms      | Recommended for sentiment analysis, good accuracy |
+| Llama-3.2-1B | 1B         | ~800MB         | 100-300ms      | Faster inference, slightly lower accuracy         |
 
 **Initial Recommendation**: **Phi-3.5-mini** for MVP
+
 - Better sentiment accuracy for nuanced conversation analysis
 - Acceptable latency for 10-30 second intervals
 - Model downloads once, cached for subsequent sessions
@@ -269,6 +293,7 @@ Illustrate the spatial audio experience through a 12-15 panel comic strip showin
 ```
 
 **Performance Considerations**:
+
 - **CPU Usage**: Moderate during analysis intervals (10-30 sec), minimal between intervals
 - **Memory**: ~500MB for model (loaded once, persists in browser)
 - **Battery Impact**: Smart intervals minimize drain compared to continuous processing
@@ -277,20 +302,24 @@ Illustrate the spatial audio experience through a 12-15 panel comic strip showin
 ### Privacy Controls & User Consent
 
 #### Open Question (Needs User Decision)
+
 **Should users be able to opt-out of sharing aggregate sentiment with the bartender?**
 
 **Option A: Required Sharing**
+
 - Aggregate sentiment sharing required for community moderation features
 - Bartender can effectively monitor community health
 - Con: Privacy purists may object to any data sharing
 
 **Option B: Optional Sharing**
+
 - Users can opt-out of sharing even aggregate sentiment
 - Maximum privacy control
 - Con: Bartender has blind spots, reduced moderation effectiveness
 - Con: May create two-tier community (sharers vs. non-sharers)
 
 **Decision**: **Defer to Post-MVP User Research**
+
 - Launch MVP without aggregate sentiment sharing requirement
 - Survey communities after they've experienced the platform
 - Make data-driven decision based on actual user preferences and community health outcomes
@@ -303,6 +332,7 @@ Illustrate the spatial audio experience through a 12-15 panel comic strip showin
 When users enter a private booth (second-floor booths, designated private zones), they define privacy preferences via natural language prompt rather than rigid permission settings.
 
 **User Workflow**:
+
 1. User(s) enter private booth
 2. System prompts: "Who should be able to join or listen to this conversation?"
 3. User provides natural language prompt, examples:
@@ -313,12 +343,14 @@ When users enter a private booth (second-floor booths, designated private zones)
    - "Friends and friends-of-friends welcome, strangers need to knock"
 
 **Local Agentic Processing**:
+
 - **Model**: Same Transformers.js + Phi-3.5-mini infrastructure used for sentiment analysis
 - **Processing**: Entirely local, runs in user's browser
 - **Function**: Parse natural language prompt into access rules
 - **Output**: Access control policy enforced client-side
 
 **Access Enforcement**:
+
 - When another user attempts to join booth:
   1. Their client sends join request with user metadata (friend status, profile, etc.)
   2. Booth owner's local agent evaluates request against natural language policy
@@ -329,6 +361,7 @@ When users enter a private booth (second-floor booths, designated private zones)
   - Knock requests: Owner receives notification, can approve/deny in real-time
 
 **Privacy Guarantees**:
+
 - Booth privacy prompts never leave the owner's device
 - Access decisions made locally, no server involvement
 - Even bartender AI cannot override privacy settings (unless explicitly permitted in prompt)
@@ -341,7 +374,7 @@ When users enter a private booth (second-floor booths, designated private zones)
 const accessPolicy = {
   allowedRelationships: ['close_friend'],
   allowBartender: false,
-  knockEnabled: false
+  knockEnabled: false,
 };
 
 // When user Alice requests to join
@@ -357,12 +390,14 @@ function evaluateAccess(requester, policy) {
 ```
 
 **Advanced Features (v2.0)**:
+
 - Time-based privacy: "Private for 30 minutes, then open"
 - Topic-based access: "Anyone interested in quantum physics can join"
 - Dynamic renegotiation: "If conversation gets heated, make it private"
 - Multi-party consent: All booth members must agree to new joiners
 
 **Design Benefits**:
+
 - **User-Friendly**: Natural language is more intuitive than permission checkboxes
 - **Flexible**: Handles nuanced, context-aware privacy preferences
 - **Privacy-Preserving**: All processing local, no server surveillance
@@ -399,6 +434,7 @@ function evaluateAccess(requester, policy) {
    - Implementation roadmap
 
 **Completed Deliverables**:
+
 - ✅ 2D floor plan with dimensions and zone specifications
 - ✅ First floor layout (gaming zone, central bar, card tables, firepit debate area)
 - ✅ Second floor layout (private booths, small stage, staircase connection)
@@ -418,14 +454,18 @@ function evaluateAccess(requester, policy) {
 **Resolved Design Decisions**:
 
 #### 1. Aggregate Sentiment Sharing
+
 **Decision**: Defer to post-MVP user research
+
 - Launch MVP without requiring aggregate sentiment sharing
 - Survey communities after experiencing the platform
 - Make data-driven decision based on actual user preferences and community outcomes
 - **Rationale**: Cannot make informed consent/data-sharing decisions without real user experience data
 
 #### 2. Audio Falloff Curve
+
 **Decision**: Wave-based falloff function (not linear multiplier)
+
 - Implement wave function for distance-based volume attenuation
 - Provides more nuanced, fluid audio processing
 - Better represents real-world sound propagation physics
@@ -433,7 +473,9 @@ function evaluateAccess(requester, policy) {
 - **Technical Note**: Explore sinusoidal or exponential decay curves during implementation
 
 #### 3. Movement & Volume Control Design
+
 **Decision**: Distance + Manual Volume (needs UX vetting before implementation)
+
 - **Problem**: Users shouldn't feel forced to "run away" from suddenly loud conversations (appears rude)
 - **Proposed Solution**:
   - User can move to maximum distance from conversation (reduces base gain via wave falloff)
@@ -444,7 +486,9 @@ function evaluateAccess(requester, policy) {
 - **Other Considerations**: May be impacted by group dynamics, cultural norms, accessibility needs
 
 #### 4. Heat Map Update Frequency
+
 **Decision**: User-configurable with multiple modes (algorithmic preference decision)
+
 - **Three Update Modes**:
   1. **On-Demand**: User requests updates (rate-limited to X requests per Y time to prevent abuse)
   2. **Event-Triggered**: Updates triggered by spatial cues (e.g., moving between gaming zone and football zone)
@@ -455,7 +499,9 @@ function evaluateAccess(requester, policy) {
 - **Architecture Review**: Needs careful consideration during implementation - what other algorithmic preferences should be user-configurable?
 
 #### 5. Booth Privacy & Access Control
+
 **Decision**: Prompt-based access control via local agentic models
+
 - **When entering private booth**: Party is asked to provide a natural language prompt
 - **Prompt Purpose**: Defines who (if anyone) can interrupt or listen in
   - Example: "Only close friends can join, no eavesdropping"
@@ -467,6 +513,7 @@ function evaluateAccess(requester, policy) {
 - **Implementation**: Can leverage same Transformers.js + Phi-3.5-mini infrastructure used for sentiment
 
 **Next Session Goals**:
+
 - Design detailed floor plans with zone specifications
 - Create data flow diagrams for P2P mesh architecture
 - Define API contracts between components
@@ -536,6 +583,7 @@ function evaluateAccess(requester, policy) {
 **Last Updated**: 2025-12-24
 
 ### Completed Sections
+
 - ✅ 12-panel comic strip walkthrough (complete narrative)
 - ✅ Privacy-first P2P architecture (PeerJS mesh + E2E encryption)
 - ✅ Two-tier sentiment model (local SLM + aggregate bartender)
@@ -547,6 +595,7 @@ function evaluateAccess(requester, policy) {
 - ✅ **Traffic flow patterns and social dynamics** (newcomer journey, escape routes)
 
 ### Pending Sections
+
 - ⏳ Data flow diagrams (technical architecture visualization)
 - ⏳ API contracts and component interfaces (implementation detail)
 - ⏳ System architecture diagram (developer reference)

@@ -1,4 +1,5 @@
 # Floor Plan Visual Reference
+
 ## Sounds of STFU - Quick Reference Diagrams
 
 **For detailed specifications, see:** `CHATSUBO_FLOOR_PLAN_SPECIFICATIONS.md`
@@ -186,6 +187,7 @@ Wave function: volume = 1 / (1 + (distance / falloff_distance)^2)
 ## Zone-Specific Atmosphere Details
 
 ### Gaming Zone (Northwest)
+
 ```
 ┌─────────────────┐
 │ ▓▓▓  [Screen]   │  Lighting: Blue-white LED (6000K)
@@ -198,6 +200,7 @@ Wave function: volume = 1 / (1 + (distance / falloff_distance)^2)
 ```
 
 ### Central Bar (Center)
+
 ```
 ┌─────────────────┐
 │  🍺 🍺 🍺       │  Lighting: Amber backlit (3000K)
@@ -210,6 +213,7 @@ Wave function: volume = 1 / (1 + (distance / falloff_distance)^2)
 ```
 
 ### Firepit (Southwest)
+
 ```
 ┌─────────────────┐
 │     🪑   🪑     │  Lighting: Orange firelight (1800K)
@@ -222,6 +226,7 @@ Wave function: volume = 1 / (1 + (distance / falloff_distance)^2)
 ```
 
 ### Private Booth (Second Floor)
+
 ```
 ┌─────────┐
 │ 🔒 BOOTH│  Lighting: Dim red-orange (2200K, 25%)
@@ -234,6 +239,7 @@ Wave function: volume = 1 / (1 + (distance / falloff_distance)^2)
 ```
 
 ### Small Stage (Second Floor)
+
 ```
 ┌────────────────┐
 │  ♪ STAGE ♪     │  Lighting: Warm spotlight (3200K, 60%)
@@ -250,6 +256,7 @@ Wave function: volume = 1 / (1 + (distance / falloff_distance)^2)
 ## Movement Speed & Audio Transition Guide
 
 ### Walking Speed Calibration
+
 ```
 Speed: 3 feet per second (virtual movement)
 
@@ -260,6 +267,7 @@ Examples:
 ```
 
 ### Audio Crossfade Formula
+
 ```
 Crossfade duration = distance / walking_speed
 Crossfade type = "smooth_wave_interpolation"
@@ -275,6 +283,7 @@ Result: Natural, smooth audio transition without abrupt cuts
 ## Privacy Levels by Zone
 
 ### Public Zones (Full Visibility)
+
 ```
 🌍 Gaming Zone
    - Heat map: ✅ Visible activity
@@ -297,6 +306,7 @@ Result: Natural, smooth audio transition without abrupt cuts
 ```
 
 ### Semi-Private Zones (Limited Visibility)
+
 ```
 🏠 Card Tables
    - Heat map: ✅ Visible activity
@@ -307,6 +317,7 @@ Result: Natural, smooth audio transition without abrupt cuts
 ```
 
 ### Private Zones (No Visibility)
+
 ```
 🔒 Private Booths
    - Heat map: 🔒 "Occupied - Private" indicator only
@@ -322,6 +333,7 @@ Result: Natural, smooth audio transition without abrupt cuts
 ## Escape Route Map
 
 ### From Gaming Zone (If Overwhelming)
+
 ```
 Gaming Zone (overwhelming)
      │
@@ -333,6 +345,7 @@ Gaming Zone (overwhelming)
 ```
 
 ### From Firepit (If Debate Too Heated)
+
 ```
 Firepit (heated debate)
      │
@@ -344,6 +357,7 @@ Firepit (heated debate)
 ```
 
 ### From Central Bar (If Crowded)
+
 ```
 Central Bar (crowded)
      │
@@ -360,6 +374,7 @@ Central Bar (crowded)
 ## Lighting Color Palette Reference
 
 ### Cyberpunk/Chatsubo Theme
+
 ```
 Gaming Zone:     #88AAFF  █████  (Blue-white LED)
                  #AA44FF  █████  (Purple accent)
@@ -386,30 +401,35 @@ Darkness:        #112233  █████  (Dark blue-grey ambient)
 ## Implementation Phase Quick Reference
 
 ### Phase 1: Core Layout (Week 1)
+
 - [ ] Isometric camera view (static)
 - [ ] First floor zones as colored rectangles
 - [ ] 2-3 test avatars
 - [ ] Validate coordinate system
 
 ### Phase 2: Spatial Audio (Week 2-3)
+
 - [ ] Wave-based falloff function
 - [ ] PeerJS mesh (2 users)
 - [ ] Audio crossfade during movement
 - [ ] Zone-specific acoustic parameters
 
 ### Phase 3: Lighting (Week 4)
+
 - [ ] Zone-specific lighting (colored point lights)
 - [ ] Darkness gradients
 - [ ] Neon effects
 - [ ] Isometric rendering with lighting
 
 ### Phase 4: Second Floor (Week 5)
+
 - [ ] Second floor rendering (40% opacity)
 - [ ] Staircase transition
 - [ ] Booth privacy (E2E encryption)
 - [ ] Prompt-based access control
 
 ### Phase 5: Heat Map (Week 6)
+
 - [ ] Heat map overlay
 - [ ] Topic word clouds
 - [ ] Avatar movement (glide)
@@ -450,10 +470,10 @@ function calculateVolume(distance, falloffDistance) {
 }
 
 // Examples:
-calculateVolume(0, 6)   // = 1.00  (100% at source)
-calculateVolume(6, 6)   // = 0.50  (50% at falloff distance)
-calculateVolume(12, 6)  // = 0.20  (20% at 2x falloff)
-calculateVolume(18, 6)  // = 0.10  (10% at 3x falloff)
+calculateVolume(0, 6); // = 1.00  (100% at source)
+calculateVolume(6, 6); // = 0.50  (50% at falloff distance)
+calculateVolume(12, 6); // = 0.20  (20% at 2x falloff)
+calculateVolume(18, 6); // = 0.10  (10% at 3x falloff)
 
 // Zone-specific falloff distances:
 const FALLOFF_DISTANCES = {
@@ -461,8 +481,8 @@ const FALLOFF_DISTANCES = {
   central_bar: 6.0,
   card_tables: 7.0,
   firepit: 9.0,
-  booths: 0.0,  // Hard cutoff (no falloff, just 0 or 100%)
-  stage: null   // Broadcast mode (different formula)
+  booths: 0.0, // Hard cutoff (no falloff, just 0 or 100%)
+  stage: null, // Broadcast mode (different formula)
 };
 ```
 

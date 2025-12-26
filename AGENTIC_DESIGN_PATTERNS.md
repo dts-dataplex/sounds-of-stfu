@@ -17,6 +17,7 @@ This document synthesizes agentic design patterns from industry research and Goo
 **Definition**: AI systems that iteratively review and refine their own outputs through self-evaluation loops.
 
 **How It Works**:
+
 - Agent generates initial output
 - Self-critic evaluates output against quality standards
 - Identifies errors, gaps, or improvements
@@ -24,18 +25,21 @@ This document synthesizes agentic design patterns from industry research and Goo
 - Repeats until quality threshold met or iteration limit reached
 
 **When to Use**:
+
 - Cost of mistakes exceeds cost of extra processing
 - Clear quality standards exist that can be programmatically verified
 - Output quality improves significantly with iteration
 - Domain has objective correctness criteria
 
 **Applications for Sounds of STFU**:
+
 - **AI-202**: Conversation summary generation with iterative refinement
 - **AI-201**: Topic detection accuracy improvement through reflection
 - **MOD-102**: Moderator alerts that self-validate before triggering
 - Code generation for platform features with automated review
 
 **Implementation Considerations**:
+
 - Define clear evaluation criteria and rubrics
 - Set iteration limits to prevent infinite loops
 - Balance quality improvements vs. processing costs
@@ -48,6 +52,7 @@ This document synthesizes agentic design patterns from industry research and Goo
 **Definition**: LLMs augmented with ability to interact with external tools, APIs, databases, and resources.
 
 **How It Works**:
+
 - Agent analyzes task and identifies needed tools
 - Selects appropriate tool from available toolkit
 - Constructs proper tool invocation with parameters
@@ -55,12 +60,14 @@ This document synthesizes agentic design patterns from industry research and Goo
 - Integrates tool output into response or next action
 
 **When to Use**:
+
 - Tasks require real-world data beyond training cutoff
 - Need to perform actions (send messages, update databases)
 - Complex calculations or specialized processing required
 - Integration with existing systems necessary
 
 **Applications for Sounds of STFU**:
+
 - **AI-203**: Smart recommendations using user activity data
 - **INT-201**: Discord bot integration using Discord API
 - **REC-203**: Transcription using speech-to-text services
@@ -69,6 +76,7 @@ This document synthesizes agentic design patterns from industry research and Goo
 - Spatial audio calculations using audio processing libraries
 
 **Implementation Considerations**:
+
 - Provide clear tool descriptions and schemas
 - Implement error handling for tool failures
 - Rate limit tool usage to prevent abuse
@@ -82,6 +90,7 @@ This document synthesizes agentic design patterns from industry research and Goo
 **Definition**: Agents that decompose complex tasks into structured roadmaps before execution.
 
 **How It Works**:
+
 - Analyze task requirements and constraints
 - Identify dependencies between subtasks
 - Generate execution sequence
@@ -90,12 +99,14 @@ This document synthesizes agentic design patterns from industry research and Goo
 - Optionally re-plan based on execution feedback
 
 **When to Use**:
+
 - Complex multi-step tasks with dependencies
 - Tasks benefit from upfront analysis
 - Resource allocation or coordination needed
 - Failure of individual steps impacts overall success
 
 **Applications for Sounds of STFU**:
+
 - **Development Planning**: Breaking down feature implementation (e.g., INF-001 to UI-009)
 - **AI-204**: Auto-moderation workflow planning
 - **User Onboarding**: Structured multi-step user experience
@@ -103,6 +114,7 @@ This document synthesizes agentic design patterns from industry research and Goo
 - System deployment and infrastructure provisioning
 
 **Implementation Considerations**:
+
 - Balance planning depth vs. time to first action
 - Support dynamic re-planning when conditions change
 - Consider predefined workflows for common scenarios
@@ -116,6 +128,7 @@ This document synthesizes agentic design patterns from industry research and Goo
 **Definition**: Networks of specialized agents coordinated by an orchestrator to solve complex problems.
 
 **How It Works**:
+
 - Orchestrator receives complex task
 - Decomposes into subtasks matched to specialist capabilities
 - Delegates subtasks to appropriate specialist agents
@@ -124,6 +137,7 @@ This document synthesizes agentic design patterns from industry research and Goo
 - Manages conflicts and dependencies
 
 **When to Use**:
+
 - Task requires diverse expertise or capabilities
 - Subtasks can be parallelized for efficiency
 - Need modular, maintainable architecture
@@ -131,6 +145,7 @@ This document synthesizes agentic design patterns from industry research and Goo
 - Want to evolve system by adding/removing specialists
 
 **Applications for Sounds of STFU**:
+
 - **MOD-102**: Moderator dashboard with specialized agents for:
   - Conversation toxicity detection
   - Volume/noise level monitoring
@@ -141,6 +156,7 @@ This document synthesizes agentic design patterns from industry research and Goo
 - **Multi-modal Processing**: Audio analysis + text analysis + user behavior
 
 **Specialist Agent Types for Platform**:
+
 - **Audio Agent**: Handles spatial audio calculations, mixing
 - **Social Agent**: Manages user relationships, recommendations
 - **Moderation Agent**: Detects issues, suggests interventions
@@ -148,6 +164,7 @@ This document synthesizes agentic design patterns from industry research and Goo
 - **Content Agent**: Topic detection, summarization, captioning
 
 **Implementation Considerations**:
+
 - Clear responsibility boundaries between agents
 - Efficient inter-agent communication protocols
 - Orchestrator must handle agent failures
@@ -163,18 +180,21 @@ This document synthesizes agentic design patterns from industry research and Goo
 **Definition**: Iterative loop of thought → action → observation using natural language.
 
 **Process**:
+
 1. **Thought**: Model reasons about current state and next action
 2. **Action**: Execute selected action (tool use, API call, etc.)
 3. **Observation**: Process results and update understanding
 4. **Repeat**: Continue until exit condition met
 
 **When to Use**:
+
 - Open-ended tasks without predefined workflows
 - Need interpretable reasoning traces
 - Tasks require dynamic decision-making
 - Benefit from observable thought process for debugging
 
 **Applications for Sounds of STFU**:
+
 - **AI-203**: Smart conversation recommendations
   - Thought: "User interested in philosophy, debates happening in firepit area"
   - Action: Query conversation topics in firepit zone
@@ -190,6 +210,7 @@ This document synthesizes agentic design patterns from industry research and Goo
   - Action: Set alert threshold
 
 **Implementation Considerations**:
+
 - Design clear exit conditions to prevent infinite loops
 - Log thought traces for debugging and auditing
 - Balance reasoning depth vs. latency requirements
@@ -208,16 +229,16 @@ This document synthesizes agentic design patterns from industry research and Goo
 
 **Decision Criteria**:
 
-| Characteristic | Recommended Pattern |
-|---|---|
-| Predefined workflow steps | Planning Pattern |
-| Open-ended exploration | ReAct Pattern |
-| Requires specialized skills | Multi-Agent Collaboration |
-| Quality-critical output | Reflection Pattern |
-| Needs external data/actions | Tool Use Pattern (often combined) |
-| Low latency required (<1s) | Simple tool use, avoid deep reflection |
-| High accuracy critical | Reflection + Planning |
-| Complex orchestration | Multi-Agent with Planning orchestrator |
+| Characteristic              | Recommended Pattern                    |
+| --------------------------- | -------------------------------------- |
+| Predefined workflow steps   | Planning Pattern                       |
+| Open-ended exploration      | ReAct Pattern                          |
+| Requires specialized skills | Multi-Agent Collaboration              |
+| Quality-critical output     | Reflection Pattern                     |
+| Needs external data/actions | Tool Use Pattern (often combined)      |
+| Low latency required (<1s)  | Simple tool use, avoid deep reflection |
+| High accuracy critical      | Reflection + Planning                  |
+| Complex orchestration       | Multi-Agent with Planning orchestrator |
 
 ---
 
@@ -228,6 +249,7 @@ Real-world systems combine multiple patterns. Here are recommended combinations:
 ### Feature: AI-Powered Moderator Assistant (MOD-102 + AI-204)
 
 **Pattern Stack**:
+
 1. **Multi-Agent**: Orchestrator coordinates specialist agents
    - Toxicity Detection Agent
    - Volume/Noise Agent
@@ -253,6 +275,7 @@ Real-world systems combine multiple patterns. Here are recommended combinations:
    - Notification systems
 
 **Benefits**:
+
 - Specialist agents provide deep expertise
 - ReAct enables interpretable decisions
 - Reflection prevents over-moderation
@@ -263,6 +286,7 @@ Real-world systems combine multiple patterns. Here are recommended combinations:
 ### Feature: Smart Conversation Recommendations (AI-203)
 
 **Pattern Stack**:
+
 1. **Planning**: Decompose recommendation task
    - Analyze user interests and history
    - Identify active conversations
@@ -283,6 +307,7 @@ Real-world systems combine multiple patterns. Here are recommended combinations:
    - Refine rankings
 
 **Benefits**:
+
 - Planning ensures systematic approach
 - Tool use leverages all available signals
 - Reflection improves recommendation quality
@@ -292,6 +317,7 @@ Real-world systems combine multiple patterns. Here are recommended combinations:
 ### Feature: Conversation Summarization (AI-202)
 
 **Pattern Stack**:
+
 1. **Tool Use**: Access conversation data
    - Audio transcription service (REC-203)
    - Conversation participant info
@@ -311,6 +337,7 @@ Real-world systems combine multiple patterns. Here are recommended combinations:
    - Validate against transcript
 
 **Benefits**:
+
 - Systematic approach ensures comprehensive coverage
 - Reflection dramatically improves summary quality
 - Multiple iterations catch errors and omissions
@@ -324,6 +351,7 @@ Real-world systems combine multiple patterns. Here are recommended combinations:
 **Development Orchestrator**: Project manager / lead developer
 
 **Specialist Development Agents**:
+
 - **Audio Engine Team**: WebRTC, spatial audio, codec optimization
 - **Frontend Team**: React/Vue UI, canvas rendering, user interactions
 - **Backend Team**: Server infrastructure, databases, APIs
@@ -332,6 +360,7 @@ Real-world systems combine multiple patterns. Here are recommended combinations:
 - **QA Team**: Testing, quality assurance, user validation
 
 **Workflow**:
+
 1. Orchestrator reviews backlog (BACKLOG.md)
 2. Identifies parallel workstreams (e.g., AUD-001 and UI-001)
 3. Delegates to specialist teams
@@ -344,6 +373,7 @@ Real-world systems combine multiple patterns. Here are recommended combinations:
 ### Applying Planning Pattern to Sprint Execution
 
 **Sprint Planning as Planning Agent**:
+
 1. **Analyze**: Review backlog, team capacity, dependencies
 2. **Decompose**: Break epics into stories, stories into tasks
 3. **Sequence**: Order tasks by dependencies and priority
@@ -354,6 +384,7 @@ Real-world systems combine multiple patterns. Here are recommended combinations:
 ### Applying Reflection Pattern to Code Quality
 
 **Code Review as Reflection**:
+
 1. Developer writes initial implementation
 2. Self-review: Does this meet requirements? Any edge cases?
 3. Automated tests: Does code pass unit/integration tests?
@@ -373,12 +404,14 @@ Real-world systems combine multiple patterns. Here are recommended combinations:
 **Focus**: Tool Use + Basic Planning
 
 **Rationale**:
+
 - Core features (spatial audio, heat map) don't need complex AI agents yet
 - Use Planning pattern for development workflow
 - Use Tool Use pattern for integrations (WebRTC, databases)
 - Avoid premature complexity
 
 **What to Build**:
+
 - ✅ Simple rule-based moderation (no AI yet)
 - ✅ Predefined conversation zone logic
 - ✅ Basic analytics (counts, metrics)
@@ -389,11 +422,13 @@ Real-world systems combine multiple patterns. Here are recommended combinations:
 **Focus**: Reflection for Quality-Critical Features
 
 **What to Build**:
+
 - AI-201: Topic detection with reflection for accuracy
 - MOD-101: Talking stick with reflected fairness checks
 - SOC-105: Friend recommendations with quality validation
 
 **Rationale**:
+
 - Users now depend on the platform
 - Quality issues have real social impact
 - Reflection prevents embarrassing AI errors
@@ -403,12 +438,14 @@ Real-world systems combine multiple patterns. Here are recommended combinations:
 **Focus**: Multi-Agent + ReAct for Advanced Capabilities
 
 **What to Build**:
+
 - MOD-102 + AI-204: Multi-agent moderator dashboard
 - AI-203: ReAct-based conversation recommendations
 - AI-202: Reflection-enhanced conversation summaries
 - Custom orchestration for event management
 
 **Rationale**:
+
 - Platform proven and scaled
 - User base justifies investment in sophisticated AI
 - Complex features require agentic coordination
@@ -418,37 +455,48 @@ Real-world systems combine multiple patterns. Here are recommended combinations:
 ## Key Principles for Success
 
 ### 1. Start Simple, Evolve Complexity
+
 Don't implement multi-agent systems for problems a simple rule solves. Add agentic patterns when complexity genuinely requires them.
 
 ### 2. Combine Patterns Thoughtfully
+
 Most real-world systems combine patterns. Think about:
+
 - Which pattern is the primary structure?
 - Which patterns augment it?
 - How do they integrate cleanly?
 
 ### 3. Design for Observability
+
 Agentic systems make many decisions. Ensure you can:
+
 - Log reasoning traces (especially for ReAct)
 - Debug agent interactions (multi-agent)
 - Measure iteration effectiveness (reflection)
 - Audit tool usage (tool use pattern)
 
 ### 4. Handle Failures Gracefully
+
 Agents fail. Tools fail. Models hallucinate. Design with:
+
 - Fallback behaviors for each agent/tool
 - Human-in-the-loop for high-stakes decisions
 - Graceful degradation when AI unavailable
 - Clear error messages explaining AI limitations
 
 ### 5. Respect User Agency
+
 AI should augment, not replace, user decisions:
+
 - Recommendations are suggestions, not mandates
 - Users can override AI moderation
 - Transparency about what AI is doing
 - Opt-in for AI features that feel intrusive
 
 ### 6. Measure What Matters
+
 For each agentic feature, define:
+
 - **Success metric**: How do we know it works? (e.g., recommendation click-through rate)
 - **Safety metric**: How do we prevent harm? (e.g., false positive moderation rate)
 - **Cost metric**: Is this sustainable? (API costs, latency)
@@ -460,11 +508,13 @@ For each agentic feature, define:
 When designing a new feature, ask:
 
 **Does this need agentic AI at all?**
+
 - ☐ Could simple rules or heuristics work?
 - ☐ Is the complexity worth the cost/latency?
 - ☐ Do we have training data or a suitable model?
 
 **If yes, which patterns apply?**
+
 - ☐ **Reflection**: Will iterative refinement improve quality significantly?
 - ☐ **Tool Use**: Does this need external data or actions?
 - ☐ **Planning**: Is this a multi-step task with dependencies?
@@ -472,12 +522,14 @@ When designing a new feature, ask:
 - ☐ **ReAct**: Is this open-ended reasoning without a clear workflow?
 
 **How will we validate it works?**
+
 - ☐ Success metrics defined
 - ☐ Safety/quality thresholds set
 - ☐ Observability built in
 - ☐ User feedback mechanism planned
 
 **What's the fallback if AI fails?**
+
 - ☐ Graceful degradation path designed
 - ☐ Human override mechanism available
 - ☐ Error messaging prepared
@@ -487,18 +539,22 @@ When designing a new feature, ask:
 ## Resources & References
 
 ### External Resources
+
 - **DeepLearning.AI Agentic Patterns**: Reflection, Tool Use, Planning, Multi-Agent (Andrew Ng)
 - **Google Cloud Agentic AI Architecture**: https://cloud.google.com/architecture/agentic-ai-overview
 - **Google Cloud Pattern Selection Guide**: https://docs.cloud.google.com/architecture/choose-design-pattern-agentic-ai-system
 - **Multi-Agent Systems (Google)**: https://docs.cloud.google.com/architecture/multiagent-ai-system
 
 ### Internal Project Documents
+
 - **PRODUCT_REQUIREMENTS.md**: Feature specifications where patterns apply
 - **BACKLOG.md**: Specific tasks that may use agentic patterns
 - **CLAUDE.md**: High-level project context
 
 ### Superpowers Skills
+
 When implementing features, consider using:
+
 - `superpowers:brainstorming` - Before designing agentic features
 - `superpowers:writing-plans` - For Planning pattern implementations
 - `superpowers:systematic-debugging` - For debugging agentic systems

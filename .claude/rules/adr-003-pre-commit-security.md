@@ -17,18 +17,21 @@ Security vulnerabilities and code quality issues should be caught before they re
 ## Required Tools
 
 ### Security Scanning
+
 - **gitleaks**: Detect hardcoded secrets, API keys, credentials
 - **checkov**: Infrastructure-as-code security scanning
 - **npm audit** / **pip-audit**: Dependency vulnerability scanning
 - **semgrep**: Static analysis for security patterns
 
 ### Code Quality
+
 - **eslint**: JavaScript/TypeScript linting
 - **prettier**: Code formatting
 - **shellcheck**: Shell script linting
 - **markdownlint**: Documentation consistency
 
 ### Type Safety
+
 - **TypeScript compiler**: Type checking for TS projects
 - **mypy**: Type checking for Python projects
 
@@ -99,39 +102,46 @@ pre-commit run --all-files
 ## Stack-Specific Tools
 
 ### JavaScript/TypeScript + Node.js
+
 - eslint, prettier
 - npm audit
 - typescript compiler (tsc --noEmit)
 
 ### Python
+
 - black (formatting)
 - flake8 (linting)
 - mypy (type checking)
 - pip-audit (dependencies)
 
 ### Infrastructure (Terraform/CloudFormation)
+
 - checkov
 - terraform validate
 - tflint
 
 ### Shell Scripts
+
 - shellcheck
 - shfmt
 
 ## Enforcement Levels
 
 ### Blocking (MUST pass to commit)
+
 - ❌ Secrets detected (gitleaks)
 - ❌ Critical/high vulnerabilities (npm audit, checkov)
 - ❌ Syntax errors (linters)
 - ❌ Type errors (TypeScript, mypy)
 
 ### Warning (can commit with --no-verify)
+
 - ⚠️ Code style issues (prettier, black)
 - ⚠️ Medium/low vulnerabilities (audit)
 - ⚠️ Deprecated API usage
 
 ### Info (logged but not blocking)
+
 - ℹ️ Code complexity metrics
 - ℹ️ TODO/FIXME comments
 - ℹ️ Documentation coverage
@@ -139,11 +149,13 @@ pre-commit run --all-files
 ## Bypass Mechanism
 
 **Emergency bypass** (use sparingly):
+
 ```bash
 git commit --no-verify -m "Emergency fix, will address security scan in follow-up"
 ```
 
 **MUST:**
+
 - Create follow-up issue immediately
 - Document reason in commit message
 - Fix within 24 hours
@@ -168,12 +180,14 @@ jobs:
 ## Consequences
 
 **Benefits:**
+
 - Secrets never reach repository
 - Vulnerabilities caught before code review
 - Consistent code style automatically enforced
 - Developer feedback immediate (not in CI)
 
 **Costs:**
+
 - Initial setup time per developer
 - Commit time slightly longer (2-10 seconds)
 - False positives require .gitleaks.toml config

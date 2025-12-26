@@ -1,4 +1,5 @@
 # Chatsubo Floor Plan Specifications
+
 ## Sounds of STFU - Virtual Bar Layout Design
 
 **Date:** 2025-12-24
@@ -13,6 +14,7 @@
 This document provides implementation-ready specifications for the Sounds of STFU virtual bar layout, inspired by William Gibson's Chatsubo bar from Neuromancer. The design prioritizes intimate, conversation-focused zones within a single-screen isometric view, using lighting-based depth perception and wave-based spatial audio to create natural social boundaries without requiring navigation or scrolling.
 
 **Key Design Principles:**
+
 - **Intimacy over scale**: Gritty, close-quarters atmosphere like a real dive bar
 - **Lighting as boundaries**: Darkness at 8-10ft creates natural conversation zones
 - **One-screen experience**: No scrolling or exploration - see the whole bar at once
@@ -24,6 +26,7 @@ This document provides implementation-ready specifications for the Sounds of STF
 ## Overall Dimensions & Capacity
 
 ### Floor Plan Footprint
+
 - **Total Width**: 48 feet (east-west)
 - **Total Depth**: 36 feet (north-south)
 - **First Floor Height**: 12 feet ceiling
@@ -31,11 +34,13 @@ This document provides implementation-ready specifications for the Sounds of STF
 - **Total Floor Area**: 1,728 sq ft (both floors)
 
 ### Capacity Constraints
+
 - **MVP Maximum**: 10 concurrent users (PeerJS mesh limitation)
 - **Distributed Capacity**: See zone specifications below
 - **"Bar is Full" Threshold**: Graceful failure at 11th user
 
 ### Isometric View Configuration
+
 - **Camera Angle**: 30-degree downward tilt from horizontal
 - **Perspective**: Isometric projection (no vanishing point distortion)
 - **Second Floor Rendering**: 40% opacity (semi-transparent)
@@ -50,12 +55,14 @@ This document provides implementation-ready specifications for the Sounds of STF
 **Purpose**: High-energy multiplayer gaming, spectating, team coordination
 
 **Physical Specifications:**
+
 - **Position**: Northwest corner (0, 0) origin point
 - **Dimensions**: 16ft × 14ft (224 sq ft)
 - **Ceiling Height**: 12ft
 - **Capacity**: 3-4 users
 
 **Spatial Audio Configuration:**
+
 - **Audio Boundary Type**: Hard boundary (gaming area isolated from rest of bar)
 - **Falloff Distance**:
   - 0-6ft: 100% volume (full engagement)
@@ -66,6 +73,7 @@ This document provides implementation-ready specifications for the Sounds of STF
 - **Background Noise**: Low hum of game audio (10% ambient)
 
 **Lighting & Atmosphere:**
+
 - **Primary Lighting**: Blue-white LED glow from screens (cold, technical)
 - **Secondary Lighting**: Purple neon strip under gaming table
 - **Light Level**: Medium-bright (70% brightness) - functional for gaming
@@ -73,12 +81,14 @@ This document provides implementation-ready specifications for the Sounds of STF
 - **Visibility Range**: 12ft before darkness consumes conversation
 
 **Furniture & Layout:**
+
 - 1 large gaming table (8ft × 4ft) with 4 stools
 - Screens/monitors facing inward (creates acoustic cup)
 - Cable management visible (cyberpunk aesthetic: wires everywhere)
 - Worn vinyl stools, patched with duct tape
 
 **Social Dynamics:**
+
 - **Entry Point**: Easy to spot from entrance (orange heat map glow)
 - **Newcomer Friendliness**: Medium - gaming sessions can be intense, hard to interrupt
 - **Conversation Rhythm**: Fast, punctuated, coordinated (team comms)
@@ -91,12 +101,14 @@ This document provides implementation-ready specifications for the Sounds of STF
 **Purpose**: Social hub, bartender interactions, drink service, transitional space
 
 **Physical Specifications:**
+
 - **Position**: Center of first floor (16, 10) coordinate
 - **Dimensions**: 16ft × 12ft (192 sq ft) - bar counter is 12ft long
 - **Ceiling Height**: 12ft
 - **Capacity**: 4-5 users
 
 **Spatial Audio Configuration:**
+
 - **Audio Boundary Type**: Soft boundary (intentionally permeable)
 - **Falloff Distance**:
   - 0-4ft: 100% volume (intimate conversation at bar)
@@ -107,6 +119,7 @@ This document provides implementation-ready specifications for the Sounds of STF
 - **Background Noise**: Ambient bar sounds - glass clinking (5%), distant laughter
 
 **Lighting & Atmosphere:**
+
 - **Primary Lighting**: Amber backlit shelves behind bar (warm, inviting)
 - **Secondary Lighting**: Dim overhead pendants (40% brightness)
 - **Accent Lighting**: Green neon "OPEN" sign (Chatsubo signature)
@@ -115,12 +128,14 @@ This document provides implementation-ready specifications for the Sounds of STF
 - **Visibility Range**: 10ft before shadows deepen
 
 **Furniture & Layout:**
+
 - Rectangular bar counter (12ft × 3ft) with bartender station inside
 - 6 bar stools (worn leather, mismatched)
 - Back bar shelving (liquor bottles, neon underglow)
 - Sticky spots on bar surface (authenticity detail)
 
 **Social Dynamics:**
+
 - **Entry Point**: First stop for newcomers (bartender AI greets here)
 - **Newcomer Friendliness**: High - bartender facilitates introductions
 - **Conversation Rhythm**: Variable - casual small talk to serious one-on-ones
@@ -134,12 +149,14 @@ This document provides implementation-ready specifications for the Sounds of STF
 **Purpose**: Casual gaming (cards, board games), focused small group conversations
 
 **Physical Specifications:**
+
 - **Position**: Southeast corner (32, 22)
 - **Dimensions**: 14ft × 12ft (168 sq ft)
 - **Ceiling Height**: 12ft
 - **Capacity**: 3-4 users
 
 **Spatial Audio Configuration:**
+
 - **Audio Boundary Type**: Medium boundary (semi-isolated for focus)
 - **Falloff Distance**:
   - 0-5ft: 100% volume (table conversation)
@@ -150,6 +167,7 @@ This document provides implementation-ready specifications for the Sounds of STF
 - **Background Noise**: Shuffling cards, dice rolling (8% ambient)
 
 **Lighting & Atmosphere:**
+
 - **Primary Lighting**: Single overhead pendant per table (focused pool of light)
 - **Secondary Lighting**: Red neon strip along wall (dim, moody)
 - **Light Level**: Low-medium (40% brightness) - focused on table surface
@@ -158,12 +176,14 @@ This document provides implementation-ready specifications for the Sounds of STF
 - **Chatsubo Detail**: Light pools like islands in darkness (Gibson's vision)
 
 **Furniture & Layout:**
+
 - 2 round tables (4ft diameter each) with green felt surfaces
 - 4 mismatched chairs per table (wooden, vinyl, metal - eclectic)
 - Card deck storage in table drawer
 - Worn felt, cigarette burns (aesthetic detail, no actual smoking)
 
 **Social Dynamics:**
+
 - **Entry Point**: Quiet alternative to gaming zone energy
 - **Newcomer Friendliness**: Medium-low - games in progress are hard to join
 - **Conversation Rhythm**: Turn-based, thoughtful pauses (game-paced)
@@ -176,12 +196,14 @@ This document provides implementation-ready specifications for the Sounds of STF
 **Purpose**: Deep conversations, philosophy, heated debates, talking stick zone
 
 **Physical Specifications:**
+
 - **Position**: Southwest corner (0, 22)
 - **Dimensions**: 14ft × 14ft (196 sq ft)
 - **Ceiling Height**: 12ft
 - **Capacity**: 4-5 users
 
 **Spatial Audio Configuration:**
+
 - **Audio Boundary Type**: Soft boundary (ideas should drift to other zones)
 - **Falloff Distance**:
   - 0-6ft: 100% volume (full debate engagement)
@@ -192,6 +214,7 @@ This document provides implementation-ready specifications for the Sounds of STF
 - **Background Noise**: Crackling firepit ambience (12% volume, warm crackle)
 
 **Lighting & Atmosphere:**
+
 - **Primary Lighting**: Flickering orange firepit glow (animated, dynamic)
 - **Secondary Lighting**: None - firelight only (most atmospheric zone)
 - **Light Level**: Low (30% brightness) - firelit faces, shadowed bodies
@@ -200,12 +223,14 @@ This document provides implementation-ready specifications for the Sounds of STF
 - **Chatsubo Detail**: "Faces half-lit by the glow" (Gibson aesthetic)
 
 **Furniture & Layout:**
+
 - Circular seating arrangement around central firepit (virtual flames)
 - 6 low chairs (worn armchairs, mismatched fabric)
 - Firepit center (2ft diameter, animated flame effect)
 - Wood floor (dark, scuffed planks visible in firelight)
 
 **Social Dynamics:**
+
 - **Entry Point**: For serious conversations, escaping high energy zones
 - **Newcomer Friendliness**: Variable - depends on debate intensity
 - **Conversation Rhythm**: Slow, thoughtful, turn-taking (talking stick enforced here)
@@ -222,18 +247,21 @@ This document provides implementation-ready specifications for the Sounds of STF
 **Purpose**: Vertical transition between floors, visual focal point
 
 **Physical Specifications:**
+
 - **Position**: East side of central bar (28, 10)
 - **Dimensions**: 6ft × 8ft footprint, 12ft vertical rise
 - **Material**: Metal grating stairs (industrial, see-through)
 - **Capacity**: 1 user in transition at a time
 
 **Visual Design:**
+
 - **Transparency**: 60% opacity - can see through to floor below
 - **Lighting**: Blue neon under each step (cyberpunk accent)
 - **Sound**: Metallic clanging footsteps (atmospheric audio cue)
 - **Isometric View**: Stairs render as diagonal ascent, semi-transparent
 
 **Social Dynamics:**
+
 - **Transition Audio**: User's audio mix shifts from floor 1 to floor 2 over 2 seconds
 - **Visual Cue**: Avatar fades slightly during transition (depth indication)
 
@@ -244,12 +272,14 @@ This document provides implementation-ready specifications for the Sounds of STF
 **Purpose**: Intimate conversations, 1-on-1 or small groups, privacy-first spaces
 
 **Physical Specifications:**
+
 - **Position**: North side of second floor (scattered along north wall)
 - **Dimensions**: 3 booths, each 6ft × 6ft (36 sq ft per booth)
 - **Ceiling Height**: 10ft (lower than first floor - more intimate)
 - **Capacity**: 2-3 users per booth (6-9 total for all booths)
 
 **Spatial Audio Configuration:**
+
 - **Audio Boundary Type**: Hard boundary with prompt-based access control
 - **Falloff Distance**:
   - Inside booth: 100% volume (private conversation)
@@ -259,6 +289,7 @@ This document provides implementation-ready specifications for the Sounds of STF
 - **Background Noise**: None - absolute quiet (privacy priority)
 
 **Lighting & Atmosphere:**
+
 - **Primary Lighting**: Single dim overhead lamp per booth (20% brightness)
 - **Secondary Lighting**: Soft red neon strip along booth edge
 - **Light Level**: Very low (25% brightness) - intimate, shadowed
@@ -267,12 +298,14 @@ This document provides implementation-ready specifications for the Sounds of STF
 - **Chatsubo Detail**: "Coffin hotel" aesthetic - cramped, private capsules
 
 **Furniture & Layout:**
+
 - Each booth: Worn vinyl bench seats (L-shaped or facing)
 - Small table (2ft × 2ft) with scratched surface
 - Curtain option (user can "close" booth for full visual privacy)
 - Graffiti on walls (user-submitted text - v2.0 feature)
 
 **Social Dynamics:**
+
 - **Entry Point**: For users seeking privacy, escaping main floor energy
 - **Newcomer Friendliness**: Low - booths signal "occupied, private"
 - **Conversation Rhythm**: Uninterrupted, intimate (no talking stick needed)
@@ -288,12 +321,14 @@ This document provides implementation-ready specifications for the Sounds of STF
 **Purpose**: Live music performances (guitar, drums, mic), atmosphere setting
 
 **Physical Specifications:**
+
 - **Position**: South side of second floor, center (24, 28)
 - **Dimensions**: 10ft × 8ft (80 sq ft)
 - **Ceiling Height**: 10ft
 - **Capacity**: 3 performers maximum (guitarist, drummer, vocalist)
 
 **Spatial Audio Configuration:**
+
 - **Audio Boundary Type**: Broadcast mode (special audio routing)
 - **Falloff Distance**:
   - Performance mode: 40% volume to entire bar (both floors)
@@ -303,6 +338,7 @@ This document provides implementation-ready specifications for the Sounds of STF
 - **Background Noise**: Performance becomes background for all zones
 
 **Lighting & Atmosphere:**
+
 - **Primary Lighting**: Single warm spotlight (60% brightness) when active
 - **Secondary Lighting**: Purple stage wash (ambient glow when inactive)
 - **Light Level**: Variable - bright during performance, dim when empty
@@ -311,12 +347,14 @@ This document provides implementation-ready specifications for the Sounds of STF
 - **Chatsubo Detail**: "Solace in somber pickups and hooks" (user's vision)
 
 **Furniture & Layout:**
+
 - Small riser platform (8in elevation above floor)
 - 3 positions marked: guitar, snare drum, microphone
 - Cables visible (cyberpunk aesthetic - wires snake across floor)
 - Worn wood stage floor, dark stain
 
 **Social Dynamics:**
+
 - **Entry Point**: For performers, occasional intimate sets
 - **Newcomer Friendliness**: Low - stage is for scheduled performances
 - **Performance Mode**: User activates "perform" mode, audio broadcast begins
@@ -331,6 +369,7 @@ This document provides implementation-ready specifications for the Sounds of STF
 ### Newcomer Journey (First 5 Minutes)
 
 **Entry Point: The Entrance**
+
 1. **Visual Orientation** (0-30 seconds):
    - Heat map overlay visible immediately (orange gaming zone, blue firepit)
    - Bartender AI avatar visible at central bar (green "OPEN" neon)
@@ -353,6 +392,7 @@ This document provides implementation-ready specifications for the Sounds of STF
    - Conversation integration - existing group acknowledges newcomer
 
 **Bartender AI Role in Onboarding:**
+
 - Detects newcomer (first-time visitor flag)
 - Provides brief audio tutorial: "Move closer to hear better, mix volumes here"
 - Suggests starting zone based on current activity levels
@@ -363,6 +403,7 @@ This document provides implementation-ready specifications for the Sounds of STF
 ### Movement Patterns Between Zones
 
 **High-Traffic Routes:**
+
 1. **Gaming Zone ↔ Central Bar**: Most common (6ft distance)
    - Purpose: Drink refills, quick social check-ins
    - Audio transition: Fast (1 second crossfade)
@@ -380,11 +421,13 @@ This document provides implementation-ready specifications for the Sounds of STF
    - Audio transition: Medium (2 second crossfade)
 
 **Movement Speed & Distance Calibration:**
+
 - **Walking Speed**: 3 feet per second (virtual movement)
 - **Audio Crossfade**: 1 second per 6 feet traveled (smooth transition)
 - **Visual Movement**: Avatar glides (no walking animation - minimalist)
 
 **Distance-Based Volume Formula (Wave Function):**
+
 ```
 volume = 1 / (1 + (distance / falloff_distance)^2)
 
@@ -399,21 +442,25 @@ Where:
 ### Privacy vs Visibility Balance
 
 **Public Zones (High Visibility):**
+
 - Gaming Zone: Fully public, activity visible on heat map
 - Central Bar: Public, bartender AI monitors aggregate sentiment
 - Card Tables: Semi-public, games in progress visible
 - Firepit: Public intellectual space, debates meant to be overheard
 
 **Semi-Private Zones (Medium Visibility):**
+
 - Second Floor General Area: Visible but distance creates psychological privacy
 - Stage: Public when active, private when empty
 
 **Private Zones (Low Visibility):**
+
 - Booths: 🔒 indicator on heat map, content never visible
 - Booth access: Prompt-based control (see ADR - natural language)
 - Privacy guarantee: E2E encrypted audio, local SLM only, no server visibility
 
 **Heat Map Privacy Design:**
+
 - **Public zones**: Topic word clouds visible ("combo!" "nice shot!" "consciousness")
 - **Private booths**: Generic label only ("🔒 private - no data")
 - **User control**: Can opt-out of topic contribution to word cloud (local setting)
@@ -423,6 +470,7 @@ Where:
 ### Escape Routes from High-Energy Zones
 
 **Scenario 1: Gaming Zone Overwhelming**
+
 - **Escape Route 1**: East to central bar (6ft, 2 seconds)
   - Audio: Gaming 100% → 60% → 20%, Bar 20% → 60% → 100%
   - Social: "Grabbing a drink" is natural, non-confrontational exit
@@ -431,6 +479,7 @@ Where:
   - Social: Joining a quieter game is understandable exit
 
 **Scenario 2: Firepit Debate Too Heated**
+
 - **Escape Route 1**: North to central bar (10ft, 3 seconds)
   - Audio: Firepit 100% → 60% → 30% → 10%, Bar 10% → 30% → 60% → 100%
   - Social: "Need a drink" is universal escape justification
@@ -439,12 +488,14 @@ Where:
   - Social: "Taking a call" or "need privacy" - clear signal of overwhelm
 
 **Scenario 3: Central Bar Too Crowded**
+
 - **Escape Route 1**: Any direction within 6-10ft to adjacent zones
   - User has maximum flexibility from central position
 - **Escape Route 2**: Upstairs to booth (fastest privacy access)
   - Audio: Bar 100% → background ambience 20% (booth isolation)
 
 **Design Principle: No "Running Away" Required**
+
 - User can move to maximum spatial distance from conversation (wave falloff)
 - User can manually adjust volume using mixing controls
 - Combination of distance + manual control = social comfort without rudeness
@@ -459,29 +510,31 @@ Where:
 **Origin Point**: Northwest corner of first floor (0, 0)
 **Coordinate Units**: Feet (ft)
 **Axis Convention**:
+
 - X-axis: West to East (0 to 48)
 - Y-axis: North to South (0 to 36)
 - Z-axis: Floor elevation (0 = first floor, 12 = second floor)
 
 **Zone Coordinates (Bounding Boxes):**
 
-| Zone | X1 | Y1 | X2 | Y2 | Z (floor) |
-|------|----|----|----|----|-----------|
-| Gaming Zone | 0 | 0 | 16 | 14 | 0 |
-| Central Bar | 16 | 10 | 32 | 22 | 0 |
-| Card Tables | 32 | 22 | 46 | 34 | 0 |
-| Firepit | 0 | 22 | 14 | 36 | 0 |
-| Stairs | 28 | 10 | 34 | 18 | 0-12 |
-| Booth 1 | 2 | 2 | 8 | 8 | 12 |
-| Booth 2 | 12 | 2 | 18 | 8 | 12 |
-| Booth 3 | 22 | 2 | 28 | 8 | 12 |
-| Stage | 19 | 28 | 29 | 36 | 12 |
+| Zone        | X1  | Y1  | X2  | Y2  | Z (floor) |
+| ----------- | --- | --- | --- | --- | --------- |
+| Gaming Zone | 0   | 0   | 16  | 14  | 0         |
+| Central Bar | 16  | 10  | 32  | 22  | 0         |
+| Card Tables | 32  | 22  | 46  | 34  | 0         |
+| Firepit     | 0   | 22  | 14  | 36  | 0         |
+| Stairs      | 28  | 10  | 34  | 18  | 0-12      |
+| Booth 1     | 2   | 2   | 8   | 8   | 12        |
+| Booth 2     | 12  | 2   | 18  | 8   | 12        |
+| Booth 3     | 22  | 2   | 28  | 8   | 12        |
+| Stage       | 19  | 28  | 29  | 36  | 12        |
 
 ---
 
 ### Acoustic Parameters (Per Zone)
 
 **Gaming Zone:**
+
 ```javascript
 {
   zone_id: "gaming",
@@ -496,6 +549,7 @@ Where:
 ```
 
 **Central Bar:**
+
 ```javascript
 {
   zone_id: "central_bar",
@@ -510,6 +564,7 @@ Where:
 ```
 
 **Card Tables:**
+
 ```javascript
 {
   zone_id: "card_tables",
@@ -524,6 +579,7 @@ Where:
 ```
 
 **Firepit:**
+
 ```javascript
 {
   zone_id: "firepit",
@@ -538,6 +594,7 @@ Where:
 ```
 
 **Private Booths:**
+
 ```javascript
 {
   zone_id: "booth_1", // booth_2, booth_3
@@ -554,6 +611,7 @@ Where:
 ```
 
 **Stage (Performance Mode):**
+
 ```javascript
 {
   zone_id: "stage",
@@ -574,6 +632,7 @@ Where:
 ### Lighting Specifications (Per Zone)
 
 **Lighting Data Structure:**
+
 ```javascript
 {
   zone_id: "gaming",
@@ -601,6 +660,7 @@ Where:
 ```
 
 **Color Palette (Cyberpunk/Chatsubo Theme):**
+
 - Gaming Zone: `#88AAFF` (blue-white), `#AA44FF` (purple accent)
 - Central Bar: `#FFAA44` (amber), `#44FF88` (green neon "OPEN")
 - Card Tables: `#FF4444` (red neon), `#FFCC88` (warm incandescent)
@@ -609,6 +669,7 @@ Where:
 - Stage: `#FFCC66` (warm spotlight), `#AA44FF` (purple wash)
 
 **Darkness Gradient:**
+
 - 0-4ft from light source: Full illumination (100%)
 - 4-8ft: Gradual dimming (100% → 40%)
 - 8-10ft: Rapid darkness (40% → 10%)
@@ -619,6 +680,7 @@ Where:
 ### Visual Perspective Parameters
 
 **Isometric Camera Configuration:**
+
 ```javascript
 {
   projection_type: "isometric",
@@ -644,6 +706,7 @@ Where:
 ```
 
 **Rendering Layers (Back to Front):**
+
 1. First floor background (dark floor texture)
 2. First floor furniture (tables, chairs, bar)
 3. First floor avatars (users)
@@ -660,6 +723,7 @@ Where:
 ### Heat Map Visualization Parameters
 
 **Heat Map Data Structure:**
+
 ```javascript
 {
   zone_id: "gaming",
@@ -678,6 +742,7 @@ Where:
 ```
 
 **Heat Map Rendering:**
+
 - Overlay layer at 75% opacity
 - Gaussian blur radius: 8ft (soft boundaries between zones)
 - Update frequency: User-configurable (on-demand, event-triggered, 2min periodic)
@@ -688,6 +753,7 @@ Where:
 ### User Avatar Specifications
 
 **Avatar Representation:**
+
 - **Visual Style**: Minimalist geometric shape (circle or simple silhouette)
 - **Size**: 2ft diameter (consistent across both floors)
 - **Color**: User-selected accent color (default: white)
@@ -695,12 +761,14 @@ Where:
 - **Movement**: Glide animation (no walking legs - cyberpunk simplicity)
 
 **Avatar States:**
+
 - **Speaking**: Pulsing glow effect around avatar
 - **Listening**: Subtle ambient glow
 - **AFK**: Faded to 30% opacity, greyed out
 - **In Private Booth**: 100% opacity, curtain icon if booth closed
 
 **Spatial Audio Indicator:**
+
 - Concentric circles emanate from speaking avatar (visualize sound waves)
 - Circle radius = current audio falloff distance
 - Circle opacity decreases with distance (visual volume representation)
@@ -712,37 +780,44 @@ Where:
 ### Design Constraints Validation
 
 **✅ Chatsubo/Neuromancer Aesthetic:**
+
 - Gritty, intimate expatriate bar atmosphere
 - Dim lighting, neon accents (green "OPEN", purple/blue/red strips)
 - Worn surfaces, visible cables, cyberpunk clutter
 - "Coffin hotel" booths, darkness as privacy
 
 **✅ Isometric 3D View:**
+
 - 30-degree downward angle from horizontal
 - Isometric projection (no vanishing point distortion)
 - Entire bar visible on 1920x1080 without scrolling
 
 **✅ Semi-Transparent Second Floor:**
+
 - 40% opacity for second floor elements
 - Can see through to first floor below
 - Depth indicated by lighting and layering
 
 **✅ Lighting-Based Depth:**
+
 - Darkness at 8-10ft creates natural boundaries
 - Zone-specific lighting (firepit orange, gaming blue-white)
 - Visibility range per zone enforces conversation bubbles
 
 **✅ Communication-First Design:**
+
 - NOT a game world - no exploration mechanics
 - Focused on spatial audio conversation zones
 - One-screen view (no scrolling or navigation feel)
 
 **✅ Wave-Based Spatial Audio:**
+
 - Wave inverse-square falloff function specified
 - Distance-based volume attenuation per zone
 - Smooth crossfades during movement
 
 **✅ Zones from Requirements:**
+
 - Floor 1: Gaming zone ✅, Central bar ✅, Card tables ✅, Firepit ✅
 - Floor 2: Private booths ✅, Small stage ✅
 
@@ -751,28 +826,33 @@ Where:
 ### Implementation Readiness
 
 **✅ Dimensions & Coordinates:**
+
 - All zones have bounding box coordinates (X1, Y1, X2, Y2, Z)
 - Origin point defined (0, 0) at northwest corner
 - Units standardized (feet)
 
 **✅ Capacity Specifications:**
+
 - Per-zone capacity defined (2-5 users per zone)
 - Total capacity: 10 users (PeerJS mesh constraint)
 - "Bar is full" graceful failure at 11th user
 
 **✅ Audio Parameters:**
+
 - Falloff distance per zone (6-10ft typical)
 - Wave-based falloff function formula provided
 - Acoustic character definitions (bright, damped, resonant, etc.)
 - Background ambience types and volumes
 
 **✅ Lighting Specifications:**
+
 - Color codes (hex) for all lighting sources
 - Intensity values (0.0 to 1.0)
 - Color temperatures (Kelvin)
 - Visibility ranges (darkness boundaries)
 
 **✅ Visual Rendering:**
+
 - Camera configuration (isometric, 45° horizontal, -30° vertical)
 - Layer ordering (back to front)
 - Opacity values for second floor (40%)
@@ -783,21 +863,25 @@ Where:
 ### Social Flow Validation
 
 **✅ Newcomer Orientation:**
+
 - Clear entry point (central bar, bartender greeting)
 - Heat map provides visual navigation cues
 - First 5 minutes journey documented
 
 **✅ Movement Patterns:**
+
 - High-traffic routes identified (gaming ↔ bar, bar ↔ firepit)
 - Audio transition times specified (1-3 seconds based on distance)
 - Walking speed calibrated (3 ft/sec)
 
 **✅ Privacy vs Visibility:**
+
 - Public zones: Heat map visible, topic word clouds
 - Private zones: 🔒 indicator, E2E encrypted, no content leakage
 - Prompt-based booth access control (natural language)
 
 **✅ Escape Routes:**
+
 - Multiple escape options from each high-energy zone
 - Social comfort priority (no "running away" required)
 - Distance + manual volume control combination
@@ -807,30 +891,35 @@ Where:
 ## Next Steps for Developers
 
 ### Phase 1: Prototype Core Layout (Week 1)
+
 1. Implement isometric camera view (static for MVP)
 2. Render first floor zones as colored rectangles
 3. Place 2-3 test avatars in different zones
 4. Validate coordinate system and bounding boxes
 
 ### Phase 2: Spatial Audio Integration (Week 2-3)
+
 1. Implement wave-based falloff function
 2. Test PeerJS mesh with 2 users in different zones
 3. Validate audio crossfade during movement
 4. Add zone-specific acoustic parameters
 
 ### Phase 3: Lighting & Atmosphere (Week 4)
+
 1. Add zone-specific lighting (colored point lights)
 2. Implement darkness gradients (visibility range)
 3. Add neon effects (green "OPEN", purple gaming strip)
 4. Test isometric rendering with lighting
 
 ### Phase 4: Second Floor & Stairs (Week 5)
+
 1. Render second floor at 40% opacity
 2. Implement staircase transition (audio + visual)
 3. Add booth privacy (E2E encryption, hard audio cutoff)
 4. Test prompt-based access control (basic version)
 
 ### Phase 5: Heat Map & Polish (Week 6)
+
 1. Implement heat map overlay (activity visualization)
 2. Add topic word clouds for public zones
 3. Refine avatar movement (glide animation)
@@ -845,6 +934,7 @@ Where:
 > "The Chatsubo was a bar for professional expatriates; you could drink there for a week and never hear two words in Japanese. Ratz was tending bar, his prosthetic arm jerking smoothly as he filled a tray of glasses with draft Kirin. He saw Case and smiled, his teeth a webwork of East European steel and brown decay."
 
 **Design Elements Captured:**
+
 - **Expatriate atmosphere**: Diverse, international crowd (user diversity)
 - **Intimate, worn**: Dark corners, sticky surfaces, imperfect aesthetics
 - **Bartender as anchor**: Ratz = our Bartender AI (welcoming, observant)
@@ -853,6 +943,7 @@ Where:
 > "At a table near the door, three Wage Police sat in their dark, turtlenecked uniforms. The man beside Case was reading a hardcopy of the latest Yomiuri, his head bobbing to a twitchy rhythm as he scanned the columns of print."
 
 **Design Elements Captured:**
+
 - **Multiple conversations**: Wage Police, reader, Case - all coexisting
 - **Different energy levels**: Reading (quiet) vs police (tense) vs Case (story focus)
 - **Spatial proximity**: Near door, separate tables - distance creates privacy
@@ -860,6 +951,7 @@ Where:
 > "The bartender's smile widened. His ugliness was the stuff of legend. In an age of affordable beauty, there was something heraldic about his lack of it."
 
 **Design Elements Captured:**
+
 - **Authenticity over polish**: Worn, imperfect, real (no sanitized corporate aesthetic)
 - **Character in imperfection**: Scratched surfaces, mismatched furniture, graffiti
 
@@ -870,6 +962,7 @@ Where:
 This floor plan design provides implementation-ready specifications for the Sounds of STFU virtual bar, capturing the intimate, gritty atmosphere of Gibson's Chatsubo while prioritizing spatial audio communication. The design balances privacy (booths, E2E encryption) with community (heat map, overlapping conversations), using lighting and wave-based audio falloff to create natural social boundaries within a single-screen isometric view.
 
 **Key Achievements:**
+
 - ✅ Complete zone specifications (dimensions, coordinates, capacity)
 - ✅ Acoustic parameters (falloff curves, boundary types, ambient sounds)
 - ✅ Lighting specifications (colors, intensities, visibility ranges)

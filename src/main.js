@@ -80,17 +80,6 @@ async function joinRoom() {
     // Enable zone movement buttons
     enableZoneButtons();
 
-    // Show peer connect section and display local peer ID
-    const peerConnectSection = getElement('peer-connect-section');
-    const localPeerIdInput = getElement('local-peer-id');
-    if (peerConnectSection) peerConnectSection.style.display = 'block';
-    if (localPeerIdInput && app.meshNetworkCoordinator) {
-      const peerId = app.meshNetworkCoordinator.peerManager.peerId;
-      localPeerIdInput.value = peerId;
-      addSystemMessage(`Your Peer ID: ${peerId}`);
-      console.log(`[Main] Local Peer ID: ${peerId}`);
-    }
-
     // Start connection metrics tracking
     startConnectionMetrics();
   } catch (error) {
@@ -118,10 +107,6 @@ function leaveRoom() {
   if (statusDialog) {
     statusDialog.classList.remove('hidden');
   }
-
-  // Hide peer connect section
-  const peerConnectSection = getElement('peer-connect-section');
-  if (peerConnectSection) peerConnectSection.style.display = 'none';
 
   updateButtonVisibility();
   updateStatus('Left room');
@@ -315,7 +300,6 @@ function updateConnectionMetrics() {
 
   if (!connectionStatus || !app) return;
 
-  const peerCount = app.getPeerCount();
   const isConnected = app.networkCoordinator && app.localPeerId;
 
   // Connection state
@@ -356,32 +340,6 @@ document.addEventListener('DOMContentLoaded', () => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         sendMessage();
-      }
-    });
-  }
-
-  // Connect to peer button
-  const connectPeerButton = getElement('connect-peer-button');
-  if (connectPeerButton) {
-    connectPeerButton.addEventListener('click', async () => {
-      if (!app || !isInRoom) return;
-
-      const remotePeerIdInput = getElement('remote-peer-id');
-      const remotePeerId = remotePeerIdInput?.value.trim();
-
-      if (!remotePeerId) {
-        addSystemMessage('⚠️ Please enter a peer ID');
-        return;
-      }
-
-      try {
-        addSystemMessage(`Connecting to peer: ${remotePeerId}...`);
-        await app.meshNetworkCoordinator.connectToPeer(remotePeerId);
-        addSystemMessage(`✅ Connected to peer: ${remotePeerId}`);
-        remotePeerIdInput.value = '';
-      } catch (error) {
-        console.error('[Main] Failed to connect to peer:', error);
-        addSystemMessage(`❌ Failed to connect: ${error.message}`);
       }
     });
   }

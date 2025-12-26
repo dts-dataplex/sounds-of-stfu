@@ -20,9 +20,7 @@
     
 </div>
 
-
-# Awesome Claude Code Subagents 
-
+# Awesome Claude Code Subagents
 
 ## What is this?
 
@@ -42,11 +40,13 @@ This repository serves as the definitive collection of Claude Code subagents - s
 4. Customize based on your project requirements
 
 ### ⭐ Maintaining by the VoltAgent open-source community ⭐
+
 If you find this helpful, starring the <a href="https://github.com/voltagent/voltagent">VoltAgent framework repo </a> is more than enough support 🙏
 
 ## 📚 Categories
 
 ### [01. Core Development](categories/01-core-development/)
+
 Essential development subagents for everyday coding tasks.
 
 - [**api-designer**](categories/01-core-development/api-designer.md) - REST and GraphQL API architect
@@ -62,7 +62,9 @@ Essential development subagents for everyday coding tasks.
 - [**wordpress-master**](categories/08-business-product/wordpress-master.md) - WordPress development and optimization expert
 
 ### [02. Language Specialists](categories/02-language-specialists/)
+
 Language-specific experts with deep framework knowledge.
+
 - [**typescript-pro**](categories/02-language-specialists/typescript-pro.md) - TypeScript specialist
 - [**sql-pro**](categories/02-language-specialists/sql-pro.md) - Database query expert
 - [**swift-expert**](categories/02-language-specialists/swift-expert.md) - iOS and macOS specialist
@@ -89,8 +91,8 @@ Language-specific experts with deep framework knowledge.
 - [**rust-engineer**](categories/02-language-specialists/rust-engineer.md) - Systems programming expert
 - [**spring-boot-engineer**](categories/02-language-specialists/spring-boot-engineer.md) - Spring Boot 3+ microservices expert
 
-
 ### [03. Infrastructure](categories/03-infrastructure/)
+
 DevOps, cloud, and deployment specialists.
 
 - [**azure-infra-engineer**](categories/03-infrastructure/azure-infra-engineer.md) - Azure infrastructure and Az PowerShell automation expert
@@ -109,6 +111,7 @@ DevOps, cloud, and deployment specialists.
 - [**windows-infra-admin**](categories/03-infrastructure/windows-infra-admin.md) - Active Directory, DNS, DHCP, and GPO automation specialist
 
 ### [04. Quality & Security](categories/04-quality-security/)
+
 Testing, security, and code quality experts.
 
 - [**accessibility-tester**](categories/04-quality-security/accessibility-tester.md) - A11y compliance expert
@@ -125,6 +128,7 @@ Testing, security, and code quality experts.
 - [**test-automator**](categories/04-quality-security/test-automator.md) - Test automation framework expert
 
 ### [05. Data & AI](categories/05-data-ai/)
+
 Data engineering, ML, and AI specialists.
 
 - [**ai-engineer**](categories/05-data-ai/ai-engineer.md) - AI system design and deployment expert
@@ -141,6 +145,7 @@ Data engineering, ML, and AI specialists.
 - [**prompt-engineer**](categories/05-data-ai/prompt-engineer.md) - Prompt optimization specialist
 
 ### [06. Developer Experience](categories/06-developer-experience/)
+
 Tooling and developer productivity experts.
 
 - [**build-engineer**](categories/06-developer-experience/build-engineer.md) - Build system specialist
@@ -157,6 +162,7 @@ Tooling and developer productivity experts.
 - [**tooling-engineer**](categories/06-developer-experience/tooling-engineer.md) - Developer tooling specialist
 
 ### [07. Specialized Domains](categories/07-specialized-domains/)
+
 Domain-specific technology experts.
 
 - [**api-documenter**](categories/07-specialized-domains/api-documenter.md) - API documentation specialist
@@ -173,6 +179,7 @@ Domain-specific technology experts.
 - [**seo-specialist**](categories/07-specialized-domains/seo-specialist.md) - Search engine optimization expert
 
 ### [08. Business & Product](categories/08-business-product/)
+
 Product management and business analysis.
 
 - [**business-analyst**](categories/08-business-product/business-analyst.md) - Requirements specialist
@@ -187,6 +194,7 @@ Product management and business analysis.
 - [**ux-researcher**](categories/08-business-product/ux-researcher.md) - User research expert
 
 ### [09. Meta & Orchestration](categories/09-meta-orchestration/)
+
 Agent coordination and meta-programming.
 
 - [**agent-organizer**](categories/09-meta-orchestration/agent-organizer.md) - Multi-agent coordinator
@@ -199,6 +207,7 @@ Agent coordination and meta-programming.
 - [**workflow-orchestrator**](categories/09-meta-orchestration/workflow-orchestrator.md) - Complex workflow automation
 
 ### [10. Research & Analysis](categories/10-research-analysis/)
+
 Research, search, and analysis specialists.
 
 - [**research-analyst**](categories/10-research-analysis/research-analyst.md) - Comprehensive research specialist
@@ -236,11 +245,13 @@ You can configure each subagent with specific tool access rights, enabling fine-
 ### Getting Started with Subagents
 
 **1. Access the Subagent Manager**
+
 ```bash
 /agents
 ```
 
 **2. Create Your Subagent**
+
 - Choose between project-specific or global subagents
 - Let Claude generate an initial version, then refine it to your needs
 - Provide detailed descriptions of the subagent's purpose and activation triggers
@@ -249,24 +260,24 @@ You can configure each subagent with specific tool access rights, enabling fine-
 
 **3. Deploy and Utilize**
 Your subagent becomes immediately available. Claude Code will automatically engage it when suitable, or you can explicitly request its help:
+
 ```
 > Have the code-reviewer subagent analyze my latest commits
 ```
 
 ### Subagent Storage Locations
 
-| Type | Path | Availability | Precedence |
-|------|------|--------------|------------|
-| Project Subagents | `.claude/agents/` | Current project only | Higher |
-| Global Subagents | `~/.claude/agents/` | All projects | Lower |
+| Type              | Path                | Availability         | Precedence |
+| ----------------- | ------------------- | -------------------- | ---------- |
+| Project Subagents | `.claude/agents/`   | Current project only | Higher     |
+| Global Subagents  | `~/.claude/agents/` | All projects         | Lower      |
 
 Note: When naming conflicts occur, project-specific subagents override global ones.
-
-
 
 ## 🛠️ How to Use Subagents
 
 ### Setting Up in Claude Code
+
 1. Place subagent files in `.claude/agents/` within your project
 2. Claude Code automatically detects and loads the subagents
 3. Invoke them naturally in conversation or let Claude decide when to use them
@@ -274,24 +285,29 @@ Note: When naming conflicts occur, project-specific subagents override global on
 ### Creating New Subagents - Step by Step
 
 **Step 1: Launch the Agent Interface**
+
 ```bash
 /agents
 ```
 
 **Step 2: Choose "Create New Agent"**
+
 - Decide on project-level (current project) or user-level (all projects) scope
 
 **Step 3: Configure Your Agent**
+
 - **Recommended approach**: Let Claude draft an initial version, then customize
-- Write a comprehensive description of the agent's role and activation scenarios  
+- Write a comprehensive description of the agent's role and activation scenarios
 - Grant specific tool permissions (or leave blank for full access)
 - Browse available tools through the interface for easy selection
 - Edit the system prompt directly by pressing `e` for advanced customization
 
 **Step 4: Save and Start Using**
+
 - Your agent is instantly ready for use
 - Claude automatically delegates appropriate tasks to it
 - Or manually invoke it:
+
 ```
 > Ask the code-reviewer agent to examine my pull request
 ```
@@ -321,6 +337,7 @@ Structured implementation phases...
 ### Tool Assignment Philosophy
 
 Each subagent's `tools` field specifies Claude Code built-in tools, optimized for their role:
+
 - **Read-only agents** (reviewers, auditors): `Read, Grep, Glob` - analyze without modifying
 - **Research agents** (analysts, researchers): `Read, Grep, Glob, WebFetch, WebSearch` - gather information
 - **Code writers** (developers, engineers): `Read, Write, Edit, Bash, Glob, Grep` - create and execute

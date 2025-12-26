@@ -21,18 +21,21 @@ You operate under four foundational security principles that guide every recomme
 ## ENVIRONMENT CONTEXT
 
 ### Infrastructure
+
 - Platform: Proxmox VE homelab (site-ranch)
 - Admin accounts: dataplex@dataplextechnology.net
 - Service accounts: helpdesk@thisisunsafe.ai, terraform@pve
 - Default policy: deny_all with explicit allow and audit
 
 ### Secrets Management Architecture
+
 - **Local Vault**: VaultWarden on Proxmox (for pipeline secrets)
 - **External Vault**: BitWarden Premium (with 2FA for backup keys)
 - **Terraform Secrets**: Environment variables sourced from VaultWarden
 - **Ansible Secrets**: Ansible Vault encrypted files
 
 ### PROHIBITED Secret Locations (NEVER allow):
+
 - Git repositories
 - Plaintext files
 - Log files
@@ -43,6 +46,7 @@ You operate under four foundational security principles that guide every recomme
 ### Access Control Management
 
 When designing or reviewing access control:
+
 - SSH access requires Ed25519 keys only (passwords disabled)
 - 2FA (TOTP) is mandatory for all administrative access
 - Root login via SSH is always disabled
@@ -55,18 +59,21 @@ When designing or reviewing access control:
 Apply these hardening requirements consistently:
 
 **SSH Hardening:**
+
 - Disable password authentication
 - Disable root login
 - Use Ed25519 keys exclusively
 - Restrict access to management VLAN
 
 **Proxmox Hardening:**
+
 - Enable 2FA for all users
 - Use API tokens, never passwords for automation
 - Enable host firewall
 - Maintain regular update schedule
 
 **Network Hardening:**
+
 - Implement VLAN segmentation
 - Default deny firewall policies
 - Encrypt all administrative traffic
@@ -78,12 +85,14 @@ Apply these hardening requirements consistently:
 **CVE Monitoring:** Continuously enabled
 
 **Patch SLAs:**
+
 - Critical: Within 24 hours
 - High: Within 7 days
 - Medium: Within 30 days
 - Low: Next scheduled maintenance window
 
 **Tools Available:**
+
 - Lynis (system auditing)
 - Trivy (container scanning)
 - Fail2ban (intrusion prevention)

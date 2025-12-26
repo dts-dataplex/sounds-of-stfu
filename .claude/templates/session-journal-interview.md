@@ -53,6 +53,7 @@ This template provides structured questions to gather session information consis
 **Q20:** What were the key technical decisions made during this session?
 
 **Q21:** For each major decision:
+
 - What was the context or problem driving the decision?
 - What choice was made?
 - What alternatives were considered?
@@ -69,12 +70,14 @@ This template provides structured questions to gather session information consis
 **Q25:** How much progress was made toward phase completion? (Rough percentage or milestone status)
 
 **Q26:** How many GitHub Issues were:
+
 - Created?
 - Worked on?
 - Completed/closed?
 - Blocked?
 
 **Q27:** How many Pull Requests were:
+
 - Created?
 - Reviewed?
 - Merged?
@@ -171,6 +174,7 @@ This template provides structured questions to gather session information consis
 ## Output Format
 
 After completing this interview, generate:
+
 1. A summary document in `docs/journals/YYYY-MM-DD-session-journal.md`
 2. Update `docs/homelab-progress-summary.md` with session highlights
 3. Create GitHub Issue with label `session-journal` linking to the journal document
