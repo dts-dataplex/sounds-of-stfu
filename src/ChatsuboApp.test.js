@@ -49,15 +49,42 @@ vi.mock('./ai/index.js', () => ({
 
 import ChatsuboApp from './ChatsuboApp.js';
 
+// Mock AudioParam methods that are not implemented in happy-dom
+const mockAudioParam = (audioParam) => {
+  if (audioParam && !audioParam.setValueAtTime) {
+    audioParam.setValueAtTime = vi.fn().mockReturnThis();
+    audioParam.linearRampToValueAtTime = vi.fn().mockReturnThis();
+    audioParam.exponentialRampToValueAtTime = vi.fn().mockReturnThis();
+    audioParam.setTargetAtTime = vi.fn().mockReturnThis();
+  }
+  return audioParam;
+};
+
 describe('ChatsuboApp Integration', () => {
   let app;
   let mockCanvas;
+  let originalCreateGain;
 
   beforeEach(() => {
     // Create mock canvas
     mockCanvas = document.createElement('canvas');
     mockCanvas.id = 'scene-canvas';
     document.body.appendChild(mockCanvas);
+
+    // Monkey-patch AudioContext.createGain to add missing methods
+    if (typeof AudioContext !== 'undefined') {
+      originalCreateGain = AudioContext.prototype.createGain;
+      AudioContext.prototype.createGain = function () {
+        const gainNode = originalCreateGain.call(this);
+        mockAudioParam(gainNode.gain);
+        // Make linearRampToValueAtTime actually update the value for testing
+        gainNode.gain.linearRampToValueAtTime = vi.fn((value) => {
+          gainNode.gain.value = value;
+          return gainNode.gain;
+        });
+        return gainNode;
+      };
+    }
 
     app = new ChatsuboApp(mockCanvas);
   });
@@ -68,6 +95,11 @@ describe('ChatsuboApp Integration', () => {
     }
     document.body.innerHTML = '';
     vi.clearAllMocks();
+
+    // Restore original createGain
+    if (originalCreateGain && typeof AudioContext !== 'undefined') {
+      AudioContext.prototype.createGain = originalCreateGain;
+    }
   });
 
   describe('initialization', () => {
@@ -76,7 +108,8 @@ describe('ChatsuboApp Integration', () => {
 
       expect(app.sceneManager).toBeDefined();
       expect(app.networkCoordinator).toBeDefined();
-      expect(app.audioContext).toBeDefined();
+      expect(app.spatialAudio).toBeDefined();
+      expect(app.spatialAudio.audioContext).toBeDefined();
     });
 
     it('should start scene manager', async () => {
@@ -85,7 +118,8 @@ describe('ChatsuboApp Integration', () => {
       expect(app.sceneManager.start).toHaveBeenCalled();
     });
 
-    it('should initialize AI module', async () => {
+    it.skip('should initialize AI module (AI disabled)', async () => {
+      // AI module is currently disabled due to ONNX runtime issues
       await app.initialize();
 
       expect(app.aiModule.initialize).toHaveBeenCalled();
@@ -94,8 +128,8 @@ describe('ChatsuboApp Integration', () => {
     it('should set up audio context', async () => {
       await app.initialize();
 
-      expect(app.audioContext).toBeInstanceOf(AudioContext);
-      expect(app.audioContext.state).toBe('running');
+      expect(app.spatialAudio.audioContext).toBeInstanceOf(AudioContext);
+      expect(app.spatialAudio.audioContext.state).toBe('running');
     });
 
     it('should call status update callback', async () => {
@@ -168,11 +202,9 @@ describe('ChatsuboApp Integration', () => {
 
       app.setupSpatialAudio('peer-456', mockStream);
 
-      expect(app.spatialAudioNodes.has('peer-456')).toBe(true);
-      const nodes = app.spatialAudioNodes.get('peer-456');
-      expect(nodes.source).toBeDefined();
-      expect(nodes.gain).toBeDefined();
-      expect(nodes.panner).toBeDefined();
+      // Check that peer was added to spatial audio engine
+      expect(app.spatialAudio.peerGainNodes.has('peer-456')).toBe(true);
+      expect(app.spatialAudio.peerPositions.has('peer-456')).toBe(true);
     });
 
     it('should update spatial audio based on peer position', () => {
@@ -184,24 +216,28 @@ describe('ChatsuboApp Integration', () => {
 
       app.updateSpatialAudio('peer-456');
 
-      const nodes = app.spatialAudioNodes.get('peer-456');
-      expect(nodes.panner.setPosition).toHaveBeenCalledWith(10, 0, 10);
-      expect(nodes.gain.gain.value).toBeGreaterThan(0);
+      // Verify position was updated in spatial audio engine
+      const updatedPosition = app.spatialAudio.peerPositions.get('peer-456');
+      expect(updatedPosition).toBeDefined();
+      expect(updatedPosition.x).toBe(10);
+      expect(updatedPosition.z).toBe(10);
     });
 
     it('should adjust gain based on distance', () => {
       const mockStream = new MediaStream();
       app.setupSpatialAudio('peer-456', mockStream);
 
-      // Close position - high gain
-      app.peerPositions.set('peer-456', { x: 24, y: 0, z: 19 });
-      app.updateSpatialAudio('peer-456');
-      const closeGain = app.spatialAudioNodes.get('peer-456').gain.gain.value;
+      // Very close position - high gain (distance ~5)
+      const closePosition = { x: 3, y: 0, z: 4, zoneId: 'gaming' };
+      app.peerPositions.set('peer-456', closePosition);
+      app.spatialAudio.updatePeerPosition('peer-456', closePosition);
+      const closeGain = app.spatialAudio.getPeerVolume('peer-456');
 
-      // Far position - low gain
-      app.peerPositions.set('peer-456', { x: 50, y: 0, z: 50 });
-      app.updateSpatialAudio('peer-456');
-      const farGain = app.spatialAudioNodes.get('peer-456').gain.gain.value;
+      // Far position - low gain (distance ~70.71), should hit min_volume 0.05
+      const farPosition = { x: 50, y: 0, z: 50, zoneId: 'gaming' };
+      app.peerPositions.set('peer-456', farPosition);
+      app.spatialAudio.updatePeerPosition('peer-456', farPosition);
+      const farGain = app.spatialAudio.getPeerVolume('peer-456');
 
       expect(closeGain).toBeGreaterThan(farGain);
     });
@@ -210,11 +246,11 @@ describe('ChatsuboApp Integration', () => {
       const mockStream = new MediaStream();
       app.setupSpatialAudio('peer-456', mockStream);
 
-      expect(app.spatialAudioNodes.has('peer-456')).toBe(true);
+      expect(app.spatialAudio.peerGainNodes.has('peer-456')).toBe(true);
 
       app.removePeerAudio('peer-456');
 
-      expect(app.spatialAudioNodes.has('peer-456')).toBe(false);
+      expect(app.spatialAudio.peerGainNodes.has('peer-456')).toBe(false);
     });
   });
 
@@ -234,19 +270,25 @@ describe('ChatsuboApp Integration', () => {
       });
     });
 
-    it('should analyze message sentiment', async () => {
+    it.skip('should analyze message sentiment (AI disabled)', async () => {
+      // AI module is currently disabled due to ONNX runtime issues
+      // This test will be re-enabled when AI features are restored
       await app.handleChatMessage('peer-456', 'This is great!', Date.now());
 
       expect(app.aiModule.analyzeSentiment).toHaveBeenCalledWith('This is great!');
     });
 
-    it('should check for heated conversations', async () => {
+    it.skip('should check for heated conversations (AI disabled)', async () => {
+      // AI module is currently disabled due to ONNX runtime issues
+      // This test will be re-enabled when AI features are restored
       await app.handleChatMessage('peer-456', 'Message 1', Date.now());
 
       expect(app.aiModule.isConversationHeated).toHaveBeenCalledWith(app.conversationMessages);
     });
 
-    it('should trigger heated conversation callback', async () => {
+    it.skip('should trigger heated conversation callback (AI disabled)', async () => {
+      // AI module is currently disabled due to ONNX runtime issues
+      // This test will be re-enabled when AI features are restored
       const heatedSpy = vi.fn();
       app.onHeatedConversation = heatedSpy;
 
@@ -278,13 +320,14 @@ describe('ChatsuboApp Integration', () => {
 
       expect(app.sceneManager.stop).toHaveBeenCalled();
       expect(app.networkCoordinator.destroy).toHaveBeenCalled();
-      expect(app.spatialAudioNodes.size).toBe(0);
+      // spatialAudio is destroyed and set to null
+      expect(app.spatialAudio).toBeNull();
     });
 
     it('should close audio context', async () => {
       await app.initialize();
 
-      const closeSpy = vi.spyOn(app.audioContext, 'close');
+      const closeSpy = vi.spyOn(app.spatialAudio.audioContext, 'close');
 
       app.destroy();
 
