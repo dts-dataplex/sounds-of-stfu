@@ -14,7 +14,8 @@ This phase establishes the core spatial audio engine with distance-based volume 
       **Note:** N/A - Project uses JavaScript with JSDoc comments instead of TypeScript. Zone configs already defined in `ZONE_CONFIGS` object in `spatial-falloff.js`.
 - [x] Add `updatePeerPosition(peerId: string, position: SpatialPosition)` method to SpatialAudioEngine that recalculates volume for affected peer connections
       **Note:** Implemented in `SpatialAudioEngine.js` with smooth volume ramping (50ms) to avoid clicks and zone-aware volume calculation.
-- [ ] Integrate SpatialAudioEngine into existing PeerJS mesh network by wrapping each MediaStream with a GainNode before connecting to AudioContext destination
+- [x] Integrate SpatialAudioEngine into existing PeerJS mesh network by wrapping each MediaStream with a GainNode before connecting to AudioContext destination
+      **Note:** Fully integrated into ChatsuboApp - replaced manual Web Audio API setup with SpatialAudioEngine class. Remote peer MediaStreams now processed through SpatialAudioEngine.addPeer() which creates GainNodes. Listener position updates trigger volume recalculation for all peers. Cleanup properly handled in destroy().
 - [ ] Create `src/components/SpatialAudioControls.tsx` component with master volume slider, spatial audio toggle, and distance falloff visualization
 - [ ] Add position tracking to existing user avatar system - emit position updates via PeerJS data channel every 100ms when position changes
 - [ ] Implement `onPositionUpdate(peerId: string, position: SpatialPosition)` handler that calls `updatePeerPosition` on SpatialAudioEngine

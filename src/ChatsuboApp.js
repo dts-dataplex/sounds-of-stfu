@@ -7,7 +7,7 @@ import * as THREE from 'three';
 import { SceneManager } from './scene/SceneManager.js';
 import { MeshNetworkCoordinator } from './network/index.js';
 // import { chatsuboAI } from './ai/index.js'; // TEMPORARILY DISABLED: ONNX runtime error
-import { calculateSpatialGain } from './audio/spatial-falloff.js';
+import { SpatialAudioEngine } from './audio/SpatialAudioEngine.js';
 
 export default class ChatsuboApp {
   constructor(canvasElement) {
@@ -17,6 +17,7 @@ export default class ChatsuboApp {
     this.sceneManager = null;
     this.networkCoordinator = null;
     this.aiModule = null; // chatsuboAI; // TEMPORARILY DISABLED: ONNX runtime error
+    this.spatialAudio = null; // SpatialAudioEngine for spatial audio processing
 
     // Application state
     this.localPeerId = null;
@@ -24,8 +25,6 @@ export default class ChatsuboApp {
     this.localAvatar = null; // User's own avatar mesh
     this.peerPositions = new Map(); // peerId -> {x, y, z}
     this.peerAvatars = new Map(); // peerId -> THREE.Mesh
-    this.audioContext = null;
-    this.spatialAudioNodes = new Map(); // peerId -> {source, gain, panner}
     this.conversationMessages = [];
 
     // UI callbacks
@@ -59,17 +58,23 @@ export default class ChatsuboApp {
       // await this.delay(500);
       console.log('[ChatsuboApp] AI systems disabled (ONNX runtime issue)');
 
-      // 3. Initialize audio context (user gesture required - non-blocking)
-      this.updateStatus('Setting up audio system...');
+      // 3. Initialize spatial audio engine
+      this.updateStatus('Setting up spatial audio system...');
+      this.spatialAudio = new SpatialAudioEngine({
+        minDistance: 50,
+        maxDistance: 500,
+        rolloffFactor: 2.0,
+        defaultZone: 'central_bar',
+      });
       try {
-        await this.initializeAudio();
-        console.log('[ChatsuboApp] Audio system ready');
+        await this.spatialAudio.initialize();
+        console.log('[ChatsuboApp] Spatial audio engine ready');
       } catch (audioError) {
         console.warn(
-          '[ChatsuboApp] Audio initialization deferred (requires user gesture):',
+          '[ChatsuboApp] Spatial audio initialization deferred (requires user gesture):',
           audioError.message
         );
-        this.updateStatus('Audio will activate after joining room');
+        this.updateStatus('Spatial audio will activate after joining room');
       }
 
       // 4. Initialize network (creates peer ID)
@@ -96,10 +101,10 @@ export default class ChatsuboApp {
     try {
       this.updateStatus(`Joining room: ${roomId}...`);
 
-      // Resume audio context if suspended (user gesture happened)
-      if (this.audioContext && this.audioContext.state === 'suspended') {
-        await this.audioContext.resume();
-        console.log('[ChatsuboApp] Audio context resumed after user gesture');
+      // Initialize spatial audio if not ready (user gesture happened)
+      if (this.spatialAudio && !this.spatialAudio.isReady()) {
+        await this.spatialAudio.initialize();
+        console.log('[ChatsuboApp] Spatial audio initialized after user gesture');
       }
 
       // Join mesh network
@@ -179,99 +184,61 @@ export default class ChatsuboApp {
   }
 
   /**
-   * Initialize Web Audio API
-   */
-  async initializeAudio() {
-    if (!this.audioContext) {
-      this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-
-      // AudioContext starts suspended - will resume on user gesture (Join Room click)
-      if (this.audioContext.state === 'suspended') {
-        console.log('[ChatsuboApp] Audio context created (suspended until user gesture)');
-      } else {
-        console.log('[ChatsuboApp] Audio context initialized');
-      }
-    }
-  }
-
-  /**
-   * Set up spatial audio for a remote peer
+   * Set up spatial audio for a remote peer using SpatialAudioEngine
    */
   setupSpatialAudio(peerId, stream) {
-    if (!this.audioContext) {
-      console.warn('[ChatsuboApp] Audio context not initialized');
+    if (!this.spatialAudio || !this.spatialAudio.isReady()) {
+      console.warn('[ChatsuboApp] Spatial audio engine not ready');
       return;
     }
 
-    // Create audio nodes
-    const source = this.audioContext.createMediaStreamSource(stream);
-    const gainNode = this.audioContext.createGain();
-    const pannerNode = this.audioContext.createPanner();
+    // Get peer position or default to center of bar
+    const position = this.peerPositions.get(peerId) || {
+      x: 24,
+      y: 0,
+      z: 18,
+      zoneId: 'central_bar',
+    };
 
-    // Configure panner for 3D audio
-    pannerNode.panningModel = 'HRTF';
-    pannerNode.distanceModel = 'inverse';
-    pannerNode.refDistance = 1;
-    pannerNode.maxDistance = 100;
-    pannerNode.rolloffFactor = 1;
+    // Add peer to spatial audio engine (wraps MediaStream with GainNode)
+    const success = this.spatialAudio.addPeer(peerId, stream, position);
 
-    // Connect: source -> gain -> panner -> destination
-    source.connect(gainNode);
-    gainNode.connect(pannerNode);
-    pannerNode.connect(this.audioContext.destination);
-
-    // Store nodes for later updates
-    this.spatialAudioNodes.set(peerId, {
-      source,
-      gain: gainNode,
-      panner: pannerNode,
-      stream,
-    });
-
-    // Initial position update
-    this.updateSpatialAudio(peerId);
-
-    console.log(`[ChatsuboApp] Spatial audio setup for: ${peerId}`);
+    if (success) {
+      console.log(`[ChatsuboApp] Spatial audio setup for: ${peerId}`);
+    } else {
+      console.error(`[ChatsuboApp] Failed to setup spatial audio for: ${peerId}`);
+    }
   }
 
   /**
    * Update spatial audio based on peer position
    */
   updateSpatialAudio(peerId) {
-    const nodes = this.spatialAudioNodes.get(peerId);
-    if (!nodes) return;
+    if (!this.spatialAudio) return;
 
     const peerPos = this.peerPositions.get(peerId);
     if (!peerPos) return;
 
-    // Calculate distance
-    const dx = peerPos.x - this.localPosition.x;
-    const dy = peerPos.y - this.localPosition.y;
-    const dz = peerPos.z - this.localPosition.z;
-    const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    // Update peer position in spatial audio engine
+    this.spatialAudio.updatePeerPosition(peerId, peerPos);
 
-    // Update panner position
-    nodes.panner.setPosition(peerPos.x, peerPos.y, peerPos.z);
+    // Log distance and volume for debugging
+    const distance = this.spatialAudio.getDistanceToPeer(peerId);
+    const volume = this.spatialAudio.getPeerVolume(peerId);
 
-    // Calculate spatial gain using our algorithm
-    const spatialGain = calculateSpatialGain(distance, 8.0); // 8.0 = typical falloff distance
-    nodes.gain.gain.value = spatialGain;
-
-    console.log(
-      `[ChatsuboApp] Updated audio for ${peerId}: distance=${distance.toFixed(1)}, gain=${spatialGain.toFixed(2)}`
-    );
+    if (distance !== null && volume !== null) {
+      console.log(
+        `[ChatsuboApp] Updated audio for ${peerId}: distance=${distance.toFixed(1)}, volume=${volume.toFixed(2)}`
+      );
+    }
   }
 
   /**
    * Remove peer's audio when they disconnect
    */
   removePeerAudio(peerId) {
-    const nodes = this.spatialAudioNodes.get(peerId);
-    if (nodes) {
-      nodes.source.disconnect();
-      nodes.gain.disconnect();
-      nodes.panner.disconnect();
-      this.spatialAudioNodes.delete(peerId);
+    if (this.spatialAudio) {
+      this.spatialAudio.removePeer(peerId);
       console.log(`[ChatsuboApp] Removed audio for: ${peerId}`);
     }
   }
@@ -442,10 +409,10 @@ export default class ChatsuboApp {
     // Update local avatar position
     this.updateLocalAvatar();
 
-    // Update all spatial audio
-    this.spatialAudioNodes.forEach((nodes, peerId) => {
-      this.updateSpatialAudio(peerId);
-    });
+    // Update listener position in spatial audio engine
+    if (this.spatialAudio) {
+      this.spatialAudio.updateListenerPosition({ x, y, z });
+    }
 
     // Broadcast position to peers
     this.broadcastPosition();
@@ -547,13 +514,13 @@ export default class ChatsuboApp {
       this.networkCoordinator.destroy();
     }
 
-    // Close audio context
-    if (this.audioContext) {
-      this.audioContext.close();
+    // Destroy spatial audio engine
+    if (this.spatialAudio) {
+      this.spatialAudio.destroy();
+      this.spatialAudio = null;
     }
 
     // Clear state
-    this.spatialAudioNodes.clear();
     this.peerPositions.clear();
     this.conversationMessages = [];
 
