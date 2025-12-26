@@ -7,6 +7,10 @@ const mockSceneManager = {
   updateAvatarPosition: vi.fn(),
   addAvatar: vi.fn(),
   removeAvatar: vi.fn(),
+  scene: {
+    add: vi.fn(),
+    remove: vi.fn(),
+  },
 };
 
 const mockNetworkCoordinator = {

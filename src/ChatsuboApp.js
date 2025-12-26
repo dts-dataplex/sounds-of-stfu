@@ -22,6 +22,8 @@ export default class ChatsuboApp {
     // Application state
     this.localPeerId = null;
     this.localPosition = { x: 24, y: 0, z: 34 }; // Start at entryway
+    this.lastBroadcastPosition = null; // Track last broadcast position for change detection
+    this.positionBroadcastInterval = null; // Timer for periodic position updates
     this.localAvatar = null; // User's own avatar mesh
     this.peerPositions = new Map(); // peerId -> {x, y, z}
     this.peerAvatars = new Map(); // peerId -> THREE.Mesh
@@ -118,10 +120,56 @@ export default class ChatsuboApp {
 
       // Broadcast initial position
       this.broadcastPosition();
+
+      // Start periodic position broadcasting (every 100ms)
+      this.startPeriodicPositionBroadcast();
     } catch (error) {
       console.error('[ChatsuboApp] Failed to join room:', error);
       this.updateStatus(`Failed to join: ${error.message}`);
       throw error;
+    }
+  }
+
+  /**
+   * Start periodic position broadcasting (every 100ms when position changes)
+   */
+  startPeriodicPositionBroadcast() {
+    // Clear any existing interval
+    if (this.positionBroadcastInterval) {
+      clearInterval(this.positionBroadcastInterval);
+    }
+
+    // Broadcast position every 100ms if it has changed
+    this.positionBroadcastInterval = setInterval(() => {
+      if (!this.networkCoordinator || !this.localPeerId) {
+        return;
+      }
+
+      // Check if position has changed since last broadcast
+      const hasChanged =
+        !this.lastBroadcastPosition ||
+        this.lastBroadcastPosition.x !== this.localPosition.x ||
+        this.lastBroadcastPosition.y !== this.localPosition.y ||
+        this.lastBroadcastPosition.z !== this.localPosition.z;
+
+      if (hasChanged) {
+        this.broadcastPosition();
+        // Update last broadcast position
+        this.lastBroadcastPosition = { ...this.localPosition };
+      }
+    }, 100); // 100ms interval as specified in task
+
+    console.log('[ChatsuboApp] Started periodic position broadcasting (100ms interval)');
+  }
+
+  /**
+   * Stop periodic position broadcasting
+   */
+  stopPeriodicPositionBroadcast() {
+    if (this.positionBroadcastInterval) {
+      clearInterval(this.positionBroadcastInterval);
+      this.positionBroadcastInterval = null;
+      console.log('[ChatsuboApp] Stopped periodic position broadcasting');
     }
   }
 
@@ -496,6 +544,9 @@ export default class ChatsuboApp {
    * Clean up all resources
    */
   destroy() {
+    // Stop periodic position broadcasting
+    this.stopPeriodicPositionBroadcast();
+
     // Remove local avatar
     this.removeLocalAvatar();
 
@@ -523,6 +574,7 @@ export default class ChatsuboApp {
     // Clear state
     this.peerPositions.clear();
     this.conversationMessages = [];
+    this.lastBroadcastPosition = null;
 
     console.log('[ChatsuboApp] Application destroyed');
   }

@@ -1,0 +1,25 @@
+{
+  "hash": "50545e40",
+  "configHash": "c4e24fbf",
+  "lockfileHash": "b6377f06",
+  "browserHash": "b3655ef9",
+  "optimized": {
+    "three": {
+      "src": "../../node_modules/three/build/three.module.js",
+      "file": "three.js",
+      "fileHash": "da6cb4bf",
+      "needsInterop": false
+    },
+    "peerjs": {
+      "src": "../../node_modules/peerjs/dist/bundler.mjs",
+      "file": "peerjs.js",
+      "fileHash": "9116e22e",
+      "needsInterop": false
+    }
+  },
+  "chunks": {
+    "chunk-M5LBBGMC": {
+      "file": "chunk-M5LBBGMC.js"
+    }
+  }
+}
