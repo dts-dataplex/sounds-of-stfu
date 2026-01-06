@@ -11,6 +11,7 @@
 
 import SentimentAnalyzer from './SentimentAnalyzer.js';
 import TopicDetector from './TopicDetector.js';
+import { detectAICapability, getAIStatusMessage, AI_CONFIG } from './deviceCapability.js';
 
 class ChatsuboAI {
   constructor() {
@@ -98,4 +99,8 @@ class ChatsuboAI {
 
 // Singleton instance
 export const chatsuboAI = new ChatsuboAI();
+
+// Re-export capability detection
+export { detectAICapability, getAIStatusMessage, AI_CONFIG };
+
 export default chatsuboAI;

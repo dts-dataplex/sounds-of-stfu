@@ -33,3 +33,6 @@ dist/
 build/
 *.min.js
 *.map
+
+# AI model cache (transformers.js)
+.cache/

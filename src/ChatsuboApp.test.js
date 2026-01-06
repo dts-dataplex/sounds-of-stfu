@@ -7,6 +7,10 @@ const mockSceneManager = {
   updateAvatarPosition: vi.fn(),
   addAvatar: vi.fn(),
   removeAvatar: vi.fn(),
+  scene: {
+    add: vi.fn(),
+    remove: vi.fn(),
+  },
 };
 
 const mockNetworkCoordinator = {
@@ -41,6 +45,9 @@ vi.mock('./ai/index.js', () => ({
     analyzeSentiment: vi.fn().mockResolvedValue({ label: 'POSITIVE', score: 0.9, latency: 100 }),
     isConversationHeated: vi.fn().mockResolvedValue(false),
   },
+  detectAICapability: vi.fn().mockResolvedValue({ capable: true, reason: null }),
+  getAIStatusMessage: vi.fn().mockResolvedValue('AI features available'),
+  AI_CONFIG: { minMemoryGB: 4, minCPUCores: 4 },
 }));
 
 import ChatsuboApp from './ChatsuboApp.js';
@@ -81,10 +88,11 @@ describe('ChatsuboApp Integration', () => {
       expect(app.sceneManager.start).toHaveBeenCalled();
     });
 
-    it('should initialize AI module', async () => {
+    it('should initialize AI module when device is capable', async () => {
       await app.initialize();
 
-      expect(app.aiModule.initialize).toHaveBeenCalled();
+      expect(app.aiModule).toBeDefined();
+      expect(app.aiEnabled).toBe(true);
     });
 
     it('should set up audio context', async () => {

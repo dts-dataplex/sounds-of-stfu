@@ -289,6 +289,52 @@
         cursor: not-allowed;
       }
 
+      /* AI Settings */
+      #ai-settings {
+        padding-top: 15px;
+        border-top: 1px solid rgba(68, 255, 136, 0.2);
+        margin-top: 15px;
+      }
+
+      #ai-settings h2 {
+        color: #ffaa44;
+        font-size: 14px;
+        margin-bottom: 10px;
+        text-transform: uppercase;
+      }
+
+      .toggle-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        font-size: 11px;
+      }
+
+      .toggle-label input[type='checkbox'] {
+        width: auto;
+        margin: 0;
+        cursor: pointer;
+      }
+
+      .toggle-label input[type='checkbox']:disabled {
+        cursor: not-allowed;
+      }
+
+      #ai-status {
+        font-size: 10px;
+        color: rgba(255, 255, 255, 0.6);
+        margin-top: 8px;
+      }
+
+      #ai-status.active {
+        color: #44ff88;
+      }
+
+      #ai-status.unavailable {
+        color: #ff4444;
+      }
+
       /* Status Bar */
       #status {
         position: absolute;
@@ -397,6 +443,16 @@
             <p>State: <span id="connection-state" style="color: #888">Not Connected</span></p>
             <p>Latency: <span id="connection-latency" style="color: #888">N/A</span></p>
           </div>
+        </div>
+
+        <!-- AI Settings -->
+        <div id="ai-settings">
+          <h2>// AI Features</h2>
+          <label class="toggle-label">
+            <input type="checkbox" id="ai-enabled-toggle" disabled />
+            <span>Enable AI sentiment analysis</span>
+          </label>
+          <p id="ai-status">Checking device compatibility...</p>
         </div>
       </div>
 
