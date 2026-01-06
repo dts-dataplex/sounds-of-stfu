@@ -4,11 +4,14 @@
  */
 
 import ChatsuboApp from './ChatsuboApp.js';
+import TestBotManager from './test/TestBotManager.js';
 
 console.log('🍺 Chatsubo Virtual Bar - Initializing...');
 
 let app = null;
 let isInRoom = false;
+let testBotManager = null;
+let isTestMode = false;
 
 // UI Elements
 const getElement = (id) => document.getElementById(id);
@@ -102,12 +105,24 @@ function updateAISettingsUI() {
 async function joinRoom() {
   if (!app || isInRoom) return;
 
+  // Require username
+  const usernameInput = getElement('username');
+  const username = usernameInput?.value.trim();
+  if (!username) {
+    updateStatus('Please enter a username');
+    usernameInput?.focus();
+    return;
+  }
+
   const roomIdInput = getElement('room-id');
   const roomId = roomIdInput?.value.trim() || 'chatsubo-main';
 
   try {
     const joinButton = getElement('join-button');
     if (joinButton) joinButton.disabled = true;
+
+    // Set username before joining
+    app.localUsername = username;
 
     await app.joinRoom(roomId);
 
@@ -125,6 +140,12 @@ async function joinRoom() {
     // Enable zone movement buttons
     enableZoneButtons();
 
+    // Enable test button if visible
+    const testButton = getElement('test-button');
+    if (testButton && testButton.style.display !== 'none') {
+      testButton.disabled = false;
+    }
+
     // Start connection metrics tracking
     startConnectionMetrics();
   } catch (error) {
@@ -140,6 +161,19 @@ async function joinRoom() {
  */
 function leaveRoom() {
   if (!app || !isInRoom) return;
+
+  // Stop test mode if active
+  if (isTestMode && testBotManager) {
+    testBotManager.stop();
+    testBotManager = null;
+    isTestMode = false;
+    const testButton = getElement('test-button');
+    if (testButton) {
+      testButton.textContent = '🤖 TEST: Start Bot Conversations';
+      testButton.classList.remove('active');
+      testButton.disabled = true;
+    }
+  }
 
   app.destroy();
   isInRoom = false;
@@ -277,6 +311,60 @@ function addSystemMessage(text) {
 }
 
 /**
+ * Add bot message to chat UI
+ */
+function addBotMessage(speaker, text, zone) {
+  const messagesContainer = getElement('messages');
+  if (!messagesContainer) return;
+
+  const messageDiv = document.createElement('div');
+  messageDiv.className = 'message bot';
+  messageDiv.innerHTML = `<strong>${escapeHtml(speaker)}:</strong> ${escapeHtml(text)} <span class="zone-tag">[${zone}]</span>`;
+  messagesContainer.appendChild(messageDiv);
+  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+/**
+ * Toggle test mode (start/stop bot conversations)
+ */
+function toggleTestMode() {
+  if (!app || !isInRoom) return;
+
+  const testButton = getElement('test-button');
+
+  if (isTestMode) {
+    // Stop test mode
+    if (testBotManager) {
+      testBotManager.stop();
+      testBotManager = null;
+    }
+    isTestMode = false;
+    if (testButton) {
+      testButton.textContent = '🤖 TEST: Start Bot Conversations';
+      testButton.classList.remove('active');
+    }
+    addSystemMessage('Test mode stopped - bots removed');
+  } else {
+    // Start test mode
+    testBotManager = new TestBotManager(app.sceneManager, app.aiModule);
+    testBotManager.onMessageCallback = (speaker, text, zone) => {
+      addBotMessage(speaker, text, zone);
+    };
+    // Provide user position for spatial audio
+    testBotManager.setUserPositionCallback(() => app.localPosition);
+    // Sync audio range from app
+    testBotManager.setAudioRange(app.audioRange);
+    testBotManager.start();
+    isTestMode = true;
+    if (testButton) {
+      testButton.textContent = '🤖 TEST: Stop Bot Conversations';
+      testButton.classList.add('active');
+    }
+    addSystemMessage('Test mode started - 3 bot groups active');
+  }
+}
+
+/**
  * Show heated conversation alert
  */
 function showHeatedAlert() {
@@ -405,6 +493,41 @@ document.addEventListener('DOMContentLoaded', () => {
     const button = getElement(id);
     if (button) button.addEventListener('click', handler);
   });
+
+  // Test mode button (localhost only)
+  const testButton = getElement('test-button');
+  if (testButton) {
+    // Show test button only on localhost
+    const isLocalhost =
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      window.location.hostname.startsWith('192.168.') ||
+      window.location.hostname.startsWith('10.');
+
+    if (isLocalhost) {
+      testButton.style.display = 'block';
+      testButton.addEventListener('click', toggleTestMode);
+    }
+  }
+
+  // Audio range slider
+  const audioRangeSlider = getElement('audio-range-slider');
+  const audioRangeValue = getElement('audio-range-value');
+  if (audioRangeSlider) {
+    audioRangeSlider.addEventListener('input', (e) => {
+      const range = parseInt(e.target.value, 10);
+      if (audioRangeValue) {
+        audioRangeValue.textContent = range;
+      }
+      if (app) {
+        app.setAudioRange(range);
+      }
+      // Update test bot manager if running
+      if (testBotManager) {
+        testBotManager.setAudioRange(range);
+      }
+    });
+  }
 
   // Arrow key navigation
   document.addEventListener('keydown', (e) => {

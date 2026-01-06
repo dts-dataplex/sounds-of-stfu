@@ -24,11 +24,18 @@ export default class ChatsuboApp {
     this.localPeerId = null;
     this.localPosition = { x: 24, y: 0, z: 34 }; // Start at entryway
     this.localAvatar = null; // User's own avatar mesh
+    this.localUsername = null; // User's display name
+    this.localNameSprite = null; // Username label sprite
     this.peerPositions = new Map(); // peerId -> {x, y, z}
     this.peerAvatars = new Map(); // peerId -> THREE.Mesh
+    this.peerNameSprites = new Map(); // peerId -> THREE.Sprite
     this.audioContext = null;
     this.spatialAudioNodes = new Map(); // peerId -> {source, gain, panner}
     this.conversationMessages = [];
+
+    // Audio range settings
+    this.audioRange = 15; // Default hearing distance in feet
+    this.rangeCircle = null; // Visual indicator of audio range
 
     // Audio transcription
     this.audioChunkProcessor = null;
@@ -477,9 +484,91 @@ export default class ChatsuboApp {
     // Add to scene
     this.sceneManager.scene.add(this.localAvatar);
 
+    // Create username label sprite
+    if (this.localUsername) {
+      this.localNameSprite = this.createTextSprite(this.localUsername, 0x44ff88);
+      this.localNameSprite.position.set(
+        this.localPosition.x,
+        this.localPosition.y + 2.5,
+        this.localPosition.z
+      );
+      this.sceneManager.scene.add(this.localNameSprite);
+    }
+
+    // Create audio range circle
+    this.createRangeCircle();
+
     console.log(
       `[ChatsuboApp] Created local avatar at (${this.localPosition.x}, ${this.localPosition.z})`
     );
+  }
+
+  /**
+   * Create a text sprite for displaying names
+   */
+  createTextSprite(text, color) {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = 256;
+    canvas.height = 64;
+
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.font = 'bold 28px Arial';
+    ctx.fillStyle = `#${color.toString(16).padStart(6, '0')}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    const spriteMaterial = new THREE.SpriteMaterial({ map: texture, transparent: true });
+    const sprite = new THREE.Sprite(spriteMaterial);
+    sprite.scale.set(3, 0.75, 1);
+
+    return sprite;
+  }
+
+  /**
+   * Create the visual audio range circle
+   */
+  createRangeCircle() {
+    if (this.rangeCircle) {
+      this.sceneManager.scene.remove(this.rangeCircle);
+      this.rangeCircle.geometry.dispose();
+      this.rangeCircle.material.dispose();
+    }
+
+    // Create a ring geometry for the circle
+    const geometry = new THREE.RingGeometry(this.audioRange - 0.1, this.audioRange, 64);
+    const material = new THREE.MeshBasicMaterial({
+      color: 0x44ff88,
+      opacity: 0.3,
+      transparent: true,
+      side: THREE.DoubleSide,
+    });
+
+    this.rangeCircle = new THREE.Mesh(geometry, material);
+    this.rangeCircle.rotation.x = -Math.PI / 2; // Lay flat on ground
+    this.rangeCircle.position.set(
+      this.localPosition.x,
+      0.05, // Just above the floor
+      this.localPosition.z
+    );
+
+    this.sceneManager.scene.add(this.rangeCircle);
+  }
+
+  /**
+   * Update the audio range and resize the circle
+   */
+  setAudioRange(range) {
+    this.audioRange = range;
+    if (this.rangeCircle && this.sceneManager) {
+      // Recreate circle with new size
+      this.createRangeCircle();
+    }
+    console.log(`[ChatsuboApp] Audio range set to ${range}ft`);
   }
 
   /**
@@ -490,6 +579,22 @@ export default class ChatsuboApp {
       this.localAvatar.position.set(
         this.localPosition.x,
         this.localPosition.y + 1.25,
+        this.localPosition.z
+      );
+    }
+    // Update name sprite position
+    if (this.localNameSprite) {
+      this.localNameSprite.position.set(
+        this.localPosition.x,
+        this.localPosition.y + 2.5,
+        this.localPosition.z
+      );
+    }
+    // Update range circle position
+    if (this.rangeCircle) {
+      this.rangeCircle.position.set(
+        this.localPosition.x,
+        0.05,
         this.localPosition.z
       );
     }
@@ -504,8 +609,22 @@ export default class ChatsuboApp {
       this.localAvatar.geometry.dispose();
       this.localAvatar.material.dispose();
       this.localAvatar = null;
-      console.log('[ChatsuboApp] Removed local avatar');
     }
+    // Remove name sprite
+    if (this.localNameSprite && this.sceneManager) {
+      this.sceneManager.scene.remove(this.localNameSprite);
+      this.localNameSprite.material.map.dispose();
+      this.localNameSprite.material.dispose();
+      this.localNameSprite = null;
+    }
+    // Remove range circle
+    if (this.rangeCircle && this.sceneManager) {
+      this.sceneManager.scene.remove(this.rangeCircle);
+      this.rangeCircle.geometry.dispose();
+      this.rangeCircle.material.dispose();
+      this.rangeCircle = null;
+    }
+    console.log('[ChatsuboApp] Removed local avatar');
   }
 
   /**

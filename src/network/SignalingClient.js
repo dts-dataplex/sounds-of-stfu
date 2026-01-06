@@ -33,10 +33,10 @@ export default class SignalingClient {
   connect() {
     return new Promise((resolve, reject) => {
       try {
-        // Connect to standalone signaling server on port 9000
+        // Connect to signaling server embedded in Vite via /signaling endpoint
+        // This works for both localhost and external access (ngrok, etc.)
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const hostname = window.location.hostname;
-        const wsUrl = `${protocol}//${hostname}:9000/`;
+        const wsUrl = `${protocol}//${window.location.host}/signaling`;
 
         console.log(`[SignalingClient] Connecting to ${wsUrl}`);
 
