@@ -36,8 +36,10 @@ export default class MeshNetworkCoordinator {
 
     // Get local audio stream (optional - may fail on non-HTTPS connections)
     try {
-      await this.audioManager.getLocalAudioStream();
+      const localStream = await this.audioManager.getLocalAudioStream();
       console.log('[MeshNetworkCoordinator] Audio stream initialized');
+      // Pass local stream to peer manager for outgoing calls
+      this.peerManager.setLocalStream(localStream);
     } catch (audioError) {
       console.warn(
         '[MeshNetworkCoordinator] Audio unavailable (continuing without audio):',
@@ -196,6 +198,12 @@ export default class MeshNetworkCoordinator {
   setupPeerManagerHandlers() {
     this.peerManager.on('peerConnected', ({ peerId }) => {
       this.handleNewPeerJoining(peerId);
+
+      // Initiate audio call to new peer (if we have audio)
+      if (this.peerManager.localStream) {
+        console.log(`[MeshNetworkCoordinator] Initiating audio call to: ${peerId}`);
+        this.peerManager.callPeer(peerId);
+      }
     });
 
     this.peerManager.on('peerDisconnected', ({ peerId }) => {
@@ -204,6 +212,17 @@ export default class MeshNetworkCoordinator {
 
     this.peerManager.on('dataReceived', ({ peerId, data }) => {
       this.handleDataMessage(peerId, data);
+    });
+
+    // Handle incoming remote audio streams
+    this.peerManager.on('remoteStream', ({ peerId, stream }) => {
+      console.log(`[MeshNetworkCoordinator] Remote audio stream from: ${peerId}`);
+      this.audioManager.handleRemoteStream(peerId, stream);
+    });
+
+    this.peerManager.on('callClosed', ({ peerId }) => {
+      console.log(`[MeshNetworkCoordinator] Call closed with: ${peerId}`);
+      this.audioManager.removeRemoteStream(peerId);
     });
 
     this.peerManager.on('error', ({ error }) => {

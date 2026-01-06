@@ -10,6 +10,8 @@ export default class PeerConnectionManager {
     this.peerId = null;
     this.peer = null;
     this.connections = new Map(); // peerId -> DataConnection
+    this.mediaConnections = new Map(); // peerId -> MediaConnection
+    this.localStream = null; // Local audio stream for calls
     this.maxPeers = config.maxPeers || 10;
     this.eventHandlers = new Map();
 
@@ -27,6 +29,14 @@ export default class PeerConnectionManager {
       },
       ...config.peerConfig,
     };
+  }
+
+  /**
+   * Set local audio stream for outgoing calls
+   */
+  setLocalStream(stream) {
+    this.localStream = stream;
+    console.log('[PeerConnectionManager] Local audio stream set');
   }
 
   /**
@@ -51,6 +61,11 @@ export default class PeerConnectionManager {
 
       this.peer.on('connection', (conn) => {
         this.handleIncomingConnection(conn);
+      });
+
+      // Handle incoming audio/video calls
+      this.peer.on('call', (call) => {
+        this.handleIncomingCall(call);
       });
 
       this.peer.on('disconnected', () => {
@@ -116,6 +131,68 @@ export default class PeerConnectionManager {
     conn.on('open', () => {
       this.connections.set(conn.peer, conn);
       this.emit('peerConnected', { peerId: conn.peer, connection: conn });
+    });
+  }
+
+  /**
+   * Handle incoming audio/video call
+   */
+  handleIncomingCall(call) {
+    const remotePeerId = call.peer;
+    console.log('[PeerConnectionManager] Incoming call from:', remotePeerId);
+
+    // Answer with our local stream (or null if no audio)
+    call.answer(this.localStream);
+    console.log('[PeerConnectionManager] Answered call with local stream:', !!this.localStream);
+
+    this.setupMediaConnectionHandlers(call, remotePeerId);
+  }
+
+  /**
+   * Call a peer with audio stream
+   */
+  callPeer(remotePeerId) {
+    if (!this.localStream) {
+      console.warn('[PeerConnectionManager] No local stream to call with');
+      return null;
+    }
+
+    if (this.mediaConnections.has(remotePeerId)) {
+      console.warn('[PeerConnectionManager] Already in call with:', remotePeerId);
+      return this.mediaConnections.get(remotePeerId);
+    }
+
+    console.log('[PeerConnectionManager] Calling peer:', remotePeerId);
+    const call = this.peer.call(remotePeerId, this.localStream);
+
+    if (call) {
+      this.setupMediaConnectionHandlers(call, remotePeerId);
+    }
+
+    return call;
+  }
+
+  /**
+   * Set up event handlers for media connection (audio/video call)
+   */
+  setupMediaConnectionHandlers(call, remotePeerId) {
+    this.mediaConnections.set(remotePeerId, call);
+
+    call.on('stream', (remoteStream) => {
+      console.log('[PeerConnectionManager] Received remote stream from:', remotePeerId);
+      this.emit('remoteStream', { peerId: remotePeerId, stream: remoteStream });
+    });
+
+    call.on('close', () => {
+      console.log('[PeerConnectionManager] Call closed with:', remotePeerId);
+      this.mediaConnections.delete(remotePeerId);
+      this.emit('callClosed', { peerId: remotePeerId });
+    });
+
+    call.on('error', (error) => {
+      console.error('[PeerConnectionManager] Call error with:', remotePeerId, error);
+      this.mediaConnections.delete(remotePeerId);
+      this.emit('callError', { peerId: remotePeerId, error });
     });
   }
 
@@ -215,8 +292,15 @@ export default class PeerConnectionManager {
    * Clean up and disconnect all peers
    */
   destroy() {
+    // Close all data connections
     this.connections.forEach((conn) => conn.close());
     this.connections.clear();
+
+    // Close all media connections (audio calls)
+    this.mediaConnections.forEach((call) => call.close());
+    this.mediaConnections.clear();
+
+    this.localStream = null;
 
     if (this.peer) {
       this.peer.destroy();
