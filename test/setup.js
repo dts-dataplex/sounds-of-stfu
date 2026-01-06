@@ -179,6 +179,15 @@ globalThis.Worker = class Worker {
             results: data.texts.map(() => ({ label: 'POSITIVE', score: 0.9 })),
           },
         });
+      } else if (data.type === 'transcribe') {
+        // Mock transcription response for SpeechTranscriber tests
+        this._emit('message', {
+          data: {
+            id: data.id,
+            text: 'This is a mock transcription.',
+            latency: 150,
+          },
+        });
       }
     }, 10);
   }
