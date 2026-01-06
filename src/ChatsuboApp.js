@@ -30,8 +30,9 @@ export default class ChatsuboApp {
     this.peerAvatars = new Map(); // peerId -> THREE.Mesh
     this.peerNameSprites = new Map(); // peerId -> THREE.Sprite
     this.audioContext = null;
-    this.spatialAudioNodes = new Map(); // peerId -> {source, gain, panner}
+    this.spatialAudioNodes = new Map(); // peerId -> {source, gain, panner, analyser, audioData}
     this.conversationMessages = [];
+    this.peerVoiceActivityIntervals = new Map(); // peerId -> intervalId
 
     // Audio range settings
     this.audioRange = 15; // Default hearing distance in feet
@@ -40,6 +41,13 @@ export default class ChatsuboApp {
     // Audio transcription
     this.audioChunkProcessor = null;
     this.sttEnabled = false;
+
+    // Voice activity detection for local user
+    this.localAudioAnalyser = null;
+    this.localAudioData = null;
+    this.isSpeaking = false;
+    this.voiceActivityInterval = null;
+    this.speakingThreshold = 0.02; // Audio level threshold for "speaking"
 
     // UI callbacks
     this.onStatusUpdate = null;
@@ -137,6 +145,9 @@ export default class ChatsuboApp {
       // Create local user avatar
       this.createLocalAvatar();
 
+      // Set up voice activity detection for local avatar highlighting
+      this.setupVoiceActivityDetection();
+
       // Broadcast initial position
       this.broadcastPosition();
     } catch (error) {
@@ -218,6 +229,113 @@ export default class ChatsuboApp {
         console.log('[ChatsuboApp] Audio context initialized');
       }
     }
+  }
+
+  /**
+   * Set up voice activity detection to highlight local avatar when speaking
+   */
+  setupVoiceActivityDetection() {
+    if (!this.audioContext || !this.networkCoordinator) {
+      console.warn('[ChatsuboApp] Cannot set up voice detection: audio or network not ready');
+      return;
+    }
+
+    // Get local audio stream from network coordinator
+    const localStream = this.networkCoordinator.audioManager?.localStream;
+    if (!localStream) {
+      console.warn('[ChatsuboApp] No local audio stream for voice detection');
+      return;
+    }
+
+    try {
+      // Create analyser node for the local audio
+      this.localAudioAnalyser = this.audioContext.createAnalyser();
+      this.localAudioAnalyser.fftSize = 256;
+      this.localAudioAnalyser.smoothingTimeConstant = 0.5;
+
+      // Connect local stream to analyser (not to destination - we don't want to hear ourselves)
+      const source = this.audioContext.createMediaStreamSource(localStream);
+      source.connect(this.localAudioAnalyser);
+
+      // Create buffer for audio data
+      this.localAudioData = new Float32Array(this.localAudioAnalyser.frequencyBinCount);
+
+      // Start monitoring audio levels
+      this.voiceActivityInterval = setInterval(() => {
+        this.checkVoiceActivity();
+      }, 50); // Check every 50ms for responsive feedback
+
+      console.log('[ChatsuboApp] Voice activity detection enabled');
+    } catch (error) {
+      console.error('[ChatsuboApp] Failed to set up voice detection:', error);
+    }
+  }
+
+  /**
+   * Check current audio level and update avatar highlight
+   */
+  checkVoiceActivity() {
+    if (!this.localAudioAnalyser || !this.localAudioData) return;
+
+    // Get current audio level
+    this.localAudioAnalyser.getFloatTimeDomainData(this.localAudioData);
+
+    // Calculate RMS (root mean square) for audio level
+    let sum = 0;
+    for (let i = 0; i < this.localAudioData.length; i++) {
+      sum += this.localAudioData[i] * this.localAudioData[i];
+    }
+    const rms = Math.sqrt(sum / this.localAudioData.length);
+
+    // Determine if speaking based on threshold
+    const wasSpeaking = this.isSpeaking;
+    this.isSpeaking = rms > this.speakingThreshold;
+
+    // Update avatar if state changed
+    if (this.isSpeaking !== wasSpeaking) {
+      this.highlightLocalAvatar(this.isSpeaking);
+    }
+  }
+
+  /**
+   * Highlight or unhighlight local avatar based on speaking state
+   */
+  highlightLocalAvatar(isHighlighted) {
+    if (!this.localAvatar) return;
+
+    if (isHighlighted) {
+      // Brighten avatar and scale up when speaking
+      this.localAvatar.material.emissiveIntensity = 1.0;
+      this.localAvatar.scale.set(1.3, 1.3, 1.3);
+
+      // Also brighten the name sprite if it exists
+      if (this.localNameSprite) {
+        this.localNameSprite.material.opacity = 1.0;
+        this.localNameSprite.scale.set(3.6, 0.9, 1.2);
+      }
+    } else {
+      // Return to normal when not speaking
+      this.localAvatar.material.emissiveIntensity = 0.5;
+      this.localAvatar.scale.set(1.0, 1.0, 1.0);
+
+      if (this.localNameSprite) {
+        this.localNameSprite.material.opacity = 0.8;
+        this.localNameSprite.scale.set(3, 0.75, 1);
+      }
+    }
+  }
+
+  /**
+   * Stop voice activity detection
+   */
+  stopVoiceActivityDetection() {
+    if (this.voiceActivityInterval) {
+      clearInterval(this.voiceActivityInterval);
+      this.voiceActivityInterval = null;
+    }
+    this.localAudioAnalyser = null;
+    this.localAudioData = null;
+    this.isSpeaking = false;
   }
 
   /**
@@ -311,6 +429,12 @@ export default class ChatsuboApp {
     const gainNode = this.audioContext.createGain();
     const pannerNode = this.audioContext.createPanner();
 
+    // Create analyser for voice activity detection
+    const analyser = this.audioContext.createAnalyser();
+    analyser.fftSize = 256;
+    analyser.smoothingTimeConstant = 0.5;
+    const audioData = new Float32Array(analyser.frequencyBinCount);
+
     // Configure panner for 3D audio
     pannerNode.panningModel = 'HRTF';
     pannerNode.distanceModel = 'inverse';
@@ -318,8 +442,9 @@ export default class ChatsuboApp {
     pannerNode.maxDistance = 100;
     pannerNode.rolloffFactor = 1;
 
-    // Connect: source -> gain -> panner -> destination
-    source.connect(gainNode);
+    // Connect: source -> analyser -> gain -> panner -> destination
+    source.connect(analyser);
+    analyser.connect(gainNode);
     gainNode.connect(pannerNode);
     pannerNode.connect(this.audioContext.destination);
 
@@ -328,11 +453,17 @@ export default class ChatsuboApp {
       source,
       gain: gainNode,
       panner: pannerNode,
+      analyser,
+      audioData,
       stream,
+      isSpeaking: false,
     });
 
     // Initial position update
     this.updateSpatialAudio(peerId);
+
+    // Set up voice activity detection for this peer
+    this.setupPeerVoiceActivityDetection(peerId);
 
     // Start audio chunk processing for transcription if STT is enabled
     if (this.sttEnabled && this.audioChunkProcessor) {
@@ -341,6 +472,63 @@ export default class ChatsuboApp {
     }
 
     console.log(`[ChatsuboApp] Spatial audio setup for: ${peerId}`);
+  }
+
+  /**
+   * Set up voice activity detection for a remote peer
+   */
+  setupPeerVoiceActivityDetection(peerId) {
+    const nodes = this.spatialAudioNodes.get(peerId);
+    if (!nodes || !nodes.analyser) return;
+
+    const intervalId = setInterval(() => {
+      this.checkPeerVoiceActivity(peerId);
+    }, 50);
+
+    this.peerVoiceActivityIntervals.set(peerId, intervalId);
+  }
+
+  /**
+   * Check voice activity for a remote peer and update their avatar
+   */
+  checkPeerVoiceActivity(peerId) {
+    const nodes = this.spatialAudioNodes.get(peerId);
+    if (!nodes || !nodes.analyser || !nodes.audioData) return;
+
+    // Get current audio level
+    nodes.analyser.getFloatTimeDomainData(nodes.audioData);
+
+    // Calculate RMS
+    let sum = 0;
+    for (let i = 0; i < nodes.audioData.length; i++) {
+      sum += nodes.audioData[i] * nodes.audioData[i];
+    }
+    const rms = Math.sqrt(sum / nodes.audioData.length);
+
+    // Determine if speaking
+    const wasSpeaking = nodes.isSpeaking;
+    nodes.isSpeaking = rms > this.speakingThreshold;
+
+    // Update avatar if state changed
+    if (nodes.isSpeaking !== wasSpeaking) {
+      this.highlightPeerAvatar(peerId, nodes.isSpeaking);
+    }
+  }
+
+  /**
+   * Highlight or unhighlight a peer's avatar based on speaking state
+   */
+  highlightPeerAvatar(peerId, isHighlighted) {
+    const avatar = this.peerAvatars.get(peerId);
+    if (!avatar) return;
+
+    if (isHighlighted) {
+      avatar.material.emissiveIntensity = 1.0;
+      avatar.scale.set(1.3, 1.3, 1.3);
+    } else {
+      avatar.material.emissiveIntensity = 0.3;
+      avatar.scale.set(1.0, 1.0, 1.0);
+    }
   }
 
   /**
@@ -375,6 +563,13 @@ export default class ChatsuboApp {
    * Remove peer's audio when they disconnect
    */
   removePeerAudio(peerId) {
+    // Stop voice activity detection for this peer
+    const intervalId = this.peerVoiceActivityIntervals.get(peerId);
+    if (intervalId) {
+      clearInterval(intervalId);
+      this.peerVoiceActivityIntervals.delete(peerId);
+    }
+
     // Stop audio chunk processing for transcription
     if (this.audioChunkProcessor) {
       this.audioChunkProcessor.stopProcessing(peerId);
@@ -383,6 +578,7 @@ export default class ChatsuboApp {
     const nodes = this.spatialAudioNodes.get(peerId);
     if (nodes) {
       nodes.source.disconnect();
+      if (nodes.analyser) nodes.analyser.disconnect();
       nodes.gain.disconnect();
       nodes.panner.disconnect();
       this.spatialAudioNodes.delete(peerId);
@@ -755,6 +951,9 @@ export default class ChatsuboApp {
    * Clean up all resources
    */
   destroy() {
+    // Stop voice activity detection
+    this.stopVoiceActivityDetection();
+
     // Remove local avatar
     this.removeLocalAvatar();
 
@@ -789,6 +988,10 @@ export default class ChatsuboApp {
     if (this.audioContext) {
       this.audioContext.close();
     }
+
+    // Clear all peer voice activity intervals
+    this.peerVoiceActivityIntervals.forEach((intervalId) => clearInterval(intervalId));
+    this.peerVoiceActivityIntervals.clear();
 
     // Clear state
     this.spatialAudioNodes.clear();
