@@ -42,6 +42,9 @@ async function initialize() {
     // Initialize app
     await app.initialize();
 
+    // Export for console debugging (after initialization)
+    window.chatsuboApp = app;
+
     // Enable join button
     const joinButton = getElement('join-button');
     if (joinButton) joinButton.disabled = false;
@@ -454,6 +457,5 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-// Export for console debugging
-window.chatsuboApp = app;
+// Export moveToZone for console debugging
 window.moveToZone = moveToZone;
