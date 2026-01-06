@@ -8,6 +8,7 @@ import { SceneManager } from './scene/SceneManager.js';
 import { MeshNetworkCoordinator } from './network/index.js';
 // AI module is loaded dynamically based on device capability
 import { calculateSpatialGain } from './audio/spatial-falloff.js';
+import AudioChunkProcessor from './ai/AudioChunkProcessor.js';
 
 export default class ChatsuboApp {
   constructor(canvasElement) {
@@ -28,6 +29,10 @@ export default class ChatsuboApp {
     this.audioContext = null;
     this.spatialAudioNodes = new Map(); // peerId -> {source, gain, panner}
     this.conversationMessages = [];
+
+    // Audio transcription
+    this.audioChunkProcessor = null;
+    this.sttEnabled = false;
 
     // UI callbacks
     this.onStatusUpdate = null;
@@ -60,6 +65,9 @@ export default class ChatsuboApp {
           this.aiModule = chatsuboAI;
           this.aiEnabled = true;
           console.log('[ChatsuboApp] AI systems ready');
+
+          // Initialize STT for audio conversation analysis (progressive enhancement)
+          this.initializeSTT();
         } else {
           console.log(`[ChatsuboApp] AI disabled: ${reason}`);
           this.updateStatus(`AI unavailable: ${reason}`);
@@ -206,6 +214,83 @@ export default class ChatsuboApp {
   }
 
   /**
+   * Initialize speech-to-text for audio conversation analysis
+   * Loads asynchronously (non-blocking) as Whisper model is larger
+   */
+  async initializeSTT() {
+    if (!this.aiModule || !this.aiEnabled) {
+      console.log('[ChatsuboApp] STT skipped: AI not enabled');
+      return;
+    }
+
+    try {
+      console.log('[ChatsuboApp] Loading speech-to-text for audio analysis...');
+
+      // Initialize the audio chunk processor
+      this.audioChunkProcessor = new AudioChunkProcessor({
+        sampleRate: 16000, // Whisper requirement
+        chunkDuration: 5000, // 5 second chunks
+        silenceThreshold: 0.01,
+      });
+      await this.audioChunkProcessor.initialize();
+
+      // Set up callback for when audio chunks are ready
+      this.audioChunkProcessor.onChunkReady = async (peerId, audioData) => {
+        await this.handleAudioChunk(peerId, audioData);
+      };
+
+      // Initialize STT on AI module (loads Whisper model)
+      await this.aiModule.initializeSTT();
+      this.sttEnabled = true;
+
+      console.log('[ChatsuboApp] Speech-to-text ready for audio conversations');
+    } catch (error) {
+      console.warn('[ChatsuboApp] STT initialization failed (non-critical):', error.message);
+      this.sttEnabled = false;
+    }
+  }
+
+  /**
+   * Handle audio chunk from peer for transcription and sentiment analysis
+   */
+  async handleAudioChunk(peerId, audioData) {
+    if (!this.sttEnabled || !this.aiModule) return;
+
+    try {
+      const result = await this.aiModule.processAudioForSentiment(peerId, audioData);
+
+      if (result) {
+        console.log(
+          `[ChatsuboApp] [${peerId.substring(0, 8)}] "${result.text}" ` +
+            `[${result.sentiment.label}: ${result.sentiment.score.toFixed(2)}] ` +
+            `(STT: ${result.latency.stt}ms, Sentiment: ${result.latency.sentiment}ms)`
+        );
+
+        // Store transcribed message for heated conversation detection
+        this.conversationMessages.push({
+          peerId,
+          text: result.text,
+          timestamp: Date.now(),
+          source: 'audio',
+        });
+
+        // Keep only last 20 messages
+        if (this.conversationMessages.length > 20) {
+          this.conversationMessages.shift();
+        }
+
+        // Check if conversation is heated
+        const isHeated = await this.aiModule.isConversationHeated(this.conversationMessages);
+        if (isHeated && this.onHeatedConversation) {
+          this.onHeatedConversation();
+        }
+      }
+    } catch (error) {
+      console.error('[ChatsuboApp] Audio transcription error:', error);
+    }
+  }
+
+  /**
    * Set up spatial audio for a remote peer
    */
   setupSpatialAudio(peerId, stream) {
@@ -242,6 +327,12 @@ export default class ChatsuboApp {
     // Initial position update
     this.updateSpatialAudio(peerId);
 
+    // Start audio chunk processing for transcription if STT is enabled
+    if (this.sttEnabled && this.audioChunkProcessor) {
+      this.audioChunkProcessor.startProcessing(peerId, stream);
+      console.log(`[ChatsuboApp] Audio transcription started for: ${peerId}`);
+    }
+
     console.log(`[ChatsuboApp] Spatial audio setup for: ${peerId}`);
   }
 
@@ -277,6 +368,11 @@ export default class ChatsuboApp {
    * Remove peer's audio when they disconnect
    */
   removePeerAudio(peerId) {
+    // Stop audio chunk processing for transcription
+    if (this.audioChunkProcessor) {
+      this.audioChunkProcessor.stopProcessing(peerId);
+    }
+
     const nodes = this.spatialAudioNodes.get(peerId);
     if (nodes) {
       nodes.source.disconnect();
@@ -557,6 +653,18 @@ export default class ChatsuboApp {
     if (this.networkCoordinator) {
       this.networkCoordinator.destroy();
     }
+
+    // Clean up audio chunk processor
+    if (this.audioChunkProcessor) {
+      this.audioChunkProcessor.destroy();
+      this.audioChunkProcessor = null;
+    }
+
+    // Clean up STT
+    if (this.aiModule && this.sttEnabled) {
+      this.aiModule.destroySTT();
+    }
+    this.sttEnabled = false;
 
     // Close audio context
     if (this.audioContext) {
