@@ -4,8 +4,8 @@
  */
 
 export const AI_CONFIG = {
-  minMemoryGB: 4,
-  minCPUCores: 4,
+  minMemoryGB: 2, // Lowered: navigator.deviceMemory reports rounded values (2, 4, 8)
+  minCPUCores: 2, // Lowered: allow dual-core devices
   defaultMemoryGB: 4, // Assume when API unavailable
   defaultCPUCores: 4,
 };
