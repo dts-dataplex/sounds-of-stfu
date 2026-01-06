@@ -45,10 +45,52 @@ async function initialize() {
     // Enable join button
     const joinButton = getElement('join-button');
     if (joinButton) joinButton.disabled = false;
+
+    // Update AI settings UI based on app state
+    updateAISettingsUI();
   } catch (error) {
     console.error('[Main] Initialization error:', error);
     updateStatus(`Error: ${error.message}`);
   }
+}
+
+/**
+ * Update AI settings UI based on app AI capability
+ */
+function updateAISettingsUI() {
+  const aiToggle = getElement('ai-enabled-toggle');
+  const aiStatus = getElement('ai-status');
+
+  if (!aiToggle || !aiStatus) return;
+
+  if (app && app.aiEnabled) {
+    // AI is available and active
+    aiToggle.checked = true;
+    aiToggle.disabled = false;
+    aiStatus.textContent = 'AI sentiment analysis active';
+    aiStatus.className = 'active';
+  } else {
+    // AI is not available on this device
+    aiToggle.checked = false;
+    aiToggle.disabled = true;
+    aiStatus.textContent = 'AI unavailable on this device';
+    aiStatus.className = 'unavailable';
+  }
+
+  // Handle toggle change (for future runtime enable/disable)
+  aiToggle.addEventListener('change', (e) => {
+    if (app) {
+      if (e.target.checked && !app.aiEnabled) {
+        // User wants AI but it's not available
+        aiStatus.textContent = 'AI requires page refresh to enable';
+        e.target.checked = false;
+      } else if (!e.target.checked && app.aiEnabled) {
+        // User wants to disable AI (future: implement runtime disable)
+        aiStatus.textContent = 'AI disabled (restart to re-enable)';
+        app.aiEnabled = false;
+      }
+    }
+  });
 }
 
 /**
