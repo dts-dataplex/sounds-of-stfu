@@ -9,13 +9,26 @@
 // Lazy load transformers to avoid bundler issues with ONNX runtime
 let pipeline, env;
 
+// Detect if running in browser or Node.js
+const isBrowser = typeof window !== 'undefined' && typeof window.caches !== 'undefined';
+
 async function loadTransformers() {
   if (!pipeline) {
     const transformers = await import('@xenova/transformers');
     pipeline = transformers.pipeline;
     env = transformers.env;
-    env.allowLocalModels = false;
-    env.useBrowserCache = true;
+
+    // Configure for environment
+    if (isBrowser) {
+      // Browser: use browser cache
+      env.allowLocalModels = false;
+      env.useBrowserCache = true;
+    } else {
+      // Node.js/test: use filesystem cache
+      env.allowLocalModels = true;
+      env.useBrowserCache = false;
+      env.cacheDir = './.cache/transformers';
+    }
   }
   return { pipeline, env };
 }

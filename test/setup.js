@@ -62,13 +62,29 @@ globalThis.MediaStream = class MediaStream {
   }
 };
 
-// Mock navigator.mediaDevices
-globalThis.navigator = {
-  ...globalThis.navigator,
-  mediaDevices: {
-    getUserMedia: vi.fn().mockResolvedValue(new MediaStream()),
-  },
-};
+// Mock navigator.mediaDevices (only in browser-like environments)
+// In Node.js, navigator is a getter and can't be overwritten
+try {
+  if (typeof globalThis.navigator !== 'object' || !Object.getOwnPropertyDescriptor(globalThis, 'navigator')?.get) {
+    globalThis.navigator = {
+      ...globalThis.navigator,
+      mediaDevices: {
+        getUserMedia: vi.fn().mockResolvedValue(new MediaStream()),
+      },
+    };
+  } else if (globalThis.navigator && !globalThis.navigator.mediaDevices) {
+    // Browser-like environment but missing mediaDevices - mock it
+    Object.defineProperty(globalThis.navigator, 'mediaDevices', {
+      value: {
+        getUserMedia: vi.fn().mockResolvedValue(new MediaStream()),
+      },
+      writable: true,
+      configurable: true,
+    });
+  }
+} catch {
+  // In pure Node.js environment, skip navigator mocking
+}
 
 // Mock PeerJS (will be overridden in specific tests)
 globalThis.Peer = class Peer {
