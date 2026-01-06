@@ -134,3 +134,62 @@ globalThis.requestAnimationFrame = vi.fn((callback) => {
 globalThis.cancelAnimationFrame = vi.fn((_id) => {
   // No-op for tests
 });
+
+// Mock Web Worker for AI tests
+globalThis.Worker = class Worker {
+  constructor(url, options) {
+    this.url = url;
+    this.options = options;
+    this._events = new Map();
+    this._messageHandler = null;
+
+    // Simulate worker ready signal after construction
+    setTimeout(() => {
+      this._emit('message', { data: { type: 'ready' } });
+    }, 5);
+  }
+
+  addEventListener(event, handler) {
+    if (!this._events.has(event)) {
+      this._events.set(event, []);
+    }
+    this._events.get(event).push(handler);
+  }
+
+  removeEventListener(event, handler) {
+    const handlers = this._events.get(event) || [];
+    const index = handlers.indexOf(handler);
+    if (index > -1) handlers.splice(index, 1);
+  }
+
+  postMessage(data) {
+    // Simulate async worker response
+    setTimeout(() => {
+      if (data.type === 'analyze') {
+        this._emit('message', {
+          data: {
+            id: data.id,
+            result: { label: 'POSITIVE', score: 0.95 },
+          },
+        });
+      } else if (data.type === 'analyzeBatch') {
+        this._emit('message', {
+          data: {
+            id: data.id,
+            results: data.texts.map(() => ({ label: 'POSITIVE', score: 0.9 })),
+          },
+        });
+      }
+    }, 10);
+  }
+
+  _emit(event, data) {
+    const handlers = this._events.get(event) || [];
+    handlers.forEach((h) => h(data));
+    if (event === 'message' && this.onmessage) {
+      this.onmessage(data);
+    }
+  }
+
+  terminate() {}
+};
