@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/dts-dataplex/sounds-of-stfu/internal/config"
+	"github.com/dts-dataplex/sounds-of-stfu/internal/livekit"
 	"github.com/dts-dataplex/sounds-of-stfu/internal/room"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
@@ -14,16 +15,18 @@ import (
 
 // Handler holds dependencies for HTTP handlers
 type Handler struct {
-	manager  *room.Manager
-	config   *config.Config
-	upgrader websocket.Upgrader
+	manager      *room.Manager
+	config       *config.Config
+	tokenService *livekit.TokenService
+	upgrader     websocket.Upgrader
 }
 
 // NewHandler creates a new Handler instance
 func NewHandler(manager *room.Manager, cfg *config.Config) *Handler {
 	return &Handler{
-		manager: manager,
-		config:  cfg,
+		manager:      manager,
+		config:       cfg,
+		tokenService: livekit.NewTokenService(cfg),
 		upgrader: websocket.Upgrader{
 			ReadBufferSize:  1024,
 			WriteBufferSize: 1024,
@@ -63,9 +66,13 @@ func (h *Handler) HandleToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Generate actual LiveKit token using livekit-server-sdk
-	// For now, return a placeholder token
-	token := "placeholder-token-" + req.Username + "-" + req.RoomName
+	// Generate LiveKit access token
+	token, err := h.tokenService.GenerateToken(req.RoomName, req.Username)
+	if err != nil {
+		log.Printf("Failed to generate token: %v", err)
+		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(TokenResponse{Token: token})

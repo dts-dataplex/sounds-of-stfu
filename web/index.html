@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatsubo - Spatial Audio Chat</title>
+    <link rel="stylesheet" href="/css/main.css">
+    <!-- LiveKit Client SDK via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/livekit-client@2.6.1/dist/livekit-client.umd.min.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- Login Screen -->
+        <div id="login-screen" class="screen">
+            <div class="login-container">
+                <h1>Chatsubo</h1>
+                <p class="subtitle">Spatial Audio Chat</p>
+                <form id="login-form">
+                    <input type="text" id="username-input" placeholder="Enter your name" required maxlength="20">
+                    <input type="text" id="room-input" placeholder="Room name" value="chatsubo" required maxlength="30">
+                    <button type="submit" id="join-btn">Enter Bar</button>
+                </form>
+                <div id="login-error" class="error hidden"></div>
+            </div>
+        </div>
+
+        <!-- Main Room Screen -->
+        <div id="room-screen" class="screen hidden">
+            <!-- Header -->
+            <header id="header">
+                <div class="header-left">
+                    <span id="room-name">Chatsubo</span>
+                    <span id="zone-indicator" class="zone-badge">Main Bar</span>
+                </div>
+                <div class="header-right">
+                    <span id="user-count">0 users</span>
+                    <button id="leave-btn" class="btn-danger">Leave</button>
+                </div>
+            </header>
+
+            <!-- Canvas Container -->
+            <div id="canvas-container">
+                <canvas id="room-canvas" width="800" height="600"></canvas>
+
+                <!-- Audio Controls Overlay -->
+                <div id="audio-controls">
+                    <button id="mic-toggle" class="audio-btn" title="Toggle Microphone">
+                        <span class="mic-icon">🎤</span>
+                    </button>
+                    <div id="volume-control">
+                        <label for="master-volume">Vol</label>
+                        <input type="range" id="master-volume" min="0" max="100" value="80">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status Bar -->
+            <footer id="status-bar">
+                <div id="connection-status">
+                    <span class="status-dot disconnected"></span>
+                    <span id="connection-text">Disconnected</span>
+                </div>
+                <div id="audio-status">
+                    <span id="audio-indicator">Audio: Off</span>
+                </div>
+                <div id="position-display">
+                    <span id="position-text">Position: (0, 0)</span>
+                </div>
+            </footer>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div id="loading-overlay" class="hidden">
+            <div class="loading-spinner"></div>
+            <p id="loading-text">Connecting...</p>
+        </div>
+    </div>
+
+    <!-- Application Scripts -->
+    <script src="/js/config.js"></script>
+    <script src="/js/audio.js"></script>
+    <script src="/js/livekit.js"></script>
+    <script src="/js/canvas.js"></script>
+    <script src="/js/app.js"></script>
+</body>
+</html>
