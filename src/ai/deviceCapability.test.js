@@ -14,8 +14,8 @@ describe('deviceCapability', () => {
 
   describe('AI_CONFIG', () => {
     it('should have minimum requirements defined', () => {
-      expect(AI_CONFIG.minMemoryGB).toBe(4);
-      expect(AI_CONFIG.minCPUCores).toBe(4);
+      expect(AI_CONFIG.minMemoryGB).toBe(2);
+      expect(AI_CONFIG.minCPUCores).toBe(2);
     });
   });
 
@@ -36,7 +36,7 @@ describe('deviceCapability', () => {
     it('should return false for low memory device', async () => {
       globalThis.navigator = {
         ...originalNavigator,
-        deviceMemory: 2,
+        deviceMemory: 1, // Below minimum of 2
         hardwareConcurrency: 8,
       };
 
@@ -50,7 +50,7 @@ describe('deviceCapability', () => {
       globalThis.navigator = {
         ...originalNavigator,
         deviceMemory: 8,
-        hardwareConcurrency: 2,
+        hardwareConcurrency: 1, // Below minimum of 2
       };
 
       const result = await detectAICapability();

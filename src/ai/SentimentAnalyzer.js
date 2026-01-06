@@ -31,46 +31,60 @@ export default class SentimentAnalyzer {
     const startTime = performance.now();
 
     if (this.useWebWorker && typeof Worker !== 'undefined') {
-      // Initialize web worker for background processing
-      this.worker = new Worker(new URL('./workers/sentiment-worker.js', import.meta.url), {
-        type: 'module',
-      });
+      // Try web worker first for background processing
+      try {
+        this.worker = new Worker(new URL('./workers/sentiment-worker.js', import.meta.url), {
+          type: 'module',
+        });
 
-      // Wait for worker ready signal
-      await new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          reject(new Error('Worker initialization timeout after 30s'));
-        }, 30000);
+        // Wait for worker ready signal
+        await new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            reject(new Error('Worker initialization timeout after 30s'));
+          }, 30000);
 
-        this.worker.onmessage = (e) => {
-          if (e.data.type === 'ready') {
+          this.worker.onmessage = (e) => {
+            if (e.data.type === 'ready') {
+              clearTimeout(timeout);
+              console.log('[SentimentAnalyzer] Worker initialized');
+              resolve();
+            } else if (e.data.type === 'error') {
+              clearTimeout(timeout);
+              reject(new Error(`Worker error: ${e.data.error}`));
+            }
+          };
+
+          this.worker.onerror = (error) => {
             clearTimeout(timeout);
-            console.log('[SentimentAnalyzer] Worker initialized');
-            resolve();
-          } else if (e.data.type === 'error') {
-            clearTimeout(timeout);
-            reject(new Error(`Worker error: ${e.data.error}`));
-          }
-        };
-
-        this.worker.onerror = (error) => {
-          clearTimeout(timeout);
-          reject(error);
-        };
-      });
+            reject(error);
+          };
+        });
+      } catch (workerError) {
+        // Worker failed - fall back to main thread
+        console.warn('[SentimentAnalyzer] Worker failed, falling back to main thread:', workerError.message);
+        if (this.worker) {
+          this.worker.terminate();
+          this.worker = null;
+        }
+        await this._initializeMainThread();
+      }
     } else {
-      // Fallback to main thread (not recommended for production)
-      console.warn('[SentimentAnalyzer] Web Workers not available, using main thread');
-      const { pipeline: pipelineFn } = await loadTransformers();
-      this.classifier = await pipelineFn(
-        'sentiment-analysis',
-        'Xenova/distilbert-base-uncased-finetuned-sst-2-english',
-        { revision: 'main' }
-      );
+      await this._initializeMainThread();
     }
 
     const loadTime = performance.now() - startTime;
     console.log(`[SentimentAnalyzer] Loaded in ${loadTime.toFixed(0)}ms`);
+  }
+
+  async _initializeMainThread() {
+    console.log('[SentimentAnalyzer] Loading model on main thread...');
+    const { pipeline: pipelineFn } = await loadTransformers();
+    this.classifier = await pipelineFn(
+      'sentiment-analysis',
+      'Xenova/distilbert-base-uncased-finetuned-sst-2-english',
+      { revision: 'main' }
+    );
+    console.log('[SentimentAnalyzer] Main thread initialization complete');
   }
 
   /**

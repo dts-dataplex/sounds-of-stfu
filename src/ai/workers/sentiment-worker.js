@@ -11,8 +11,13 @@ async function loadTransformers() {
     const transformers = await import('@xenova/transformers');
     pipeline = transformers.pipeline;
     env = transformers.env;
+
+    // Configure for web worker environment
     env.allowLocalModels = false;
     env.useBrowserCache = true;
+
+    // Use WASM backend (more compatible in workers than WebGL/WebGPU)
+    env.backends.onnx.wasm.numThreads = 1; // Single thread for stability
   }
   return { pipeline, env };
 }
