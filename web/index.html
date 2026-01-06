@@ -9,70 +9,97 @@
     <script src="https://cdn.jsdelivr.net/npm/livekit-client@2.6.1/dist/livekit-client.umd.min.js"></script>
 </head>
 <body>
-    <div id="app">
+    <a href="#room-canvas" class="skip-link">Skip to room canvas</a>
+    <div id="app" role="application" aria-label="Chatsubo Spatial Audio Chat">
         <!-- Login Screen -->
-        <div id="login-screen" class="screen">
+        <div id="login-screen" class="screen" role="main" aria-label="Login screen">
             <div class="login-container">
                 <h1>Chatsubo</h1>
                 <p class="subtitle">Spatial Audio Chat</p>
-                <form id="login-form">
-                    <input type="text" id="username-input" placeholder="Enter your name" required maxlength="20">
-                    <input type="text" id="room-input" placeholder="Room name" value="chatsubo" required maxlength="30">
-                    <button type="submit" id="join-btn">Enter Bar</button>
+                <form id="login-form" aria-label="Join room form">
+                    <label for="username-input" class="visually-hidden">Your name</label>
+                    <input type="text" id="username-input" placeholder="Enter your name" required maxlength="20" aria-required="true" autocomplete="nickname">
+                    <label for="room-input" class="visually-hidden">Room name</label>
+                    <input type="text" id="room-input" placeholder="Room name" value="chatsubo" required maxlength="30" aria-required="true">
+                    <button type="submit" id="join-btn" aria-label="Join room and enter the bar">Enter Bar</button>
                 </form>
-                <div id="login-error" class="error hidden"></div>
+                <div id="login-error" class="error hidden" role="alert" aria-live="polite"></div>
             </div>
         </div>
 
         <!-- Main Room Screen -->
-        <div id="room-screen" class="screen hidden">
+        <div id="room-screen" class="screen hidden" role="main" aria-label="Chat room">
             <!-- Header -->
-            <header id="header">
+            <header id="header" role="banner">
                 <div class="header-left">
-                    <span id="room-name">Chatsubo</span>
-                    <span id="zone-indicator" class="zone-badge">Main Bar</span>
+                    <span id="room-name" aria-label="Room name">Chatsubo</span>
+                    <span id="zone-indicator" class="zone-badge" aria-label="Current zone" aria-live="polite">Main Bar</span>
                 </div>
                 <div class="header-right">
-                    <span id="user-count">0 users</span>
-                    <button id="leave-btn" class="btn-danger">Leave</button>
+                    <span id="user-count" aria-live="polite" aria-atomic="true">0 users</span>
+                    <button id="leave-btn" class="btn-danger" aria-label="Leave the room">Leave</button>
                 </div>
             </header>
 
             <!-- Canvas Container -->
-            <div id="canvas-container">
-                <canvas id="room-canvas" width="800" height="600"></canvas>
+            <div id="canvas-container" role="region" aria-label="Virtual room space">
+                <canvas id="room-canvas" width="800" height="600"
+                    role="img"
+                    aria-label="Interactive room map. Use arrow keys or WASD to move your avatar. Click or tap to move to a location."
+                    tabindex="0"></canvas>
 
                 <!-- Audio Controls Overlay -->
-                <div id="audio-controls">
-                    <button id="mic-toggle" class="audio-btn" title="Toggle Microphone">
-                        <span class="mic-icon">🎤</span>
+                <div id="audio-controls" role="toolbar" aria-label="Audio controls">
+                    <button id="mic-toggle" class="audio-btn" title="Toggle Microphone" aria-label="Toggle microphone" aria-pressed="false">
+                        <span class="mic-icon" aria-hidden="true">🎤</span>
                     </button>
                     <div id="volume-control">
-                        <label for="master-volume">Vol</label>
-                        <input type="range" id="master-volume" min="0" max="100" value="80">
+                        <label for="master-volume" id="volume-label">Vol</label>
+                        <input type="range" id="master-volume" min="0" max="100" value="80"
+                            aria-labelledby="volume-label"
+                            aria-valuemin="0"
+                            aria-valuemax="100"
+                            aria-valuenow="80"
+                            aria-valuetext="80 percent volume">
                     </div>
                 </div>
             </div>
 
             <!-- Status Bar -->
-            <footer id="status-bar">
-                <div id="connection-status">
-                    <span class="status-dot disconnected"></span>
+            <footer id="status-bar" role="contentinfo" aria-label="Connection and position status">
+                <div id="connection-status" aria-live="polite" aria-atomic="true">
+                    <span class="status-dot disconnected" aria-hidden="true"></span>
                     <span id="connection-text">Disconnected</span>
                 </div>
-                <div id="audio-status">
+                <div id="audio-status" aria-live="polite">
                     <span id="audio-indicator">Audio: Off</span>
                 </div>
-                <div id="position-display">
+                <div id="position-display" aria-live="off">
                     <span id="position-text">Position: (0, 0)</span>
                 </div>
             </footer>
         </div>
 
         <!-- Loading Overlay -->
-        <div id="loading-overlay" class="hidden">
-            <div class="loading-spinner"></div>
-            <p id="loading-text">Connecting...</p>
+        <div id="loading-overlay" class="hidden" role="dialog" aria-modal="true" aria-labelledby="loading-text" aria-describedby="loading-steps">
+            <div class="loading-content">
+                <div class="loading-spinner" role="progressbar" aria-label="Loading" aria-busy="true"></div>
+                <p id="loading-text" aria-live="polite">Connecting...</p>
+                <div id="loading-steps" class="loading-steps" role="list" aria-label="Connection progress">
+                    <div class="loading-step" data-step="audio" role="listitem" aria-label="Audio System">
+                        <span class="step-icon" aria-hidden="true">◯</span>
+                        <span class="step-text">Audio System</span>
+                    </div>
+                    <div class="loading-step" data-step="room" role="listitem" aria-label="Room Connection">
+                        <span class="step-icon" aria-hidden="true">◯</span>
+                        <span class="step-text">Room Connection</span>
+                    </div>
+                    <div class="loading-step" data-step="livekit" role="listitem" aria-label="Voice Setup">
+                        <span class="step-icon" aria-hidden="true">◯</span>
+                        <span class="step-text">Voice Setup</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 

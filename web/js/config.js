@@ -24,6 +24,52 @@ const Config = {
         CONE_INNER_ANGLE: 360,  // Full audio within this angle
         CONE_OUTER_ANGLE: 360,  // Reduced audio outside inner angle
         CONE_OUTER_GAIN: 0.5,   // Gain at outer cone edge
+
+        // Zone acoustic filter profiles (BiquadFilter settings)
+        ZONE_FILTERS: {
+            gaming_corner: {
+                type: 'lowshelf',      // Slightly warm, cozy gaming area
+                frequency: 500,
+                gain: -2,
+                Q: 1.0
+            },
+            main_bar: {
+                type: 'peaking',       // Neutral baseline
+                frequency: 1000,
+                gain: 0,
+                Q: 1.0
+            },
+            card_tables: {
+                type: 'highshelf',     // Focused conversation, clearer mids
+                frequency: 2000,
+                gain: 1,
+                Q: 0.7
+            },
+            firepit: {
+                type: 'lowpass',       // Intimate warmth, fire ambiance
+                frequency: 3000,
+                gain: 0,
+                Q: 0.8
+            },
+            private_booths: {
+                type: 'lowpass',       // Very private, muted external sounds
+                frequency: 2000,
+                gain: 0,
+                Q: 1.2
+            },
+            stage: {
+                type: 'highshelf',     // Amplified, clear projection
+                frequency: 3000,
+                gain: 3,
+                Q: 0.5
+            },
+            upstairs: {
+                type: 'lowpass',       // Muffled floor separation
+                frequency: 2500,
+                gain: 0,
+                Q: 1.0
+            }
+        }
     },
 
     // Zone definitions (from design doc)
@@ -106,5 +152,6 @@ Config.getZoneAt = function(x, y) {
 // Freeze config to prevent accidental modification
 Object.freeze(Config);
 Object.freeze(Config.AUDIO);
+Object.freeze(Config.AUDIO.ZONE_FILTERS);
 Object.freeze(Config.MSG_TYPES);
 Object.freeze(Config.RECONNECT);

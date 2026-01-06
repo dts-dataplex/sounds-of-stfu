@@ -41,6 +41,52 @@ body {
     display: none !important;
 }
 
+/* Visually hidden but accessible to screen readers */
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Focus indicators for keyboard navigation */
+:focus {
+    outline: 2px solid var(--accent-cyan);
+    outline-offset: 2px;
+}
+
+:focus:not(:focus-visible) {
+    outline: none;
+}
+
+:focus-visible {
+    outline: 2px solid var(--accent-cyan);
+    outline-offset: 2px;
+}
+
+/* Skip link for keyboard users */
+.skip-link {
+    position: absolute;
+    top: -100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-tertiary);
+    color: var(--accent-cyan);
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--accent-cyan);
+    z-index: 9999;
+    transition: top 0.3s;
+}
+
+.skip-link:focus {
+    top: 10px;
+}
+
 /* Login Screen */
 #login-screen {
     justify-content: center;
@@ -187,6 +233,49 @@ body {
     cursor: crosshair;
     max-width: 100%;
     max-height: 100%;
+    /* Mobile touch improvements */
+    touch-action: none; /* Disable browser touch behaviors like scroll/zoom */
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent; /* Remove tap highlight on iOS */
+}
+
+/* User Tooltip */
+.user-tooltip {
+    position: absolute;
+    background: rgba(10, 10, 15, 0.95);
+    border: 1px solid var(--accent-cyan);
+    border-radius: 4px;
+    padding: 0.5rem 0.75rem;
+    pointer-events: none;
+    z-index: 100;
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+    min-width: 100px;
+    transition: opacity 0.15s ease;
+}
+
+.user-tooltip.hidden {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.tooltip-username {
+    color: var(--accent-cyan);
+    font-weight: bold;
+    font-size: 0.9rem;
+    margin-bottom: 0.25rem;
+    text-shadow: 0 0 5px var(--accent-cyan);
+}
+
+.tooltip-zone {
+    color: var(--accent-magenta);
+    font-size: 0.75rem;
+    margin-bottom: 0.15rem;
+}
+
+.tooltip-status {
+    color: var(--text-secondary);
+    font-size: 0.7rem;
 }
 
 /* Audio Controls */
@@ -304,8 +393,14 @@ body {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: 1rem;
     z-index: 1000;
+}
+
+.loading-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
 }
 
 .loading-spinner {
@@ -325,6 +420,122 @@ body {
     color: var(--accent-cyan);
     text-transform: uppercase;
     letter-spacing: 2px;
+    font-size: 1rem;
+}
+
+/* Loading Steps */
+.loading-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.loading-step {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    transition: color 0.3s ease;
+}
+
+.loading-step .step-icon {
+    font-size: 0.9rem;
+    width: 1.2rem;
+    text-align: center;
+}
+
+.loading-step.active {
+    color: var(--accent-yellow);
+}
+
+.loading-step.active .step-icon {
+    animation: pulse 1s infinite;
+}
+
+.loading-step.completed {
+    color: var(--success);
+}
+
+.loading-step.completed .step-icon::before {
+    content: '✓';
+}
+
+.loading-step.completed .step-icon {
+    color: var(--success);
+}
+
+.loading-step.failed {
+    color: var(--danger);
+}
+
+.loading-step.failed .step-icon::before {
+    content: '✗';
+}
+
+/* Connection Status Enhancements */
+#connection-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+}
+
+#connection-status.reconnecting {
+    background: rgba(255, 170, 0, 0.15);
+}
+
+#connection-text {
+    transition: color 0.3s ease;
+}
+
+/* Reconnect indicator */
+.reconnect-indicator {
+    display: none;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: rgba(255, 170, 0, 0.2);
+    border: 1px solid var(--warning);
+    border-radius: 4px;
+    position: fixed;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 500;
+    animation: slideDown 0.3s ease;
+}
+
+.reconnect-indicator.visible {
+    display: flex;
+}
+
+.reconnect-indicator .reconnect-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 170, 0, 0.3);
+    border-top-color: var(--warning);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.reconnect-indicator .reconnect-text {
+    color: var(--warning);
+    font-size: 0.85rem;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
 }
 
 /* Responsive */

@@ -71,7 +71,16 @@ class ChatsuboApp {
             connectionStatus: document.querySelector('#connection-status .status-dot'),
             connectionText: document.getElementById('connection-text'),
             audioIndicator: document.getElementById('audio-indicator'),
-            positionText: document.getElementById('position-text')
+            positionText: document.getElementById('position-text'),
+
+            // Loading steps
+            loadingSteps: document.getElementById('loading-steps'),
+            loadingStepAudio: document.querySelector('.loading-step[data-step="audio"]'),
+            loadingStepRoom: document.querySelector('.loading-step[data-step="room"]'),
+            loadingStepLivekit: document.querySelector('.loading-step[data-step="livekit"]'),
+
+            // Reconnect indicator
+            reconnectIndicator: null // Will be created dynamically
         };
     }
 
@@ -110,28 +119,57 @@ class ChatsuboApp {
             return;
         }
 
-        // Show loading
-        this.showLoading('Connecting...');
+        // Show loading and reset steps
+        this.showLoading('Initializing...');
+        this.resetLoadingSteps();
 
         try {
-            // Initialize audio context (requires user interaction)
+            // Step 1: Initialize audio context (requires user interaction)
+            this.updateLoadingStep('audio', 'active');
+            this.showLoading('Initializing audio system...');
             await spatialAudio.initialize();
+            this.updateLoadingStep('audio', 'completed');
 
-            // Connect to WebSocket for position sync
+            // Step 2: Connect to WebSocket for position sync
+            this.updateLoadingStep('room', 'active');
             this.showLoading('Connecting to room...');
             await this.connectWebSocket();
+            this.updateLoadingStep('room', 'completed');
 
-            // Connect to LiveKit for audio
-            this.showLoading('Setting up audio...');
+            // Step 3: Connect to LiveKit for audio
+            this.updateLoadingStep('livekit', 'active');
+            this.showLoading('Setting up voice...');
             const livekitConnected = await livekit.connect(this.roomName, this.username);
 
             if (!livekitConnected) {
                 console.warn('[App] LiveKit connection failed, continuing without audio');
+                this.updateLoadingStep('livekit', 'failed');
+            } else {
+                this.updateLoadingStep('livekit', 'completed');
             }
 
             // Initialize canvas
             this.canvas.initialize();
             this.canvas.setLocalUser(this.username, { x: 400, y: 300 });
+
+            // Start audio level detection for speaking indicators
+            spatialAudio.startAudioLevelDetection();
+
+            // Start proximity tracking for conversation clusters
+            spatialAudio.startProximityTracking();
+
+            // Register for speaking state changes
+            spatialAudio.onSpeakingChange((participantId, isSpeaking, level) => {
+                this.canvas.setSpeakingState(participantId, isSpeaking, level);
+            });
+
+            // Register for cluster changes (for heat map visualization)
+            spatialAudio.onClusterChange((clusters) => {
+                this.canvas.setConversationClusters(clusters);
+            });
+
+            // Track local user position
+            spatialAudio.trackParticipantPosition(this.username, { x: 400, y: 300 });
 
             // Update UI
             this.elements.roomNameDisplay.textContent = this.roomName;
@@ -142,6 +180,17 @@ class ChatsuboApp {
 
         } catch (error) {
             console.error('[App] Login failed:', error);
+
+            // Mark appropriate step as failed based on error context
+            const errorMsg = error.message || '';
+            if (errorMsg.includes('audio') || errorMsg.includes('Audio')) {
+                this.updateLoadingStep('audio', 'failed');
+            } else if (errorMsg.includes('WebSocket') || errorMsg.includes('room')) {
+                this.updateLoadingStep('room', 'failed');
+            } else if (errorMsg.includes('LiveKit') || errorMsg.includes('voice')) {
+                this.updateLoadingStep('livekit', 'failed');
+            }
+
             this.showLoginError(error.message || 'Connection failed');
             this.hideLoading();
         }
@@ -239,6 +288,9 @@ class ChatsuboApp {
             for (const user of message.users) {
                 if (user.username !== this.username) {
                     this.canvas.updateUser(user.username, user.position, user.zone);
+
+                    // Track for proximity clustering
+                    spatialAudio.trackParticipantPosition(user.username, user.position);
                 }
             }
             this.updateUserCount();
@@ -255,6 +307,10 @@ class ChatsuboApp {
 
         if (message.username !== this.username) {
             this.canvas.updateUser(message.username, message.position, message.zone);
+
+            // Track for proximity clustering
+            spatialAudio.trackParticipantPosition(message.username, message.position);
+
             this.updateUserCount();
         }
     }
@@ -266,6 +322,9 @@ class ChatsuboApp {
 
             // Update spatial audio position
             spatialAudio.updateParticipantPosition(message.username, message.position);
+
+            // Update proximity tracking
+            spatialAudio.trackParticipantPosition(message.username, message.position);
 
             if (message.zone) {
                 spatialAudio.applyZoneMultiplier(message.username, message.zone);
@@ -285,6 +344,11 @@ class ChatsuboApp {
     handlePositionChange(position) {
         // Update local audio listener position
         spatialAudio.setLocalPosition(position.x, position.y);
+
+        // Update local user position for proximity tracking
+        if (this.username) {
+            spatialAudio.trackParticipantPosition(this.username, position);
+        }
 
         // Update zone indicator
         const zone = Config.getZoneAt(position.x, position.y);
@@ -381,15 +445,23 @@ class ChatsuboApp {
         const success = await livekit.toggleMicrophone();
 
         if (success) {
-            this.elements.micToggle.classList.toggle('muted', livekit.isMuted);
-            this.elements.audioIndicator.textContent = livekit.isMuted ? 'Audio: Muted' : 'Audio: Live';
+            const isMuted = livekit.isMuted;
+            this.elements.micToggle.classList.toggle('muted', isMuted);
+            this.elements.micToggle.setAttribute('aria-pressed', isMuted ? 'true' : 'false');
+            this.elements.micToggle.setAttribute('aria-label', isMuted ? 'Unmute microphone' : 'Mute microphone');
+            this.elements.audioIndicator.textContent = isMuted ? 'Audio: Muted' : 'Audio: Live';
         }
     }
 
     // Handle volume change
     handleVolumeChange() {
-        const volume = this.elements.masterVolume.value / 100;
+        const volumeValue = this.elements.masterVolume.value;
+        const volume = volumeValue / 100;
         spatialAudio.setMasterVolume(volume);
+
+        // Update ARIA attributes for accessibility
+        this.elements.masterVolume.setAttribute('aria-valuenow', volumeValue);
+        this.elements.masterVolume.setAttribute('aria-valuetext', `${volumeValue} percent volume`);
     }
 
     // Handle leave
@@ -425,6 +497,7 @@ class ChatsuboApp {
     scheduleWebSocketReconnect() {
         if (this.wsReconnectAttempts >= Config.RECONNECT.MAX_ATTEMPTS) {
             console.log('[App] Max WebSocket reconnect attempts reached');
+            this.hideReconnectIndicator();
             this.handleError(new Error('Lost connection to server'));
             return;
         }
@@ -437,10 +510,15 @@ class ChatsuboApp {
         console.log(`[App] Scheduling WebSocket reconnect in ${delay}ms`);
         this.updateConnectionUI('connecting');
 
+        // Show reconnect indicator with attempt count
+        this.showReconnectIndicator(this.wsReconnectAttempts + 1, Config.RECONNECT.MAX_ATTEMPTS);
+
         setTimeout(async () => {
             this.wsReconnectAttempts++;
             try {
                 await this.connectWebSocket();
+                // Success - hide indicator
+                this.hideReconnectIndicator();
             } catch (error) {
                 console.error('[App] WebSocket reconnect failed:', error);
                 this.scheduleWebSocketReconnect();
@@ -511,6 +589,89 @@ class ChatsuboApp {
     updateUserCount() {
         const count = this.canvas.users.size;
         this.elements.userCount.textContent = `${count} user${count !== 1 ? 's' : ''}`;
+    }
+
+    // Loading step management
+    updateLoadingStep(stepName, status) {
+        const stepElement = {
+            'audio': this.elements.loadingStepAudio,
+            'room': this.elements.loadingStepRoom,
+            'livekit': this.elements.loadingStepLivekit
+        }[stepName];
+
+        if (!stepElement) return;
+
+        // Remove all state classes
+        stepElement.classList.remove('active', 'completed', 'failed');
+
+        // Update icon and add new state class
+        const iconElement = stepElement.querySelector('.step-icon');
+        const stepText = stepElement.querySelector('.step-text').textContent;
+
+        switch (status) {
+            case 'active':
+                stepElement.classList.add('active');
+                iconElement.textContent = '◯';
+                stepElement.setAttribute('aria-label', `${stepText}: In progress`);
+                stepElement.setAttribute('aria-busy', 'true');
+                break;
+            case 'completed':
+                stepElement.classList.add('completed');
+                iconElement.textContent = ''; // CSS ::before will show ✓
+                stepElement.setAttribute('aria-label', `${stepText}: Completed`);
+                stepElement.removeAttribute('aria-busy');
+                break;
+            case 'failed':
+                stepElement.classList.add('failed');
+                iconElement.textContent = ''; // CSS ::before will show ✗
+                stepElement.setAttribute('aria-label', `${stepText}: Failed`);
+                stepElement.removeAttribute('aria-busy');
+                break;
+            default:
+                iconElement.textContent = '◯';
+                stepElement.setAttribute('aria-label', `${stepText}: Pending`);
+                stepElement.removeAttribute('aria-busy');
+        }
+    }
+
+    resetLoadingSteps() {
+        ['audio', 'room', 'livekit'].forEach(step => {
+            this.updateLoadingStep(step, 'pending');
+        });
+    }
+
+    // Reconnect indicator management
+    createReconnectIndicator() {
+        if (this.elements.reconnectIndicator) return;
+
+        const indicator = document.createElement('div');
+        indicator.className = 'reconnect-indicator';
+        indicator.innerHTML = `
+            <div class="reconnect-spinner"></div>
+            <span class="reconnect-text">Reconnecting...</span>
+        `;
+        document.getElementById('app').appendChild(indicator);
+        this.elements.reconnectIndicator = indicator;
+    }
+
+    showReconnectIndicator(attempt, maxAttempts) {
+        this.createReconnectIndicator();
+        const text = this.elements.reconnectIndicator.querySelector('.reconnect-text');
+        text.textContent = `Reconnecting... (${attempt}/${maxAttempts})`;
+        this.elements.reconnectIndicator.classList.add('visible');
+
+        // Also update connection status styling
+        const statusContainer = document.getElementById('connection-status');
+        statusContainer.classList.add('reconnecting');
+    }
+
+    hideReconnectIndicator() {
+        if (this.elements.reconnectIndicator) {
+            this.elements.reconnectIndicator.classList.remove('visible');
+        }
+
+        const statusContainer = document.getElementById('connection-status');
+        statusContainer.classList.remove('reconnecting');
     }
 }
 
