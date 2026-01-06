@@ -13,7 +13,14 @@
 import SentimentAnalyzer from './SentimentAnalyzer.js';
 import SpeechTranscriber from './SpeechTranscriber.js';
 import TopicDetector from './TopicDetector.js';
-import { detectAICapability, getAIStatusMessage, AI_CONFIG } from './deviceCapability.js';
+import {
+  detectAICapability,
+  detectSTTCapability,
+  getAIStatusMessage,
+  getSTTStatusMessage,
+  AI_CONFIG,
+  STT_CONFIG,
+} from './deviceCapability.js';
 
 class ChatsuboAI {
   constructor() {
@@ -197,6 +204,13 @@ class ChatsuboAI {
 export const chatsuboAI = new ChatsuboAI();
 
 // Re-export capability detection
-export { detectAICapability, getAIStatusMessage, AI_CONFIG };
+export {
+  detectAICapability,
+  detectSTTCapability,
+  getAIStatusMessage,
+  getSTTStatusMessage,
+  AI_CONFIG,
+  STT_CONFIG,
+};
 
 export default chatsuboAI;
