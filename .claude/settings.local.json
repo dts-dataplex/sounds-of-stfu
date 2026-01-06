@@ -43,7 +43,9 @@
       "Bash(./scripts/launch-chrome-debug.sh:*)",
       "Bash(python3:*)",
       "Bash(./scripts/chrome-screenshot.sh:*)",
-      "Bash(xargs kill:*)"
+      "Bash(xargs kill:*)",
+      "Bash(git stash:*)",
+      "Bash(git stash pop:*)"
     ],
     "deny": [],
     "ask": []

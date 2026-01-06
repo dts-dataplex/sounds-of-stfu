@@ -136,6 +136,11 @@ export default class ChatsuboApp {
         console.log('[ChatsuboApp] Audio context resumed after user gesture');
       }
 
+      // Pass local username to network coordinator for sharing with peers
+      if (this.localUsername) {
+        this.networkCoordinator.setLocalUsername(this.localUsername);
+      }
+
       // Join mesh network
       this.localPeerId = await this.networkCoordinator.joinRoom(roomId);
 
@@ -193,6 +198,12 @@ export default class ChatsuboApp {
       this.peerPositions.set(peerId, position);
       this.updateSpatialAudio(peerId);
       this.updatePeerAvatar(peerId);
+    });
+
+    // Peer username received
+    this.networkCoordinator.on('peerUsername', ({ peerId, username }) => {
+      console.log(`[ChatsuboApp] Peer ${peerId} is named: ${username}`);
+      this.createPeerNameSprite(peerId, username);
     });
 
     // Chat message received
@@ -522,12 +533,24 @@ export default class ChatsuboApp {
     const avatar = this.peerAvatars.get(peerId);
     if (!avatar) return;
 
+    const nameSprite = this.peerNameSprites.get(peerId);
+
     if (isHighlighted) {
       avatar.material.emissiveIntensity = 1.0;
       avatar.scale.set(1.3, 1.3, 1.3);
+
+      if (nameSprite) {
+        nameSprite.material.opacity = 1.0;
+        nameSprite.scale.set(3.6, 0.9, 1.2);
+      }
     } else {
       avatar.material.emissiveIntensity = 0.3;
       avatar.scale.set(1.0, 1.0, 1.0);
+
+      if (nameSprite) {
+        nameSprite.material.opacity = 0.8;
+        nameSprite.scale.set(3, 0.75, 1);
+      }
     }
   }
 
@@ -622,13 +645,52 @@ export default class ChatsuboApp {
 
     if (avatar && position) {
       avatar.position.set(position.x, position.y + 1, position.z);
+
+      // Also update name sprite position
+      const nameSprite = this.peerNameSprites.get(peerId);
+      if (nameSprite) {
+        nameSprite.position.set(position.x, position.y + 2, position.z);
+      }
     }
+  }
+
+  /**
+   * Create a username label sprite for a remote peer
+   */
+  createPeerNameSprite(peerId, username) {
+    if (!this.sceneManager) return;
+
+    // Remove existing sprite if any
+    const existingSprite = this.peerNameSprites.get(peerId);
+    if (existingSprite) {
+      this.sceneManager.scene.remove(existingSprite);
+      existingSprite.material.map.dispose();
+      existingSprite.material.dispose();
+    }
+
+    // Get peer's color for the name label
+    const peerColor = this.generatePeerColor(peerId);
+    const colorHex = peerColor.getHex();
+
+    // Create the sprite using the existing createTextSprite method
+    const nameSprite = this.createTextSprite(username, colorHex);
+
+    // Position above the peer's avatar
+    const position = this.peerPositions.get(peerId) || { x: 24, y: 0, z: 18 };
+    nameSprite.position.set(position.x, position.y + 2, position.z);
+
+    // Add to scene and store
+    this.sceneManager.scene.add(nameSprite);
+    this.peerNameSprites.set(peerId, nameSprite);
+
+    console.log(`[ChatsuboApp] Created name sprite for ${peerId}: ${username}`);
   }
 
   /**
    * Remove peer avatar when they disconnect
    */
   removePeerAvatar(peerId) {
+    // Remove avatar
     const avatar = this.peerAvatars.get(peerId);
     if (avatar && this.sceneManager) {
       this.sceneManager.scene.remove(avatar);
@@ -636,6 +698,15 @@ export default class ChatsuboApp {
       avatar.material.dispose();
       this.peerAvatars.delete(peerId);
       console.log(`[ChatsuboApp] Removed avatar for: ${peerId}`);
+    }
+
+    // Remove name sprite
+    const nameSprite = this.peerNameSprites.get(peerId);
+    if (nameSprite && this.sceneManager) {
+      this.sceneManager.scene.remove(nameSprite);
+      nameSprite.material.map.dispose();
+      nameSprite.material.dispose();
+      this.peerNameSprites.delete(peerId);
     }
   }
 
