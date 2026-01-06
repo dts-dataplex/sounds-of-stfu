@@ -6,11 +6,19 @@
  * Performance: <200ms p95 latency, ~280MB memory
  */
 
-import { pipeline, env } from '@xenova/transformers';
+// Lazy load transformers to avoid bundler issues with ONNX runtime
+let pipeline, env;
 
-// Configure Transformers.js to use CDN (defaults to HuggingFace)
-env.allowLocalModels = false;
-env.useBrowserCache = true;
+async function loadTransformers() {
+  if (!pipeline) {
+    const transformers = await import('@xenova/transformers');
+    pipeline = transformers.pipeline;
+    env = transformers.env;
+    env.allowLocalModels = false;
+    env.useBrowserCache = true;
+  }
+  return { pipeline, env };
+}
 
 export default class SentimentAnalyzer {
   constructor() {
@@ -53,7 +61,8 @@ export default class SentimentAnalyzer {
     } else {
       // Fallback to main thread (not recommended for production)
       console.warn('[SentimentAnalyzer] Web Workers not available, using main thread');
-      this.classifier = await pipeline(
+      const { pipeline: pipelineFn } = await loadTransformers();
+      this.classifier = await pipelineFn(
         'sentiment-analysis',
         'Xenova/distilbert-base-uncased-finetuned-sst-2-english',
         { revision: 'main' }

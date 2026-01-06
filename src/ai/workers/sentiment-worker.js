@@ -3,11 +3,19 @@
  * Runs DistilBERT in background thread to avoid blocking UI
  */
 
-import { pipeline, env } from '@xenova/transformers';
+// Lazy load transformers to avoid bundler issues with ONNX runtime
+let pipeline, env;
 
-// Configure Transformers.js to use CDN (defaults to HuggingFace)
-env.allowLocalModels = false;
-env.useBrowserCache = true;
+async function loadTransformers() {
+  if (!pipeline) {
+    const transformers = await import('@xenova/transformers');
+    pipeline = transformers.pipeline;
+    env = transformers.env;
+    env.allowLocalModels = false;
+    env.useBrowserCache = true;
+  }
+  return { pipeline, env };
+}
 
 let classifier = null;
 
@@ -15,8 +23,10 @@ let classifier = null;
 async function initialize() {
   console.log('[SentimentWorker] Loading DistilBERT model...');
   try {
+    // Load transformers dynamically to avoid ONNX bundler issues
+    const { pipeline: pipelineFn } = await loadTransformers();
     // Load with explicit revision to ensure correct model path
-    classifier = await pipeline(
+    classifier = await pipelineFn(
       'sentiment-analysis',
       'Xenova/distilbert-base-uncased-finetuned-sst-2-english',
       { revision: 'main' }

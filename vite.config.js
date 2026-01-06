@@ -6,7 +6,7 @@ export default defineConfig({
     format: 'es',
   },
   optimizeDeps: {
-    exclude: ['@xenova/transformers', 'onnxruntime-web'],
+    exclude: ['@xenova/transformers'],
   },
   build: {
     target: 'esnext',
@@ -15,9 +15,10 @@ export default defineConfig({
         manualChunks: {
           three: ['three'],
           peerjs: ['peerjs'],
-          'ai-models': ['@xenova/transformers'],
         },
       },
     },
   },
+  // Ensure WASM files are properly served
+  assetsInclude: ['**/*.wasm'],
 });
