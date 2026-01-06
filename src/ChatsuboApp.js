@@ -6,7 +6,7 @@
 import * as THREE from 'three';
 import { SceneManager } from './scene/SceneManager.js';
 import { MeshNetworkCoordinator } from './network/index.js';
-// import { chatsuboAI } from './ai/index.js'; // TEMPORARILY DISABLED: ONNX runtime error
+// AI module is loaded dynamically based on device capability
 import { calculateSpatialGain } from './audio/spatial-falloff.js';
 
 export default class ChatsuboApp {
@@ -16,7 +16,8 @@ export default class ChatsuboApp {
     // Core modules
     this.sceneManager = null;
     this.networkCoordinator = null;
-    this.aiModule = null; // chatsuboAI; // TEMPORARILY DISABLED: ONNX runtime error
+    this.aiModule = null;
+    this.aiEnabled = false; // Set after capability detection
 
     // Application state
     this.localPeerId = null;
@@ -47,17 +48,27 @@ export default class ChatsuboApp {
       this.sceneManager.start();
       await this.delay(500);
 
-      // 2. Initialize AI module (TEMPORARILY DISABLED: ONNX runtime error)
-      // this.updateStatus('Preparing AI systems...');
-      // try {
-      //   await this.aiModule.initialize();
-      //   console.log('[ChatsuboApp] AI systems ready');
-      // } catch (aiError) {
-      //   console.warn('[ChatsuboApp] AI initialization failed (non-critical):', aiError.message);
-      //   this.updateStatus('AI systems unavailable (continuing without AI features)');
-      // }
-      // await this.delay(500);
-      console.log('[ChatsuboApp] AI systems disabled (ONNX runtime issue)');
+      // 2. Check AI capability and initialize if device supports it
+      this.updateStatus('Checking AI capabilities...');
+      try {
+        const { detectAICapability, chatsuboAI } = await import('./ai/index.js');
+        const { capable, reason } = await detectAICapability();
+
+        if (capable) {
+          this.updateStatus('Preparing AI systems...');
+          await chatsuboAI.initialize();
+          this.aiModule = chatsuboAI;
+          this.aiEnabled = true;
+          console.log('[ChatsuboApp] AI systems ready');
+        } else {
+          console.log(`[ChatsuboApp] AI disabled: ${reason}`);
+          this.updateStatus(`AI unavailable: ${reason}`);
+        }
+      } catch (aiError) {
+        console.warn('[ChatsuboApp] AI initialization failed (non-critical):', aiError.message);
+        this.updateStatus('AI systems unavailable (continuing without AI features)');
+      }
+      await this.delay(500);
 
       // 3. Initialize audio context (user gesture required - non-blocking)
       this.updateStatus('Setting up audio system...');
@@ -414,7 +425,7 @@ export default class ChatsuboApp {
     }
 
     // Analyze sentiment (skip if AI disabled)
-    if (this.aiModule) {
+    if (this.aiEnabled && this.aiModule) {
       try {
         const sentiment = await this.aiModule.analyzeSentiment(text);
         console.log(
