@@ -50,7 +50,7 @@ describe('SentimentAnalyzer', () => {
 
       // Mock the transformers module for main thread fallback
       vi.doMock('@xenova/transformers', () => ({
-        pipeline: vi.fn().mockResolvedValue((text) => [{ label: 'POSITIVE', score: 0.9 }]),
+        pipeline: vi.fn().mockResolvedValue((_text) => [{ label: 'POSITIVE', score: 0.9 }]),
         env: { allowLocalModels: false, useBrowserCache: true },
       }));
 
