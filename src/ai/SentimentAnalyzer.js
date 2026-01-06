@@ -11,9 +11,11 @@ let pipeline, env;
 
 async function loadTransformers() {
   if (!pipeline) {
-    const transformers = await import('@xenova/transformers');
+    const transformers = await import('@huggingface/transformers');
     pipeline = transformers.pipeline;
     env = transformers.env;
+
+    // Configure for browser environment
     env.allowLocalModels = false;
     env.useBrowserCache = true;
   }
