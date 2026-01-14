@@ -192,13 +192,10 @@ class LiveKitManager {
             // Enable microphone through LiveKit
             await this.localParticipant.setMicrophoneEnabled(true);
 
-            // Get the local audio track
-            const audioTracks = this.localParticipant.getTrackPublications();
-            for (const [, publication] of audioTracks) {
-                if (publication.track && publication.track.kind === 'audio') {
-                    this.localAudioTrack = publication.track;
-                    break;
-                }
+            // Get the local audio track using the correct SDK property
+            const micPub = this.localParticipant.getTrackPublication(LivekitClient.Track.Source.Microphone);
+            if (micPub && micPub.track) {
+                this.localAudioTrack = micPub.track;
             }
 
             this.isMuted = false;

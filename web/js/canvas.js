@@ -308,7 +308,9 @@ class CanvasRenderer {
 
     // Handle keyboard key up
     handleKeyUp(e) {
-        this.keysPressed.delete(e.key.toLowerCase());
+        if (e.key) {
+            this.keysPressed.delete(e.key.toLowerCase());
+        }
     }
 
     // Process keyboard movement (called each frame)
