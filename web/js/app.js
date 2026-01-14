@@ -1,3 +1,60 @@
+// localStorage persistence for user preferences
+const Storage = {
+    KEYS: {
+        USERNAME: 'chatsubo_username',
+        LAST_ROOM: 'chatsubo_lastRoom',
+        PREFERENCES: 'chatsubo_preferences'
+    },
+
+    // Load saved data
+    load() {
+        try {
+            return {
+                username: localStorage.getItem(this.KEYS.USERNAME) || '',
+                lastRoom: localStorage.getItem(this.KEYS.LAST_ROOM) || 'chatsubo',
+                preferences: JSON.parse(localStorage.getItem(this.KEYS.PREFERENCES)) || {
+                    masterVolume: 0.8
+                }
+            };
+        } catch (e) {
+            console.warn('[Storage] Failed to load preferences:', e);
+            return { username: '', lastRoom: 'chatsubo', preferences: { masterVolume: 0.8 } };
+        }
+    },
+
+    // Save username and room
+    saveSession(username, roomName) {
+        try {
+            localStorage.setItem(this.KEYS.USERNAME, username);
+            localStorage.setItem(this.KEYS.LAST_ROOM, roomName);
+        } catch (e) {
+            console.warn('[Storage] Failed to save session:', e);
+        }
+    },
+
+    // Save preferences
+    savePreferences(preferences) {
+        try {
+            const current = JSON.parse(localStorage.getItem(this.KEYS.PREFERENCES)) || {};
+            const updated = { ...current, ...preferences };
+            localStorage.setItem(this.KEYS.PREFERENCES, JSON.stringify(updated));
+        } catch (e) {
+            console.warn('[Storage] Failed to save preferences:', e);
+        }
+    },
+
+    // Clear all saved data
+    clear() {
+        try {
+            localStorage.removeItem(this.KEYS.USERNAME);
+            localStorage.removeItem(this.KEYS.LAST_ROOM);
+            localStorage.removeItem(this.KEYS.PREFERENCES);
+        } catch (e) {
+            console.warn('[Storage] Failed to clear storage:', e);
+        }
+    }
+};
+
 // Main Application - Chatsubo Spatial Audio Chat
 class ChatsuboApp {
     constructor() {
@@ -39,7 +96,31 @@ class ChatsuboApp {
         this.canvas = new CanvasRenderer('room-canvas');
         this.canvas.onPositionChange = (pos) => this.handlePositionChange(pos);
 
+        // Load saved preferences and pre-fill inputs
+        this.loadSavedPreferences();
+
         console.log('[App] Initialization complete');
+    }
+
+    // Load saved preferences from localStorage
+    loadSavedPreferences() {
+        const saved = Storage.load();
+
+        // Pre-fill login form
+        if (saved.username) {
+            this.elements.usernameInput.value = saved.username;
+        }
+        if (saved.lastRoom) {
+            this.elements.roomInput.value = saved.lastRoom;
+        }
+
+        // Restore volume setting
+        if (saved.preferences.masterVolume !== undefined) {
+            const volumePercent = Math.round(saved.preferences.masterVolume * 100);
+            this.elements.masterVolume.value = volumePercent;
+        }
+
+        console.log('[App] Loaded saved preferences');
     }
 
     // Cache DOM elements
@@ -174,6 +255,9 @@ class ChatsuboApp {
             // Update UI
             this.elements.roomNameDisplay.textContent = this.roomName;
             this.showRoomScreen();
+
+            // Save session to localStorage for quick reconnect
+            Storage.saveSession(this.username, this.roomName);
 
             // Send initial position
             this.sendPositionUpdate({ x: 400, y: 300 });
@@ -462,6 +546,9 @@ class ChatsuboApp {
         // Update ARIA attributes for accessibility
         this.elements.masterVolume.setAttribute('aria-valuenow', volumeValue);
         this.elements.masterVolume.setAttribute('aria-valuetext', `${volumeValue} percent volume`);
+
+        // Save volume preference to localStorage
+        Storage.savePreferences({ masterVolume: volume });
     }
 
     // Handle leave
@@ -675,11 +762,251 @@ class ChatsuboApp {
     }
 }
 
+// Debug Console
+class DebugConsole {
+    constructor() {
+        this.isOpen = false;
+        this.maxLines = 200;
+        this.commandHistory = [];
+        this.historyIndex = -1;
+
+        // Cache elements
+        this.container = document.getElementById('debug-console');
+        this.output = document.getElementById('debug-output');
+        this.input = document.getElementById('debug-input');
+        this.closeBtn = document.getElementById('debug-close');
+
+        // Bind methods
+        this.toggle = this.toggle.bind(this);
+        this.handleKeyDown = this.handleKeyDown.bind(this);
+        this.handleCommand = this.handleCommand.bind(this);
+
+        // Set up event listeners
+        this.setupEventListeners();
+
+        // Log initial message
+        this.log('Debug console initialized. Press ~ to toggle.', 'info');
+    }
+
+    setupEventListeners() {
+        // Global ~ key to toggle
+        document.addEventListener('keydown', (e) => {
+            if (e.key === '`' || e.key === '~') {
+                // Don't toggle if typing in an input (except debug input)
+                if (document.activeElement.tagName === 'INPUT' &&
+                    document.activeElement.id !== 'debug-input') {
+                    return;
+                }
+                e.preventDefault();
+                this.toggle();
+            }
+        });
+
+        // Close button
+        this.closeBtn.addEventListener('click', () => this.toggle());
+
+        // Input handling
+        this.input.addEventListener('keydown', this.handleKeyDown);
+    }
+
+    toggle() {
+        this.isOpen = !this.isOpen;
+        this.container.classList.toggle('hidden', !this.isOpen);
+
+        if (this.isOpen) {
+            this.input.focus();
+            this.log('Console opened', 'info');
+        }
+    }
+
+    handleKeyDown(e) {
+        if (e.key === 'Enter') {
+            const cmd = this.input.value.trim();
+            if (cmd) {
+                this.commandHistory.push(cmd);
+                this.historyIndex = this.commandHistory.length;
+                this.log(`> ${cmd}`, 'cmd');
+                this.handleCommand(cmd);
+                this.input.value = '';
+            }
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (this.historyIndex > 0) {
+                this.historyIndex--;
+                this.input.value = this.commandHistory[this.historyIndex];
+            }
+        } else if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (this.historyIndex < this.commandHistory.length - 1) {
+                this.historyIndex++;
+                this.input.value = this.commandHistory[this.historyIndex];
+            } else {
+                this.historyIndex = this.commandHistory.length;
+                this.input.value = '';
+            }
+        } else if (e.key === 'Escape') {
+            this.toggle();
+        }
+    }
+
+    handleCommand(cmd) {
+        const parts = cmd.split(/\s+/);
+        const command = parts[0].toLowerCase();
+        const args = parts.slice(1);
+
+        const app = window.chatsuboApp;
+
+        switch (command) {
+            case '/help':
+            case 'help':
+                this.log('Available commands:', 'info');
+                this.log('  /tp <x> <y>   - Teleport to position', 'info');
+                this.log('  /users        - List connected users', 'info');
+                this.log('  /volume <0-1> - Set master volume', 'info');
+                this.log('  /zone         - Show current zone info', 'info');
+                this.log('  /status       - Show connection status', 'info');
+                this.log('  /clear        - Clear console output', 'info');
+                this.log('  /help         - Show this help', 'info');
+                break;
+
+            case '/tp':
+            case 'tp':
+                if (args.length >= 2) {
+                    const x = parseInt(args[0]);
+                    const y = parseInt(args[1]);
+                    if (!isNaN(x) && !isNaN(y) && x >= 0 && x <= 800 && y >= 0 && y <= 600) {
+                        if (app && app.canvas) {
+                            app.canvas.moveLocalUser({ x, y });
+                            this.log(`Teleported to (${x}, ${y})`, 'success');
+                        } else {
+                            this.log('Not connected to a room', 'error');
+                        }
+                    } else {
+                        this.log('Invalid coordinates. Use: /tp <x 0-800> <y 0-600>', 'error');
+                    }
+                } else {
+                    this.log('Usage: /tp <x> <y>', 'warn');
+                }
+                break;
+
+            case '/users':
+            case 'users':
+                if (app && app.canvas) {
+                    const users = app.canvas.getUsers();
+                    this.log(`Connected users (${users.length}):`, 'info');
+                    users.forEach(user => {
+                        const zone = Config.getZoneAt(user.position.x, user.position.y);
+                        this.log(`  ${user.username} @ (${Math.round(user.position.x)}, ${Math.round(user.position.y)}) - ${zone.name}`, 'info');
+                    });
+                } else {
+                    this.log('Not connected to a room', 'error');
+                }
+                break;
+
+            case '/volume':
+            case 'vol':
+                if (args.length >= 1) {
+                    const vol = parseFloat(args[0]);
+                    if (!isNaN(vol) && vol >= 0 && vol <= 1) {
+                        spatialAudio.setMasterVolume(vol);
+                        const volumePercent = Math.round(vol * 100);
+                        if (app && app.elements.masterVolume) {
+                            app.elements.masterVolume.value = volumePercent;
+                        }
+                        Storage.savePreferences({ masterVolume: vol });
+                        this.log(`Volume set to ${volumePercent}%`, 'success');
+                    } else {
+                        this.log('Invalid volume. Use: /volume <0-1>', 'error');
+                    }
+                } else {
+                    const currentVol = spatialAudio.getMasterVolume ? spatialAudio.getMasterVolume() : 'unknown';
+                    this.log(`Current volume: ${currentVol}`, 'info');
+                    this.log('Usage: /volume <0-1>', 'info');
+                }
+                break;
+
+            case '/zone':
+            case 'zone':
+                if (app && app.canvas && app.username) {
+                    const user = app.canvas.users.get(app.username);
+                    if (user) {
+                        const zone = Config.getZoneAt(user.x, user.y);
+                        this.log(`Current zone: ${zone.name}`, 'info');
+                        this.log(`  Acoustic multiplier: ${zone.acousticMultiplier}`, 'info');
+                        this.log(`  Bounds: (${zone.bounds.x}, ${zone.bounds.y}) to (${zone.bounds.x + zone.bounds.width}, ${zone.bounds.y + zone.bounds.height})`, 'info');
+                    }
+                } else {
+                    this.log('Not connected to a room', 'error');
+                }
+                break;
+
+            case '/status':
+            case 'status':
+                this.log('Connection Status:', 'info');
+                if (app) {
+                    this.log(`  WebSocket: ${app.wsConnected ? 'Connected' : 'Disconnected'}`, app.wsConnected ? 'success' : 'error');
+                    this.log(`  LiveKit: ${livekit.connected ? 'Connected' : 'Disconnected'}`, livekit.connected ? 'success' : 'error');
+                    this.log(`  Room: ${app.roomName || 'None'}`, 'info');
+                    this.log(`  Username: ${app.username || 'None'}`, 'info');
+                } else {
+                    this.log('App not initialized', 'error');
+                }
+                break;
+
+            case '/clear':
+            case 'clear':
+                this.output.innerHTML = '';
+                this.log('Console cleared', 'info');
+                break;
+
+            default:
+                this.log(`Unknown command: ${command}. Type /help for available commands.`, 'warn');
+        }
+    }
+
+    log(message, type = 'info') {
+        const line = document.createElement('div');
+        line.className = `debug-line ${type}`;
+        line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+        this.output.appendChild(line);
+
+        // Trim old lines
+        while (this.output.children.length > this.maxLines) {
+            this.output.removeChild(this.output.firstChild);
+        }
+
+        // Auto-scroll to bottom
+        this.output.scrollTop = this.output.scrollHeight;
+    }
+
+    // Log WebSocket messages
+    logWS(direction, message) {
+        const prefix = direction === 'in' ? '<<' : '>>';
+        let msgStr;
+        try {
+            msgStr = typeof message === 'string' ? message : JSON.stringify(message);
+            if (msgStr.length > 100) {
+                msgStr = msgStr.substring(0, 100) + '...';
+            }
+        } catch (e) {
+            msgStr = '[Binary data]';
+        }
+        this.log(`${prefix} ${msgStr}`, 'ws');
+    }
+}
+
+// Global debug console instance
+let debugConsole = null;
+
 // Initialize app when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     const app = new ChatsuboApp();
     app.init();
 
+    // Initialize debug console
+    debugConsole = new DebugConsole();
+
     // Expose for debugging
     window.chatsuboApp = app;
+    window.debugConsole = debugConsole;
 });

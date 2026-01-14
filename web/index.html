@@ -80,6 +80,19 @@
             </footer>
         </div>
 
+        <!-- Debug Console (toggle with ~) -->
+        <div id="debug-console" class="hidden" role="dialog" aria-label="Debug console">
+            <div class="debug-header">
+                <span>Debug Console</span>
+                <button id="debug-close" aria-label="Close debug console">×</button>
+            </div>
+            <div id="debug-output" class="debug-output" role="log" aria-live="polite"></div>
+            <div class="debug-input-container">
+                <span class="debug-prompt">&gt;</span>
+                <input type="text" id="debug-input" placeholder="Type /help for commands" autocomplete="off" aria-label="Debug command input">
+            </div>
+        </div>
+
         <!-- Loading Overlay -->
         <div id="loading-overlay" class="hidden" role="dialog" aria-modal="true" aria-labelledby="loading-text" aria-describedby="loading-steps">
             <div class="loading-content">
