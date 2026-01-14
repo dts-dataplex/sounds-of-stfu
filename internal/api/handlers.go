@@ -101,6 +101,7 @@ func (h *Handler) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 		Username: username,
 		RoomName: roomName,
 		Send:     make(chan []byte, 256),
+		Done:     make(chan struct{}),
 	}
 
 	// Register client
@@ -119,6 +120,13 @@ func (h *Handler) HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 // sendRoomState sends the current room state to a client
 func (h *Handler) sendRoomState(client *room.Client) {
+	// Check if client is still connected
+	select {
+	case <-client.Done:
+		return // Client disconnected
+	default:
+	}
+
 	rm, exists := h.manager.GetRoom(client.RoomName)
 	if !exists {
 		return
@@ -132,6 +140,8 @@ func (h *Handler) sendRoomState(client *room.Client) {
 	}
 
 	select {
+	case <-client.Done:
+		return // Client disconnected
 	case client.Send <- data:
 	default:
 		log.Printf("Client %s send buffer full", client.Username)
@@ -140,6 +150,13 @@ func (h *Handler) sendRoomState(client *room.Client) {
 
 // broadcastUserJoined broadcasts that a user has joined
 func (h *Handler) broadcastUserJoined(client *room.Client) {
+	// Check if client is still connected
+	select {
+	case <-client.Done:
+		return // Client disconnected
+	default:
+	}
+
 	rm, exists := h.manager.GetRoom(client.RoomName)
 	if !exists {
 		return

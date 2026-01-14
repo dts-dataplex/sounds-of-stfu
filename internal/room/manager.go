@@ -14,6 +14,7 @@ type Client struct {
 	Username string
 	RoomName string
 	Send     chan []byte
+	Done     chan struct{} // Closed when client disconnects
 
 	// Rate limiting
 	lastPositionUpdate time.Time
@@ -107,6 +108,7 @@ func (m *Manager) handleUnregister(client *Client) {
 	}
 
 	delete(m.clients, client)
+	close(client.Done) // Signal that client is done before closing Send
 	close(client.Send)
 
 	if room, exists := m.rooms[client.RoomName]; exists {

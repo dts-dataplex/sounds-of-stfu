@@ -23,11 +23,5 @@ room:
   empty_timeout: 300  # 5 minutes
   max_participants: 50
 
-# Audio settings optimized for spatial audio
-audio:
-  active_speaker_threshold: 0.3
-
-# WebRTC settings
-webrtc:
-  congestion_control:
-    enabled: true
+# Audio settings
+# Note: Spatial audio mixing is handled by the Go backend, not LiveKit config
