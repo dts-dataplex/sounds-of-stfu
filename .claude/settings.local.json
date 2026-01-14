@@ -43,7 +43,17 @@
       "Bash(./scripts/launch-chrome-debug.sh:*)",
       "Bash(python3:*)",
       "Bash(./scripts/chrome-screenshot.sh:*)",
-      "Bash(xargs kill:*)"
+      "Bash(xargs kill:*)",
+      "Bash(docker-compose logs:*)",
+      "Bash(docker-compose down:*)",
+      "Bash(docker-compose up:*)",
+      "Bash(docker-compose ps:*)",
+      "Bash(docker-compose build:*)",
+      "Bash(docker-compose restart:*)",
+      "Bash(docker exec:*)",
+      "mcp__MCP_DOCKER__browser_press_key",
+      "mcp__MCP_DOCKER__browser_type",
+      "mcp__MCP_DOCKER__browser_evaluate"
     ],
     "deny": [],
     "ask": []
