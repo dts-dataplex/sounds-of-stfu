@@ -31,8 +31,11 @@ Thumbs.db
 # Build outputs (for future use)
 dist/
 build/
+bin/
 *.min.js
 *.map
 
 # AI model cache (transformers.js)
 .cache/
+server.exe
+.cursor/mcp.json
