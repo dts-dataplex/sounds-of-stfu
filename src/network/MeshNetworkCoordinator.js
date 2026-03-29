@@ -15,8 +15,17 @@ export default class MeshNetworkCoordinator {
     this.signalingClient = new SignalingClient();
     this.roomId = null;
     this.peerList = new Set(); // All peers in room (including self)
+    this.peerUsernames = new Map(); // peerId -> username
+    this.localUsername = null;
     this.eventHandlers = new Map();
     this.isInitialized = false;
+  }
+
+  /**
+   * Set local username for sharing with peers
+   */
+  setLocalUsername(username) {
+    this.localUsername = username;
   }
 
   /**
@@ -36,8 +45,10 @@ export default class MeshNetworkCoordinator {
 
     // Get local audio stream (optional - may fail on non-HTTPS connections)
     try {
-      await this.audioManager.getLocalAudioStream();
+      const localStream = await this.audioManager.getLocalAudioStream();
       console.log('[MeshNetworkCoordinator] Audio stream initialized');
+      // Pass local stream to peer manager for outgoing calls
+      this.peerManager.setLocalStream(localStream);
     } catch (audioError) {
       console.warn(
         '[MeshNetworkCoordinator] Audio unavailable (continuing without audio):',
@@ -196,6 +207,25 @@ export default class MeshNetworkCoordinator {
   setupPeerManagerHandlers() {
     this.peerManager.on('peerConnected', ({ peerId }) => {
       this.handleNewPeerJoining(peerId);
+
+      // Send our username to the new peer
+      if (this.localUsername) {
+        this.peerManager.sendToPeer(peerId, {
+          type: 'username',
+          username: this.localUsername,
+        });
+      }
+
+      // Only the peer with the "lower" peerId initiates the audio call
+      // This prevents both peers from calling each other simultaneously
+      const shouldInitiateCall = this.peerManager.peerId < peerId;
+
+      if (shouldInitiateCall && this.peerManager.localStream) {
+        console.log(`[MeshNetworkCoordinator] Initiating audio call to: ${peerId} (we have lower peerId)`);
+        this.peerManager.callPeer(peerId);
+      } else if (!shouldInitiateCall) {
+        console.log(`[MeshNetworkCoordinator] Waiting for audio call from: ${peerId} (they have lower peerId)`);
+      }
     });
 
     this.peerManager.on('peerDisconnected', ({ peerId }) => {
@@ -204,6 +234,17 @@ export default class MeshNetworkCoordinator {
 
     this.peerManager.on('dataReceived', ({ peerId, data }) => {
       this.handleDataMessage(peerId, data);
+    });
+
+    // Handle incoming remote audio streams
+    this.peerManager.on('remoteStream', ({ peerId, stream }) => {
+      console.log(`[MeshNetworkCoordinator] Remote audio stream from: ${peerId}`);
+      this.audioManager.handleRemoteStream(peerId, stream);
+    });
+
+    this.peerManager.on('callClosed', ({ peerId }) => {
+      console.log(`[MeshNetworkCoordinator] Call closed with: ${peerId}`);
+      this.audioManager.removeRemoteStream(peerId);
     });
 
     this.peerManager.on('error', ({ error }) => {
@@ -313,6 +354,16 @@ export default class MeshNetworkCoordinator {
           peerId,
           text: data.text,
           timestamp: data.timestamp,
+        });
+        break;
+
+      case 'username':
+        // Store peer's username and emit event
+        this.peerUsernames.set(peerId, data.username);
+        console.log(`[MeshNetworkCoordinator] Received username from ${peerId}: ${data.username}`);
+        this.emit('peerUsername', {
+          peerId,
+          username: data.username,
         });
         break;
 
